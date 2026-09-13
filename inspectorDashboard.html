@@ -1,0 +1,697 @@
+<div class="h-full flex flex-col">
+    <!-- Header & Tabs -->
+    <header class="bg-white border-b border-slate-200 px-4 sm:px-6 py-4 shrink-0 shadow-sm z-10 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+        <div>
+            <h1 class="text-base sm:text-lg font-black text-slate-800 tracking-tight flex items-center gap-2">
+                <i data-lucide="briefcase" class="w-5 h-5 text-emerald-600"></i> My Workspace
+            </h1>
+            <p class="text-[10px] sm:text-[11px] text-slate-500 font-bold mt-0.5 truncate max-w-[280px] sm:max-w-none" id="insp-header-name">Loading records...</p>
+        </div>
+        <div class="flex bg-slate-100 p-1 rounded-xl border border-slate-200 w-full sm:w-auto shrink-0">
+            <button onclick="window.switchWorkflowTab('not-scheduled')" id="tab-not-scheduled" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs font-bold rounded-lg bg-white shadow-sm text-blue-600 transition">
+                Not Scheduled
+            </button>
+            <button onclick="window.switchWorkflowTab('scheduled')" id="tab-scheduled" class="flex-1 sm:flex-none px-3 sm:px-4 py-2 text-xs font-bold rounded-lg text-slate-500 hover:text-slate-800 transition">
+                Scheduled (Pending)
+            </button>
+        </div>
+    </header>
+
+    <!-- Main List Container -->
+    <div class="flex-1 overflow-y-auto bg-slate-50 p-3 sm:p-6 custom-scrollbar relative" id="insp-container">
+        <div class="flex justify-center items-center h-full">
+            <div class="animate-pulse flex flex-col items-center">
+                <i data-lucide="loader-2" class="w-8 h-8 text-blue-500 animate-spin mb-2"></i>
+                <p class="text-xs font-bold text-slate-500">Fetching your assigned inspections...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- ACTION MODAL (Fully Mobile Responsive) -->
+<!-- ========================================== -->
+<div id="insp-action-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-3 sm:p-4">
+    <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col relative">
+        
+        <div class="bg-slate-900 text-white p-4 sm:p-5 sticky top-0 z-20 flex justify-between items-center shrink-0">
+            <div>
+                <h3 class="font-black text-xs sm:text-sm uppercase tracking-wider text-emerald-400" id="modal-title">Update Record</h3>
+                <p class="text-[10px] text-slate-300 font-mono mt-0.5" id="modal-id-label">ID</p>
+            </div>
+            <button type="button" onclick="window.closeInspModal()" class="text-slate-400 hover:text-white transition cursor-pointer p-1"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <form id="insp-action-form" onsubmit="window.handleInspReview(event)" class="p-4 sm:p-6 space-y-4 sm:space-y-5 flex-1 relative">
+            <input type="hidden" id="modal-insp-id">
+            <input type="hidden" id="modal-discom">
+            <input type="hidden" id="modal-type">
+
+            <!-- ================= STATE 1: DATA ENTRY ================= -->
+            <div id="modal-entry-state" class="space-y-4 sm:space-y-5">
+                
+                <!-- 1. NOT SCHEDULED FIELDS -->
+                <div id="fields-schedule" class="hidden">
+                    <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl">
+                        <label class="block text-xs font-black uppercase text-blue-800 mb-2">Assign Schedule Date</label>
+                        <input type="date" id="input-schedule-date" class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold outline-none focus:border-blue-500 shadow-sm bg-white cursor-pointer">
+                        <p class="text-[10px] text-slate-500 mt-2 font-bold"><i data-lucide="info" class="w-3 h-3 inline-block mb-0.5 text-blue-500"></i> The status will automatically update to 'Schedule' upon saving.</p>
+                    </div>
+                </div>
+
+                <!-- 2. SCHEDULED - PENDING COMPLETION FIELDS -->
+                <div id="fields-complete" class="hidden space-y-4 sm:space-y-5">
+                    
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Inspection Completed On <span class="text-rose-500">*</span></label>
+                            <input type="date" id="input-comp-date" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-blue-500 bg-white">
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Report / OM No and Date <span class="text-rose-500">*</span></label>
+                            <input type="text" id="input-om" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:border-blue-500 bg-white" placeholder="e.g. OM-123 dated 12/09/2026">
+                        </div>
+                    </div>
+
+                    <!-- Inspection Status & Sub Status Options -->
+                    <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4 bg-slate-50 p-3 sm:p-4 rounded-2xl border border-slate-200">
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-700 mb-1">Inspection Status <span class="text-rose-500">*</span></label>
+                            <select id="input-status" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                                <option value="" disabled selected>-- Select Status --</option>
+                                <option value="Completed">Completed</option>
+                                <option value="Schedule">Schedule</option>
+                                <option value="Revised">Revised</option>
+                                <option value="Cancelled">Cancelled</option>
+                                <option value="On Hold">On Hold</option>
+                                <option value="Waiver">Waiver</option>
+                            </select>
+                        </div>
+                        <div>
+                            <label class="block text-[10px] font-black uppercase text-slate-700 mb-1">Inspection Sub Status <span class="text-rose-500">*</span></label>
+                            <select id="input-sub-status" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                                <option value="" disabled selected>-- Select Sub Status --</option>
+                                <option value="Completed - Material Pass">Completed - Material Pass</option>
+                                <option value="Completed - MOM">Completed - MOM</option>
+                                <option value="Completed - Failed in NABL Lab">Completed - Failed in NABL Lab</option>
+                                <option value="Hold by Dept">Hold by Dept</option>
+                                <option value="Hold by Manufacturer">Hold by Manufacturer</option>
+                                <option value="Hold by TKC">Hold by TKC</option>
+                                <option value="NABL Awaited">NABL Awaited</option>
+                                <option value="Pending">Pending</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Inspection conducted by TPIA Inspector <span class="text-rose-500">*</span></label>
+                        <input type="text" id="input-conducted-by" readonly class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold bg-slate-100 text-slate-600 outline-none">
+                    </div>
+
+                    <!-- Date Sequences -->
+                    <div class="bg-emerald-50/50 p-3 sm:p-4 rounded-2xl border border-emerald-100 space-y-3">
+                        <div class="flex flex-col sm:flex-row justify-between sm:items-end gap-3">
+                            <div class="flex-1 w-full">
+                                <label class="block text-[10px] font-black uppercase text-emerald-800 mb-1">Date(s) of Inspection (From - To)</label>
+                                <input type="text" id="input-dates-insp" readonly class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold bg-white outline-none" placeholder="Build sequence below...">
+                            </div>
+                            <div class="w-full sm:w-24 shrink-0">
+                                <label class="block text-[10px] font-black uppercase text-emerald-800 mb-1">Man Days</label>
+                                <input type="number" step="0.5" id="input-mandays" readonly class="w-full px-3 py-2 border border-emerald-300 rounded-xl text-xs font-black bg-emerald-100 text-emerald-900 outline-none text-center">
+                            </div>
+                        </div>
+                        <div class="flex gap-1.5 sm:gap-2 flex-wrap">
+                            <button type="button" onclick="window.openDatePrompt('Inspection', 'Initial')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ Start</button>
+                            <button type="button" onclick="window.openDatePrompt('Inspection', 'To')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ To</button>
+                            <button type="button" onclick="window.openDatePrompt('Inspection', 'And')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ And</button>
+                            <button type="button" onclick="window.clearDateSequence()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold rounded-lg shadow-sm cursor-pointer">Clear</button>
+                        </div>
+                    </div>
+
+                    <!-- Seal Details -->
+                    <div class="bg-amber-50/50 p-3 sm:p-4 rounded-2xl border border-amber-100 space-y-3">
+                        <label class="block text-[10px] font-black uppercase text-amber-800 mb-1">Type of Seal</label>
+                        <select id="input-seal-type" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                            <option value="">-- Select Seal Type --</option>
+                            <option value="Polycarbonate Seal">Polycarbonate Seal</option>
+                            <option value="Holographic Seal">Holographic Seal</option>
+                            <option value="HS Cable Seal">HS Cable Seal</option>
+                        </select>
+
+                        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 items-end">
+                            <div class="sm:col-span-3">
+                                <label class="block text-[10px] font-black uppercase text-amber-800 mb-1">Seal Serial No Used in Inspection</label>
+                                <textarea id="input-seal-serial" rows="2" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold outline-none custom-scrollbar bg-white" placeholder="e.g. SL-120 to 150"></textarea>
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-amber-800 mb-1">Total Seals</label>
+                                <input type="number" id="input-seal-count" readonly class="w-full px-3 py-2 border border-amber-300 rounded-xl text-xs font-black bg-amber-100 text-amber-900 outline-none text-center">
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+
+                <div class="pt-3 sm:pt-4 border-t border-slate-200 flex justify-end">
+                    <button type="submit" class="w-full sm:w-auto px-6 py-3 bg-slate-800 hover:bg-slate-900 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition cursor-pointer text-center">
+                        Review Details &rarr;
+                    </button>
+                </div>
+            </div>
+
+            <!-- ================= STATE 2: CONFIRMATION ================= -->
+            <div id="modal-confirm-state" class="hidden space-y-4">
+                <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 sm:p-4 rounded-xl text-xs font-bold flex gap-3">
+                    <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i> 
+                    <p>Please carefully review the details below. Once confirmed and saved, this record will progress to the next stage.</p>
+                </div>
+                
+                <div class="bg-slate-50 border border-slate-200 rounded-xl p-4 sm:p-5 space-y-2 sm:space-y-3 text-xs" id="confirm-summary-box">
+                    <!-- Dynamic Summary -->
+                </div>
+
+                <div class="pt-3 sm:pt-4 border-t border-slate-200 flex flex-col-reverse sm:flex-row justify-between gap-3">
+                    <button type="button" onclick="window.hideConfirmationState()" class="w-full sm:w-auto px-4 py-3 text-xs font-bold text-slate-500 hover:bg-slate-100 hover:text-slate-800 rounded-xl transition cursor-pointer text-center">
+                        &larr; Edit Data
+                    </button>
+                    <button type="button" onclick="window.handleInspSave()" id="btn-final-save" class="w-full sm:w-auto px-6 py-3 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-md transition flex items-center justify-center gap-2 cursor-pointer">
+                        <i data-lucide="save" class="w-4 h-4"></i> Confirm & Submit
+                    </button>
+                </div>
+            </div>
+
+        </form>
+    </div>
+</div>
+
+<!-- Date Picker Dialog -->
+<div id="date-picker-dialog" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[200] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-sm rounded-3xl shadow-xl p-6 border border-slate-200 space-y-4 animate-fade-in relative">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h4 id="date-dialog-title" class="font-black text-xs uppercase text-slate-800 tracking-wider">Select Date</h4>
+            <button type="button" onclick="window.closeDatePrompt()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+        <div>
+            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Choose Date</label>
+            <input type="date" id="dialog-date-input" class="w-full p-3 border border-slate-300 rounded-xl text-sm font-bold outline-none bg-white focus:border-blue-500 cursor-pointer">
+        </div>
+        <div class="flex justify-end gap-2 pt-2 border-t">
+            <button type="button" onclick="window.closeDatePrompt()" class="px-4 py-2 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+            <button type="button" onclick="window.confirmDatePrompt()" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-md cursor-pointer">Confirm</button>
+        </div>
+    </div>
+</div>
+
+<script>
+    window.myInspections = [];
+    window.activeWorkflowTab = 'not-scheduled';
+    window.activeSequenceCategory = 'Inspection';
+    window.activeSequenceType = 'Initial';
+
+    window.initInspectorWorkflow = async function() {
+        document.getElementById("insp-header-name").innerText = `Inspector: ${currentMiUser.name}`;
+        document.getElementById("input-conducted-by").value = currentMiUser.name;
+        
+        document.getElementById("input-seal-serial").addEventListener('input', function(e) {
+            document.getElementById("input-seal-count").value = window.calculateTotalSeals(e.target.value);
+        });
+
+        await window.fetchMyData();
+    }
+
+    window.fetchMyData = async function() {
+        const container = document.getElementById("insp-container");
+        container.innerHTML = `<div class="flex justify-center items-center h-full"><div class="animate-pulse flex flex-col items-center"><i data-lucide="loader-2" class="w-8 h-8 text-blue-500 animate-spin mb-2"></i><p class="text-xs font-bold text-slate-500">Synchronizing records...</p></div></div>`;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            const res = await fetch(`${API_URL}?action=getInspections`);
+            const data = await res.json();
+            
+            if (data.status) {
+                const me = currentMiUser.name.toLowerCase().trim();
+                window.myInspections = data.data.filter(d => (d.tpiaInspector || "").toLowerCase().trim() === me);
+                window.renderWorkflowList();
+            } else {
+                container.innerHTML = `<p class="text-rose-500 font-bold text-xs p-6 text-center">Data Error: ${data.message}</p>`;
+            }
+        } catch(e) {
+            container.innerHTML = `<p class="text-rose-500 font-bold text-xs p-6 text-center">Network error. Please try again later.</p>`;
+        }
+    }
+
+    window.switchWorkflowTab = function(tabId) {
+        window.activeWorkflowTab = tabId;
+        const activeClass = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md bg-white shadow-sm text-blue-600 transition";
+        const inactiveClass = "flex-1 sm:flex-none px-4 py-1.5 text-xs font-bold rounded-md text-slate-500 hover:text-slate-800 transition";
+
+        document.getElementById('tab-not-scheduled').className = tabId === 'not-scheduled' ? activeClass : inactiveClass;
+        document.getElementById('tab-scheduled').className = tabId === 'scheduled' ? activeClass : inactiveClass;
+
+        window.renderWorkflowList();
+    }
+
+    window.toggleAccordionRow = function(inspId) {
+        const detailDiv = document.getElementById(`detail-${inspId}`);
+        const icon = document.getElementById(`icon-${inspId}`);
+        if (detailDiv.classList.contains('hidden')) {
+            detailDiv.classList.remove('hidden');
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            detailDiv.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    }
+
+    // 🎯 MOBILE-FIRST RESPONSIVE CARDS & SUMMARY
+    window.renderWorkflowList = function() {
+        const container = document.getElementById("insp-container");
+
+        let filtered = [];
+        if (window.activeWorkflowTab === 'not-scheduled') {
+            filtered = window.myInspections.filter(d => {
+                const s = (d.status || "").toLowerCase();
+                return s === 'pending' || s === '';
+            });
+        } else {
+            filtered = window.myInspections.filter(d => {
+                const s = (d.status || "").toLowerCase();
+                return s === 'schedule' && (!d.inspectionCompletedOn || d.inspectionCompletedOn.trim() === "");
+            });
+        }
+
+        if (filtered.length === 0) {
+            container.innerHTML = `
+                <div class="flex flex-col items-center justify-center h-full text-center opacity-60">
+                    <i data-lucide="check-circle-2" class="w-12 h-12 text-slate-400 mb-3"></i>
+                    <p class="text-sm font-bold text-slate-500">Queue is clear! No records to display.</p>
+                </div>
+            `;
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        const grouped = {};
+        filtered.forEach(d => {
+            const dc = d.discom || "UNKNOWN";
+            if (!grouped[dc]) grouped[dc] = [];
+            grouped[dc].push(d);
+        });
+
+        let html = '';
+        Object.keys(grouped).sort().forEach(discom => {
+            html += `
+                <div class="mb-6">
+                    <h2 class="text-xs sm:text-sm font-black text-slate-800 uppercase tracking-wider mb-2.5 flex items-center gap-2">
+                        <i data-lucide="folder-open" class="w-4 h-4 text-blue-500"></i> ${discom} <span class="text-[10px] text-slate-400 bg-slate-200 px-2 py-0.5 rounded-full font-bold">${grouped[discom].length}</span>
+                    </h2>
+                    <div class="flex flex-col gap-3">
+            `;
+
+            grouped[discom].forEach(rec => {
+                const idStr = rec.inspectionId || "Unknown";
+                const safeIdStr = idStr.replace(/'/g, "\\'");
+
+                let letterDisplay = rec.letterNo || "No Letter";
+                if(rec.letterDate && rec.letterDate !== "-") letterDisplay += ` (${rec.letterDate})`;
+
+                html += `
+                    <div class="bg-white border border-slate-200 rounded-2xl shadow-sm transition overflow-hidden">
+                        
+                        <!-- 🎯 COMPACT RESPONSIVE SUMMARY -->
+                        <div class="p-3.5 sm:p-4 cursor-pointer hover:bg-slate-50 transition text-xs flex flex-col sm:grid sm:grid-cols-7 gap-2 sm:gap-3 items-start sm:items-center" onclick="window.toggleAccordionRow('${safeIdStr}')">
+                            
+                            <div class="flex justify-between items-center w-full sm:w-auto sm:col-span-1">
+                                <div>
+                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Insp ID</span>
+                                    <span class="font-mono font-bold text-blue-700 text-xs sm:text-xs">${idStr}</span>
+                                </div>
+                                <i id="icon-${safeIdStr}" data-lucide="chevron-right" class="w-4 h-4 text-slate-400 transition-transform sm:hidden"></i>
+                            </div>
+
+                            <div>
+                                <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Letter No & Date</span>
+                                <span class="font-bold text-slate-700">${letterDisplay}</span>
+                            </div>
+
+                            <div>
+                                <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Manufacturer</span>
+                                <span class="font-bold text-slate-800">${rec.manufacturer || '-'}</span>
+                            </div>
+
+                            <div>
+                                <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Address</span>
+                                <span class="text-slate-600 line-clamp-1">${rec.address || '-'}</span>
+                            </div>
+
+                            <div>
+                                <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Mat. Category</span>
+                                <span class="text-slate-600">${rec.materialInspected || '-'}</span>
+                            </div>
+
+                            <div>
+                                <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Specification</span>
+                                <span class="text-slate-600 line-clamp-1">${rec.materialSpec || '-'}</span>
+                            </div>
+
+                            <div class="flex items-center justify-between w-full sm:w-auto">
+                                <div>
+                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Quantity</span>
+                                    <span class="font-mono font-bold text-slate-800">${rec.quantity || '-'}</span>
+                                </div>
+                                <i id="icon-${safeIdStr}" data-lucide="chevron-right" class="w-4 h-4 text-slate-400 transition-transform hidden sm:block"></i>
+                            </div>
+                        </div>
+
+                        <!-- 🎯 EXPANDED DETAILS -->
+                        <div id="detail-${safeIdStr}" class="hidden border-t border-slate-100 bg-slate-50 p-4">
+                            <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 text-[11px]">
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Scheme</span><span class="font-bold text-slate-700">${rec.scheme || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">District</span><span class="font-bold text-slate-700">${rec.district || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">PQCC Name</span><span class="font-bold text-slate-700">${rec.pqccName || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">TKC</span><span class="font-bold text-blue-700">${rec.tkc || '-'}</span></div>
+                            </div>
+                            <div class="flex justify-end pt-2 border-t border-slate-200/60">
+                                <button onclick="window.openInspModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i> Update Record
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            html += `</div></div>`;
+        });
+
+        container.innerHTML = html;
+        if (window.lucide) window.lucide.createIcons();
+    }
+
+    // ==========================================
+    // MODAL CONTROL & REVIEW
+    // ==========================================
+    window.openInspModal = function(inspId, discom) {
+        document.getElementById("modal-insp-id").value = inspId;
+        document.getElementById("modal-discom").value = discom;
+        document.getElementById("modal-type").value = window.activeWorkflowTab;
+        
+        document.getElementById("modal-id-label").innerText = inspId;
+        document.getElementById("insp-action-form").reset();
+        document.getElementById("input-conducted-by").value = currentMiUser.name;
+
+        // Reset dropdowns explicitly
+        document.getElementById("input-status").selectedIndex = 0;
+        document.getElementById("input-sub-status").selectedIndex = 0;
+        
+        window.hideConfirmationState(); 
+
+        if (window.activeWorkflowTab === 'not-scheduled') {
+            document.getElementById("modal-title").innerText = "Schedule Assignment";
+            document.getElementById("fields-schedule").classList.remove("hidden");
+            document.getElementById("fields-complete").classList.add("hidden");
+        } else {
+            document.getElementById("modal-title").innerText = "Inspection Completion";
+            document.getElementById("fields-schedule").classList.add("hidden");
+            document.getElementById("fields-complete").classList.remove("hidden");
+        }
+
+        document.getElementById("insp-action-modal").classList.remove("hidden");
+    }
+
+    window.closeInspModal = function() {
+        document.getElementById("insp-action-modal").classList.add("hidden");
+    }
+
+    window.handleInspReview = function(e) {
+        e.preventDefault();
+        
+        const type = document.getElementById("modal-type").value;
+        const box = document.getElementById("confirm-summary-box");
+        let summary = '';
+
+        if (type === 'not-scheduled') {
+            const dt = document.getElementById("input-schedule-date").value;
+            if (!dt) { alert("Please select a schedule date."); return; }
+            summary = `
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-slate-500">Action:</span><span class="font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">Mark as Scheduled</span></div>
+                <div class="flex justify-between items-center"><span class="text-slate-500">Schedule Date:</span><strong class="text-slate-800">${dt}</strong></div>
+            `;
+        } else {
+            const compDate = document.getElementById("input-comp-date").value;
+            const omText = document.getElementById("input-om").value.trim();
+            const statusVal = document.getElementById("input-status").value;
+            const subStatusVal = document.getElementById("input-sub-status").value;
+
+            if (!compDate) { alert("Please enter the Inspection Completed On date."); return; }
+            if (!omText) { alert("Please enter the Report / OM No and Date."); return; }
+            if (!statusVal) { alert("Please select an Inspection Status."); return; }
+            if (!subStatusVal) { alert("Please select an Inspection Sub Status."); return; }
+
+            summary = `
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-slate-500">Action:</span><span class="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mark as Completed</span></div>
+                <div class="space-y-1.5">
+                    <div class="flex justify-between"><span class="text-slate-500">Completed On:</span><strong class="text-slate-800">${compDate}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Status:</span><strong class="text-slate-800">${statusVal}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Sub Status:</span><strong class="text-slate-800">${subStatusVal}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Man Days:</span><strong class="text-slate-800">${document.getElementById("input-mandays").value}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Report/OM:</span><strong class="text-slate-800">${omText}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Insp Dates:</span><strong class="text-slate-800">${document.getElementById("input-dates-insp").value || '-'}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">Seal Count:</span><strong class="text-slate-800">${document.getElementById("input-seal-count").value || '0'}</strong></div>
+                </div>
+            `;
+        }
+
+        box.innerHTML = summary;
+        document.getElementById("modal-entry-state").classList.add("hidden");
+        document.getElementById("modal-confirm-state").classList.remove("hidden");
+    }
+
+    window.hideConfirmationState = function() {
+        document.getElementById("modal-confirm-state").classList.add("hidden");
+        document.getElementById("modal-entry-state").classList.remove("hidden");
+    }
+
+    // ==========================================
+    // SAVE LOGIC TO BACKEND
+    // ==========================================
+    window.handleInspSave = async function() {
+        const btn = document.getElementById("btn-final-save");
+        const originalBtnText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Submitting...`;
+        btn.disabled = true;
+
+        try {
+            const type = document.getElementById("modal-type").value;
+            const payload = {
+                action: "updateInspection",
+                client: currentMiUser.client,
+                inspectorName: currentMiUser.name, 
+                inspectionId: document.getElementById("modal-insp-id").value,
+                discom: document.getElementById("modal-discom").value
+            };
+
+            if (type === 'not-scheduled') {
+                payload.scheduleDate = document.getElementById("input-schedule-date").value;
+                payload.status = "Schedule";
+            } else {
+                payload.inspectionCompletedOn = document.getElementById("input-comp-date").value;
+                payload.manDays = document.getElementById("input-mandays").value;
+                payload.reportOm = document.getElementById("input-om").value;
+                payload.status = document.getElementById("input-status").value;
+                payload.subStatus = document.getElementById("input-sub-status").value;
+                payload.dateFrom = document.getElementById("input-dates-insp").value;
+                payload.sealType = document.getElementById("input-seal-type").value;
+                payload.sealSerial = document.getElementById("input-seal-serial").value;
+                payload.sealNoCount = document.getElementById("input-seal-count").value;
+                payload.conductedBy = currentMiUser.name; 
+            }
+
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            const data = await res.json();
+
+            if (data.status) {
+                window.closeInspModal();
+                await window.fetchMyData(); 
+            } else {
+                alert("Error: " + data.message);
+            }
+        } catch(err) {
+            console.error(err);
+            alert("Network error. Please try again.");
+        } finally {
+            btn.innerHTML = originalBtnText;
+            btn.disabled = false;
+            if(window.lucide) window.lucide.createIcons();
+        }
+    }
+
+    // ==========================================
+    // HELPER LOGIC (Date sequences & Seals)
+    // ==========================================
+    window.parseSafeLocalMidnight = function(str) {
+        if (!str) return null;
+        let clean = String(str).trim().replace(/^(to|and)\s+/i, "").split("T")[0];
+        if (clean.includes('/')) {
+            const p = clean.split('/');
+            if (p.length === 3) return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10), 0, 0, 0, 0);
+        } else if (clean.includes('-')) {
+            const p = clean.split('-');
+            if (p.length === 3) {
+                if (p[0].length === 4) return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10), 0, 0, 0, 0);
+                else return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10), 0, 0, 0, 0);
+            }
+        }
+        return null;
+    }
+
+    window.openDatePrompt = function(category, type) {
+        window.activeSequenceCategory = category;
+        window.activeSequenceType = type;
+        document.getElementById("date-dialog-title").innerText = `Select ${category} Date (${type})`;
+        document.getElementById("dialog-date-input").value = "";
+        document.getElementById("date-picker-dialog").classList.remove("hidden");
+    }
+
+    window.closeDatePrompt = function() {
+        document.getElementById("date-picker-dialog").classList.add("hidden");
+    }
+
+    window.confirmDatePrompt = function() {
+        const val = document.getElementById("dialog-date-input").value;
+        if (!val) return;
+        const parts = val.split("-");
+        const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
+        
+        let targetId = "input-dates-insp";
+        const seqInput = document.getElementById(targetId);
+        const currVal = seqInput.value.trim();
+
+        if (window.activeSequenceType === 'Initial' || !currVal) {
+            seqInput.value = formattedDate;
+        } else if (window.activeSequenceType === 'To') {
+            seqInput.value = `${currVal} To ${formattedDate}`;
+        } else if (window.activeSequenceType === 'And') {
+            seqInput.value = `${currVal} And ${formattedDate}`;
+        }
+        
+        window.recalcManDays();
+        window.closeDatePrompt();
+    }
+
+    window.clearDateSequence = function() {
+        document.getElementById("input-dates-insp").value = "";
+        window.recalcManDays();
+    }
+
+    window.recalcManDays = function() {
+        const inspSeq = document.getElementById("input-dates-insp").value.trim();
+
+        function getSet(seq) {
+            let ds = new Set();
+            if(!seq) return ds;
+            const t = seq.split(/\s+/);
+            let first = t.find(x => /^\d{2}\/\d{2}\/\d{4}$/.test(x));
+            if(!first) return ds;
+            let bd = window.parseSafeLocalMidnight(first);
+            if(!bd) return ds;
+            ds.add(bd.toDateString());
+
+            const regex = /(To|And)[\s\n\r]+(\d{2}\/\d{2}\/\d{4})/gi;
+            let m, last = new Date(bd.getTime());
+            while((m = regex.exec(seq)) !== null) {
+                const kw = m[1].toLowerCase();
+                const target = window.parseSafeLocalMidnight(m[2]);
+                if(target) {
+                    if(kw === 'to') {
+                        let c = new Date(last.getTime());
+                        c.setDate(c.getDate() + 1);
+                        while(c <= target) { ds.add(c.toDateString()); c.setDate(c.getDate()+1); }
+                    } else if (kw === 'and') { ds.add(target.toDateString()); }
+                    last = new Date(target.getTime());
+                }
+            }
+            return ds;
+        }
+
+        let combined = new Set();
+        getSet(inspSeq).forEach(d => combined.add(d));
+        let total = combined.size;
+
+        if(total > 0 && currentMiUser.name) {
+            const currentId = document.getElementById("modal-insp-id").value;
+            const discom = document.getElementById("modal-discom").value;
+            const me = currentMiUser.name.toLowerCase().replace(/[^a-z0-9]/g, '');
+
+            const siblings = window.myInspections.filter(r => 
+                (r.inspectionId !== currentId) && 
+                ((r.discom||"").toUpperCase() === discom.toUpperCase()) &&
+                ((r.conductedBy||r.tpiaInspector||"").toLowerCase().replace(/[^a-z0-9]/g, '') === me)
+            );
+
+            let occ = new Set();
+            siblings.forEach(s => {
+                getSet(s.dateFrom||"").forEach(d => occ.add(d));
+                getSet(s.dateTo||"").forEach(d => occ.add(d));
+            });
+
+            let overlaps = 0;
+            combined.forEach(d => { if(occ.has(d)) overlaps++; });
+            total = Math.max(0, total - overlaps);
+        }
+
+        document.getElementById("input-mandays").value = total;
+    }
+
+    window.calculateTotalSeals = function(inputStr) {
+        if (!inputStr || String(inputStr).trim() === "") return 0;
+        let lines = String(inputStr).trim().split(/[\r\n]+/);
+        let normalized = [];
+        for (let i = 0; i < lines.length; i++) {
+            let l = lines[i].trim();
+            if (!l) continue;
+            if (i > 0) {
+                let p = lines[i - 1].trim();
+                if(!/\bto\s*$/i.test(p) && !/^(to|and)\b/i.test(l)) normalized.push("And " + l);
+                else normalized.push(" " + l);
+            } else normalized.push(l);
+        }
+
+        let processedStr = normalized.join(" ");
+        let segments = processedStr.split(/\s+(?:and|AND|And)\s+|[,;]+/i);
+        let uniqueSeals = new Set();
+
+        segments.forEach(segment => {
+            let s = segment.trim();
+            if (!s) return;
+            let rm = s.match(/(.+?)\s+(?:to|TO|To|-)\s+(.+)/i);
+            if (rm) {
+                let fs = rm[1].trim(), ts = rm[2].trim();
+                let fParsed = window.extractPrefixAndNum(fs), tParsed = window.extractPrefixAndNum(ts);
+                if (fParsed && !tParsed) {
+                    let numOnly = ts.match(/^(\d+)$/);
+                    if (numOnly) tParsed = { prefix: fParsed.prefix, num: parseInt(numOnly[1], 10), padding: numOnly[1].length };
+                }
+                if (fParsed && tParsed && fParsed.prefix === tParsed.prefix) {
+                    let st = Math.min(fParsed.num, tParsed.num), en = Math.max(fParsed.num, tParsed.num);
+                    for (let i = st; i <= en; i++) uniqueSeals.add(fParsed.prefix + String(i).padStart(fParsed.padding, '0'));
+                } else {
+                    uniqueSeals.add(fs); uniqueSeals.add(ts);
+                }
+            } else {
+                s.split(/\s+/).forEach(t => {
+                    let clean = t.replace(/[^A-Za-z0-9_-]/g, "");
+                    if (clean) uniqueSeals.add(clean);
+                });
+            }
+        });
+        return uniqueSeals.size;
+    }
+
+    window.extractPrefixAndNum = function(str) {
+        let match = String(str).trim().match(/^([A-Za-z_-]+)?(\d+)$/);
+        if (match) return { prefix: match[1] || "", num: parseInt(match[2], 10), padding: match[2].length };
+        return null;
+    }
+
+    window.initInspectorWorkflow();
+</script>
