@@ -8,49 +8,18 @@
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://unpkg.com/lucide@latest"></script>
     <style>
-        .sidebar-hidden {
-            display: none !important;
-        }
+        .sidebar-hidden { display: none !important; }
+        @media (min-width: 768px) { .sidebar-hidden { display: flex !important; } }
 
-        @media (min-width: 768px) {
-            .sidebar-hidden {
-                display: flex !important;
-            }
-        }
+        /* Scrollbars */
+        .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+        @media (max-width: 768px) { .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; } }
+        .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-        /* 🎯 Desktop Scrollbar */
-        .custom-scrollbar::-webkit-scrollbar {
-            width: 10px;
-            height: 10px;
-        }
-
-        /* 🎯 Mobile Scrollbar */
-        @media (max-width: 768px) {
-            .custom-scrollbar::-webkit-scrollbar {
-                width: 6px;
-                height: 6px;
-            }
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-track {
-            background: #f1f5f9;
-            border-radius: 8px;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-            background: #cbd5e1;
-            border-radius: 8px;
-            border: 2px solid #f1f5f9;
-        }
-
-        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
-            background: #94a3b8;
-        }
-
-        /* 🎯 Global Role Visibility Controllers */
-        .role-Coordinator .hide-for-coordinator {
-            display: none !important;
-        }
+        /* Global Role Visibility Controllers */
+        .role-coordinator .hide-for-coordinator { display: none !important; }
     </style>
 </head>
 
@@ -58,20 +27,11 @@
 
     <script>
         // 🎯 PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE
-        const API_URL = "https://script.google.com/macros/s/AKfycbw7Ktnv5K7Z3ZvJxrKZshjNZfXO48pFwPelobaaf9pIJMY8utLAPEGOeVh1Q4Aho2LckQ/exec";
+        const API_URL = "https://script.google.com/macros/s/AKfycbzz97XaDNVrvlAkPE8iySoMSMZmsafTSRmW7tbDlrI9SdfoUk0CRvAFbej1UAhxECI6ww/exec";
         
-        // Dynamic client configurations
         const CLIENTS = {
-            "AYCL": {
-                name: "Andrew Yule and Company Limited",
-                shortName: "AYCL",
-                logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMBVkToRt50US-6-8ZKBQ_ZeaPmA_CfHq9ct_5TSV5SA&s"
-            },
-            "NPCC": {
-                name: "National Projects Construction Corporation Limited",
-                shortName: "NPCC",
-                logo: "https://www.uxdt.nic.in/wp-content/uploads/2020/06/NPCC-Preview.png"
-            }
+            "AYCL": { name: "Andrew Yule and Company Limited", shortName: "AYCL", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMBVkToRt50US-6-8ZKBQ_ZeaPmA_CfHq9ct_5TSV5SA&s" },
+            "NPCC": { name: "National Projects Construction Corporation Limited", shortName: "NPCC", logo: "https://www.uxdt.nic.in/wp-content/uploads/2020/06/NPCC-Preview.png" }
         };
 
         let currentMiUser = null;
@@ -80,9 +40,10 @@
         window.miMasterData = [];
         window.miInspectorsList = [];
         window.CURRENT_CLIENT = "AYCL";
+        let activeLoginTab = 'admin'; // 'admin' or 'inspector'
 
         // =========================================================================
-        // 🛡️ ADVANCED GLOBAL NETWORK INTERCEPTOR
+        // 🛡️ GLOBAL NETWORK INTERCEPTOR
         // =========================================================================
         const originalFetch = window.fetch;
         window.fetch = async function(...args) {
@@ -129,16 +90,10 @@
                             fee: 'Restricted',
                             rate: 'Restricted'
                         }));
-                        
-                        return new Response(JSON.stringify(json), {
-                            status: response.status,
-                            statusText: response.statusText,
-                            headers: response.headers
-                        });
+                        return new Response(JSON.stringify(json), { status: response.status, statusText: response.statusText, headers: response.headers });
                     }
                 } catch(e) {}
             }
-
             return response;
         };
     </script>
@@ -168,13 +123,15 @@
                         currentMiUser.selectedClient = currentMiUser.client === "ALL" ? "AYCL" : currentMiUser.client;
                     }
 
-                    // 🎯 FIX: Restore Capital "C" for legacy external files to not crash
-                    if(currentMiUser.role.toLowerCase() === 'coordinator') {
-                        currentMiUser.role = "Coordinator";
-                    }
+                    if(currentMiUser.role.toLowerCase() === 'coordinator') currentMiUser.role = "coordinator";
+                    if(currentMiUser.role.toLowerCase() === 'inspector') currentMiUser.role = "inspector";
                     
                     window.CURRENT_CLIENT = currentMiUser.selectedClient;
                     document.body.className = `min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0 role-${currentMiUser.role}`;
+                    
+                    // Route Inspector to their own starting point
+                    activeModule = currentMiUser.role === 'inspector' ? 'inspectorDashboard' : 'notificationPortal';
+                    
                     mountMiDashboardShell();
                 } catch (e) {
                     miLogout();
@@ -184,21 +141,46 @@
             }
         });
 
+        window.switchLoginMode = function(mode) {
+            activeLoginTab = mode;
+            renderMiLogin();
+        }
+
         function renderMiLogin() {
             const root = document.getElementById("mi-app-root");
+            
+            const adminTabClass = activeLoginTab === 'admin' 
+                ? 'bg-white shadow-sm text-blue-700 pointer-events-none' 
+                : 'text-slate-500 hover:text-slate-700 cursor-pointer hover:bg-slate-200/50';
+                
+            const inspectorTabClass = activeLoginTab === 'inspector' 
+                ? 'bg-white shadow-sm text-blue-700 pointer-events-none' 
+                : 'text-slate-500 hover:text-slate-700 cursor-pointer hover:bg-slate-200/50';
+
+            const subtitle = activeLoginTab === 'admin' 
+                ? 'Admin & Coordinator Access' 
+                : 'Field Inspector Operations';
+
             root.innerHTML = `
                 <div class="flex-1 flex items-center justify-center p-4 bg-slate-900 h-full w-full">
                     <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 border border-slate-800">
                         <div class="text-center mb-6">
-                            <div class="inline-flex p-3 bg-slate-50 rounded-2xl mb-3 shadow-inner border border-slate-100">
-                                <i data-lucide="shield-check" class="w-12 h-12 text-blue-600"></i>
+                            <div class="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 shadow-inner border border-slate-100">
+                                <i data-lucide="shield-check" class="w-10 h-10 text-blue-600"></i>
                             </div>
                             <h2 class="text-lg font-black text-slate-900 tracking-tight">Material Inspection Portal</h2>
-                            <p class="text-[11px] text-slate-500 mt-1 uppercase font-bold tracking-wider">Authorized Access Only</p>
+                            <p class="text-[11px] text-slate-500 mt-1 uppercase font-bold tracking-wider">${subtitle}</p>
                         </div>
+
+                        <!-- 🎯 Dual Portal Tabs -->
+                        <div class="flex bg-slate-100 p-1.5 rounded-xl mb-6 shadow-inner">
+                            <button type="button" onclick="switchLoginMode('admin')" class="flex-1 py-2 text-xs font-black rounded-lg transition-all ${adminTabClass}">Administration</button>
+                            <button type="button" onclick="switchLoginMode('inspector')" class="flex-1 py-2 text-xs font-black rounded-lg transition-all ${inspectorTabClass}">Field Inspector</button>
+                        </div>
+
                         <form onsubmit="handleMiLogin(event)" class="space-y-4">
                             <div>
-                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Username</label>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Username / ID</label>
                                 <input type="text" id="mi-user" required class="w-full px-4 py-3 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter username">
                             </div>
                             <div>
@@ -243,6 +225,7 @@
             btn.disabled = true;
 
             try {
+                // Sending credentials to backend, which searches both Hardcoded Admins and the UserDetails sheet seamlessly.
                 const res = await originalFetch(`${API_URL}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
                 const textData = await res.text();
                 const data = JSON.parse(textData);
@@ -250,27 +233,35 @@
                 if (data.status) {
                     let role = (data.role || "Readonly").toLowerCase(); 
                     let client = data.client || "AYCL"; 
-                    let name = "Guest User";
-                    
-                    if (role === "admin") name = "System Administrator";
-                    else if (role === "manager") name = "Manager";
-                    else if (role === "coordinator") name = "Field Coordinator";
-                    else if (role === "user") name = "Portal User";
+                    let name = data.name || "User";
+                    let inspectorId = data.inspectorId || null;
 
-                    // 🎯 FIX: Preserve Capital C for legacy modules
-                    let legacyRole = role === "coordinator" ? "Coordinator" : role;
+                    // UI Tab Cross-Check Security
+                    if (activeLoginTab === 'inspector' && role !== 'inspector') {
+                        alert("Please use the Administration tab for Admin/Coordinator login.");
+                        renderMiLogin();
+                        return;
+                    }
+                    if (activeLoginTab === 'admin' && role === 'inspector') {
+                        alert("Please use the Field Inspector tab for Inspector login.");
+                        renderMiLogin();
+                        return;
+                    }
 
                     currentMiUser = { 
                         username: u, 
                         name: name, 
-                        role: legacyRole, 
+                        role: role, 
                         client: client,
+                        inspectorId: inspectorId,
                         selectedClient: client === "ALL" ? "AYCL" : client
                     };
                     
                     window.CURRENT_CLIENT = currentMiUser.selectedClient;
                     document.body.className = `min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0 role-${currentMiUser.role}`;
                     localStorage.setItem("mi_current_user_cache", JSON.stringify(currentMiUser));
+                    
+                    activeModule = currentMiUser.role === 'inspector' ? 'inspectorDashboard' : 'notificationPortal';
                     mountMiDashboardShell();
                 } else {
                     alert(data.message || "Invalid credentials.");
@@ -293,7 +284,7 @@
         }
 
         window.switchAdminClient = function(newClientCode) {
-            if (currentMiUser && (currentMiUser.client === 'ALL' || currentMiUser.role.toLowerCase() === 'admin')) {
+            if (currentMiUser && (currentMiUser.client === 'ALL' || currentMiUser.role === 'admin')) {
                 currentMiUser.selectedClient = newClientCode;
                 window.CURRENT_CLIENT = newClientCode;
                 localStorage.setItem("mi_current_user_cache", JSON.stringify(currentMiUser));
@@ -304,6 +295,7 @@
         function mountMiDashboardShell() {
             const root = document.getElementById("mi-app-root");
             const activeClientObj = CLIENTS[currentMiUser.selectedClient] || CLIENTS["AYCL"];
+            const isInspector = currentMiUser.role === 'inspector';
 
             root.innerHTML = `
                 <div class="flex w-full h-screen overflow-hidden relative">
@@ -318,7 +310,7 @@
                                 <button onclick="toggleMiSidebar()" class="md:hidden text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
                             </div>
 
-                            ${(currentMiUser.client === 'ALL' || currentMiUser.role.toLowerCase() === 'admin') ? `
+                            ${(currentMiUser.client === 'ALL' || currentMiUser.role === 'admin') ? `
                             <div class="px-4 py-3 border-b border-slate-800/50 bg-slate-900/50">
                                 <label class="text-[9px] font-black uppercase text-slate-500 mb-1 block tracking-wider">Admin Workspace Switcher</label>
                                 <select onchange="switchAdminClient(this.value)" class="w-full bg-slate-800 border border-slate-700 text-xs text-white rounded-lg p-2 focus:border-blue-500 outline-none font-bold cursor-pointer transition shadow-inner">
@@ -337,7 +329,7 @@
                                     <div class="text-[10px] text-slate-400 font-mono">Role: <strong class="text-blue-400 capitalize">${currentMiUser.role}</strong></div>
                                     <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${currentMiUser.selectedClient}</span>
                                 </div>
-                                <div class="text-[10px] text-slate-500 font-mono truncate">User: <span class="text-slate-300 font-bold">${currentMiUser.username}</span></div>
+                                <div class="text-[10px] text-slate-500 font-mono truncate">User: <span class="text-slate-300 font-bold">${currentMiUser.name}</span></div>
                             </div>
                             <button onclick="miLogout()" title="Logout" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-700 shadow-md transition-all cursor-pointer border border-rose-500">
                                 <i data-lucide="power" class="w-4 h-4"></i>
@@ -372,100 +364,88 @@
             const nav = document.getElementById("mi-dynamic-nav");
             if (!nav) return;
 
-            let html = `
-                <div class="px-4 mb-2 mt-2"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Dashboard</span></div>
-                
-                <button onclick="loadMiModule('notificationPortal', this)" id="nav-notificationPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                    <i data-lucide="bell-ring" class="w-4 h-4 text-rose-400 shrink-0"></i> Command Center
-                </button>
+            const r = currentMiUser.role;
+            let html = ``;
 
-                <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Core Modules</span></div>
-                <button onclick="loadMiModule('masterRecords', this)" id="nav-masterRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                    <i data-lucide="table" class="w-4 h-4 text-emerald-400 shrink-0"></i> Master Records
-                </button>
-            `;
-
-            const r = currentMiUser.role.toLowerCase();
-
-            if (r === "manager") {
+            // 🎯 INSPECTOR MENU
+            // 🎯 INSPECTOR MENU
+            if (r === "inspector") {
                 html += `
-                    <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Configurations</span></div>
-                    <button onclick="loadMiModule('materialSpecs', this)" id="nav-materialSpecs" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="database" class="w-4 h-4 text-purple-400 shrink-0"></i> Material Specifications
+                    <div class="px-4 mb-2 mt-2"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">My Workspace</span></div>
+                    <button onclick="loadMiModule('inspectorDashboard', this)" id="nav-inspectorDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="briefcase" class="w-4 h-4 text-emerald-400 shrink-0"></i> My Inspections
                     </button>
-                    <button onclick="loadMiModule('manufacturerDetails', this)" id="nav-manufacturerDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Manufacturer Details
-                    </button>
-                    <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
-                    </button>
-                    <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
+                    <button onclick="loadMiModule('changeCredential', this)" id="nav-changeCredential" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Account Settings
                     </button>
                 `;
             }
-
-            if (r === "coordinator") {
+            // 🎯 ADMIN & COORDINATOR MENU
+            else {
                 html += `
-                    <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Operations</span></div>
-                     <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
+                    <div class="px-4 mb-2 mt-2"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Dashboard</span></div>
+                    <button onclick="loadMiModule('notificationPortal', this)" id="nav-notificationPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="bell-ring" class="w-4 h-4 text-rose-400 shrink-0"></i> Command Center
                     </button>
-                    <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
-                    </button>
-                    <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
-                    </button>
-                    <button onclick="loadMiModule('inspectorsRecords', this)" id="nav-inspectorsRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspecting Engineers
-                    </button>
-                    <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
+                    <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Core Modules</span></div>
+                    <button onclick="loadMiModule('masterRecords', this)" id="nav-masterRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="table" class="w-4 h-4 text-emerald-400 shrink-0"></i> Master Records
                     </button>
                 `;
-            }
 
-            if (r === "admin") {
-                html += `
-                    <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Administration</span></div>
-                    
-                    <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
-                    </button>
+                if (r === "coordinator") {
+                    html += `
+                        <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Operations</span></div>
+                        <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
+                        </button>
+                        <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
+                        </button>
+                        <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
+                        </button>
+                        <button onclick="loadMiModule('inspectorsRecords', this)" id="nav-inspectorsRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspecting Engineers
+                        </button>
+                        <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
+                        </button>
+                    `;
+                }
 
-                     <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
-                    </button>
-
-                    <button onclick="loadMiModule('analyticsPortal', this)" id="nav-analyticsPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                         <i data-lucide="line-chart" class="w-4 h-4 text-emerald-400 shrink-0"></i> Operations Analytics
-                    </button>
-
-                    <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
-                    </button>
-
-                     <button onclick="loadMiModule('billingOverview', this)" id="nav-billingOverview" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="receipt" class="w-4 h-4 text-purple-600 shrink-0"></i> Billing Overview
-                    </button>
-                    
-                    <button onclick="loadMiModule('inspectorsRecords', this)" id="nav-inspectorsRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspecting Engineers
-                    </button>
-                    
-                    <button onclick="loadMiModule('materialSpecs', this)" id="nav-materialSpecs" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="database" class="w-4 h-4 text-purple-400 shrink-0"></i> Material Specifications
-                    </button>
-                    
-                    <button onclick="loadMiModule('manufacturerDetails', this)" id="nav-manufacturerDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Manufacturer Details
-                    </button>
-
-                    <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
-                        <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
-                    </button>
-                `;
+                if (r === "admin") {
+                    html += `
+                        <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Administration</span></div>
+                        <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
+                        </button>
+                        <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
+                        </button>
+                        <button onclick="loadMiModule('analyticsPortal', this)" id="nav-analyticsPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-emerald-400 shrink-0"></i> Operations Analytics
+                        </button>
+                        <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
+                        </button>
+                        <button onclick="loadMiModule('billingOverview', this)" id="nav-billingOverview" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="receipt" class="w-4 h-4 text-purple-600 shrink-0"></i> Billing Overview
+                        </button>
+                        <button onclick="loadMiModule('inspectorsRecords', this)" id="nav-inspectorsRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspecting Engineers
+                        </button>
+                        <button onclick="loadMiModule('materialSpecs', this)" id="nav-materialSpecs" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="database" class="w-4 h-4 text-purple-400 shrink-0"></i> Material Specifications
+                        </button>
+                        <button onclick="loadMiModule('manufacturerDetails', this)" id="nav-manufacturerDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Manufacturer Details
+                        </button>
+                        <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
+                        </button>
+                    `;
+                }
             }
 
             nav.innerHTML = html;
@@ -500,34 +480,26 @@
                             moduleName === "billingOverview" ? "billingOverview.html" : 
                             moduleName === "sealDetails" ? "sealDetails.html" : 
                             moduleName === "analyticsPortal" ? "analyticsPortal.html" : 
-                            moduleName === "specExtractor" ? "specExtractor.html" : `${moduleName}.html`;
+                            moduleName === "specExtractor" ? "specExtractor.html" : 
+                            moduleName === "inspectorDashboard" ? "inspectorDashboard.html" : `${moduleName}.html`;
 
-            const r = currentMiUser ? currentMiUser.role.toLowerCase() : "";
+            const r = currentMiUser ? currentMiUser.role : "";
             const accessDeniedHTML = `<div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm"><i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i><h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3><p class="text-xs text-slate-500">You do not have permission to view this module.</p></div>`;
 
-            // 🎯 FIXED SECURITY GATES 
-            if (moduleName === "summaryDashboard" && r !== 'admin' && r !== 'coordinator') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if ((moduleName === "billingOverview" || moduleName === "analyticsPortal") && r !== 'admin') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if ((moduleName === "materialSpecs" || moduleName === "manufacturerDetails") && r !== 'admin' && r !== 'manager') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if (moduleName === "specExtractor" && r !== 'admin' && r !== 'manager' && r !== 'coordinator') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if (moduleName === "inspectorSchedule" && r !== 'admin' && r !== 'coordinator') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if (moduleName === "sealDetails" && r !== 'admin' && r !== 'coordinator' && r !== 'manager') {
-                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
-            }
-            if (moduleName === "inspectorsRecords" && r !== 'admin' && r !== 'coordinator') {
+            // 🎯 SECURITY GATES (Inspector strictly sandboxed)
+            if (r === 'inspector' && moduleName !== 'inspectorDashboard' && moduleName !== 'changeCredential') {
                 view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
             }
 
+            if (moduleName === "summaryDashboard" && r !== 'admin' && r !== 'coordinator') { view.innerHTML = accessDeniedHTML; return; }
+            if ((moduleName === "billingOverview" || moduleName === "analyticsPortal") && r !== 'admin') { view.innerHTML = accessDeniedHTML; return; }
+            if ((moduleName === "materialSpecs" || moduleName === "manufacturerDetails") && r !== 'admin') { view.innerHTML = accessDeniedHTML; return; }
+            if (moduleName === "specExtractor" && r !== 'admin' && r !== 'coordinator') { view.innerHTML = accessDeniedHTML; return; }
+            if (moduleName === "inspectorSchedule" && r !== 'admin' && r !== 'coordinator') { view.innerHTML = accessDeniedHTML; return; }
+            if (moduleName === "sealDetails" && r !== 'admin' && r !== 'coordinator') { view.innerHTML = accessDeniedHTML; return; }
+            if (moduleName === "inspectorsRecords" && r !== 'admin' && r !== 'coordinator') { view.innerHTML = accessDeniedHTML; return; }
+
+            // CUSTOM NATIVE INJECTIONS
             if (moduleName === "inspectorsRecords") {
                 const isAdmin = r === 'admin';
                 const titleHTML = isAdmin 
@@ -585,8 +557,6 @@
             view.innerHTML = `<div class="p-8 text-center text-slate-500 font-bold animate-pulse text-xs">Loading module view...</div>`;
             
             try {
-                // 🎯 CACHE BUSTER ADDED HERE
-                // Forces browser to pull fresh inspectorSchedule.html and bypass corrupted local cache
                 const cacheBusterUrl = fileUrl + "?v=" + new Date().getTime();
                 const res = await originalFetch(cacheBusterUrl);
                 const html = await res.text();
@@ -609,10 +579,7 @@
                     if (moduleName === "materialSpecs" && typeof initMaterialSpecsModule === 'function') initMaterialSpecsModule();
                     if (moduleName === "manufacturerDetails" && typeof initManufacturerModule === 'function') initManufacturerModule();
                     
-                    window.document.dispatchEvent(new Event("DOMContentLoaded", {
-                      bubbles: true,
-                      cancelable: true
-                    }));
+                    window.document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true, cancelable: true }));
                 }, 100);
 
                 if (window.lucide) lucide.createIcons();
