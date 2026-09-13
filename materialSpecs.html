@@ -1,0 +1,389 @@
+<div class="max-w-[98%] mx-auto space-y-3 animate-fade-in pb-12">
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-3">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="database" class="text-purple-600 w-5 h-5"></i> Material Specifications Directory (Admin Only)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Manage master material categories, specifications, units, and standard unit rates.</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <span id="spec-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
+                <button onclick="openMaterialModal()" class="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Specification
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div id="material-specs-table-wrap" class="overflow-auto h-[72vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
+            <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing material specifications...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add / Edit Material Modal -->
+<div id="material-spec-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative border space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modal-spec-title" class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="edit-3" class="text-purple-600 w-4 h-4"></i> Add Material Specification
+            </h3>
+            <button onclick="closeMaterialModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <form id="material-spec-form" onsubmit="submitMaterialSpecForm(event)" class="space-y-3">
+            <input type="hidden" id="spec-modal-mode" value="add">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Unique ID</label>
+                <input type="text" id="spec-uniqueId" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-50" placeholder="e.g. DTR01">
+            </div>
+            
+            <!-- Material Category (Toggle between existing select or type new) -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[10px] font-black uppercase text-slate-500">Material Category</label>
+                    <button type="button" onclick="toggleMaterialCategoryInputMode()" id="spec-cat-toggle-btn" class="text-[10px] font-bold text-purple-600 hover:underline cursor-pointer">+ Type New Category</button>
+                </div>
+                <!-- Existing Select Dropdown -->
+                <select id="spec-materialCategorySelect" onchange="handleMaterialCategorySelectionChange()" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="">-- Select Material Category --</option>
+                </select>
+                <!-- Text Input for New Category (Hidden by default) -->
+                <input type="text" id="spec-materialCategoryInput" class="hidden w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. Transformers, Cables">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material Specification</label>
+                <textarea id="spec-materialSpec" rows="3" required class="w-full p-2.5 border rounded-xl text-xs font-medium outline-none bg-white" placeholder="Enter specification details..."></textarea>
+            </div>
+            <div class="grid grid-cols-2 gap-3">
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Unit</label>
+                    <input type="text" id="spec-unit" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. No, Sets, Meters">
+                </div>
+                <div>
+                    <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Unit Rate (Rs)</label>
+                    <input type="number" step="0.01" id="spec-unitRate" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 50000">
+                </div>
+            </div>
+            <div class="flex justify-between items-center pt-3 border-t">
+                <button type="button" id="spec-delete-btn" onclick="deleteMaterialRecord()" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl cursor-pointer">Delete Record</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" onclick="closeMaterialModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+                    <button type="submit" id="spec-save-btn" class="px-5 py-2.5 bg-purple-600 hover:bg-purple-700 text-white font-black text-xs rounded-xl shadow cursor-pointer">Save Specification</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<script>
+    if (typeof window.windowMaterialSpecs === 'undefined') {
+        window.windowMaterialSpecs = [];
+    }
+
+    if (typeof initMaterialSpecsModule !== 'function') {
+        window.initMaterialSpecsModule = async function() {
+            if (!currentMiUser || (currentMiUser.role !== 'admin' && currentMiUser.role !== 'manager')) {
+                const viewport = document.getElementById("mi-viewport");
+                if (viewport) {
+                    viewport.innerHTML = `
+                        <div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm">
+                            <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                            <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                            <p class="text-xs text-slate-500">This module is accessible exclusively to System Administrators.</p>
+                        </div>
+                    `;
+                }
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            setTimeout(async () => {
+                await fetchMaterialSpecsData();
+                if (window.lucide) lucide.createIcons();
+            }, 50);
+        };
+    }
+
+    if (typeof fetchMaterialSpecsData !== 'function') {
+        window.fetchMaterialSpecsData = async function() {
+            const wrap = document.getElementById("material-specs-table-wrap");
+            const badge = document.getElementById("spec-count-badge");
+            if (!wrap) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getMaterialSpecs`);
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+
+                if (data.status) {
+                    window.windowMaterialSpecs = data.data || [];
+                    if (badge) badge.innerText = `${window.windowMaterialSpecs.length} Records Found`;
+
+                    if (window.windowMaterialSpecs.length === 0) {
+                        wrap.innerHTML = `<p class="text-xs text-slate-400 py-12 text-center">No material specifications found.</p>`;
+                        return;
+                    }
+
+                    let html = `<table class="w-full text-left text-xs border-collapse table-auto"><thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono"><tr>`;
+                    html += `<th class="p-3 border-r border-slate-700 text-center w-12">Sr</th>`;
+                    html += `<th class="p-3 border-r border-slate-700 w-32">Unique ID</th>`;
+                    html += `<th class="p-3 border-r border-slate-700 w-44">Category</th>`;
+                    html += `<th class="p-3 border-r border-slate-700">Material Specification</th>`;
+                    html += `<th class="p-3 border-r border-slate-700 w-28">Unit</th>`;
+                    html += `<th class="p-3 border-r border-slate-700 w-32 text-right">Unit Rate (Rs)</th>`;
+                    html += `<th class="p-3 text-center w-20">Action</th>`;
+                    html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
+
+                    window.windowMaterialSpecs.forEach((row, idx) => {
+                        const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                        const payloadStr = encodeURIComponent(JSON.stringify(row));
+                        html += `
+                            <tr class="${bg} hover:bg-purple-50/40 transition">
+                                <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                                <td class="p-3 border-r font-mono font-bold text-purple-700">${row.uniqueId}</td>
+                                <td class="p-3 border-r font-semibold text-slate-700">${row.materialCategory || '-'}</td>
+                                <td class="p-3 border-r text-slate-800 whitespace-pre-wrap">${row.materialSpec}</td>
+                                <td class="p-3 border-r text-slate-600 font-bold">${row.unit}</td>
+                                <td class="p-3 border-r text-right font-mono font-bold text-slate-900">${Number(row.unitRate).toLocaleString('en-IN', {minimumFractionDigits: 2})}</td>
+                                <td class="p-3 text-center"><button onclick="openEditMaterialModal('${payloadStr}')" class="px-2.5 py-1 bg-purple-50 hover:bg-purple-100 text-purple-700 font-bold rounded-lg text-[10px] transition cursor-pointer border border-purple-200">Edit</button></td>
+                            </tr>
+                        `;
+                    });
+                    html += `</tbody></table>`;
+                    wrap.innerHTML = html;
+                } else {
+                    wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Error: ${data.message}</p>`;
+                }
+            } catch (err) {
+                wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Failed to synchronize material specifications.</p>`;
+            }
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    function populateExistingMaterialCategoryDropdown(selectedCategory = "") {
+        const selectElem = document.getElementById("spec-materialCategorySelect");
+        if (!selectElem) return;
+        const uniqueCategories = [...new Set(window.windowMaterialSpecs.map(m => m.materialCategory))].filter(Boolean);
+        uniqueCategories.sort();
+        
+        let optionsHtml = `<option value="">-- Select Material Category --</option>` + 
+            uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        selectElem.innerHTML = optionsHtml;
+        if (selectedCategory) selectElem.value = selectedCategory;
+    }
+
+    function toggleMaterialCategoryInputMode() {
+        const selectElem = document.getElementById("spec-materialCategorySelect");
+        const inputElem = document.getElementById("spec-materialCategoryInput");
+        const toggleBtn = document.getElementById("spec-cat-toggle-btn");
+        const unitInput = document.getElementById("spec-unit");
+
+        if (selectElem.classList.contains("hidden")) {
+            selectElem.classList.remove("hidden");
+            inputElem.classList.add("hidden");
+            inputElem.value = "";
+            toggleBtn.innerText = "+ Type New Category";
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+        } else {
+            selectElem.classList.add("hidden");
+            selectElem.value = "";
+            inputElem.classList.remove("hidden");
+            toggleBtn.innerText = "Select Existing Category";
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+            unitInput.value = "No";
+        }
+    }
+
+    function handleMaterialCategorySelectionChange() {
+        const selectElem = document.getElementById("spec-materialCategorySelect");
+        const unitInput = document.getElementById("spec-unit");
+        const selectedCat = selectElem.value.trim().toLowerCase();
+
+        if (!selectedCat) {
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+            return;
+        }
+
+        const matched = window.windowMaterialSpecs.find(m => m.materialCategory && m.materialCategory.trim().toLowerCase() === selectedCat);
+        if (matched && matched.unit) {
+            unitInput.value = matched.unit;
+            unitInput.readOnly = true;
+            unitInput.classList.add("bg-slate-100", "cursor-not-allowed");
+        } else {
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+        }
+    }
+
+    if (typeof openMaterialModal !== 'function') {
+        window.openMaterialModal = function() {
+            document.getElementById("spec-modal-mode").value = "add";
+            document.getElementById("modal-spec-title").innerHTML = `<i data-lucide="plus-circle" class="text-purple-600 w-4 h-4"></i> Add Material Specification`;
+            document.getElementById("spec-uniqueId").value = "MS-" + Date.now().toString().slice(-6);
+            document.getElementById("spec-uniqueId").readOnly = true;
+            
+            const selectElem = document.getElementById("spec-materialCategorySelect");
+            const inputElem = document.getElementById("spec-materialCategoryInput");
+            const toggleBtn = document.getElementById("spec-cat-toggle-btn");
+            selectElem.classList.remove("hidden");
+            inputElem.classList.add("hidden");
+            inputElem.value = "";
+            toggleBtn.innerText = "+ Type New Category";
+
+            populateExistingMaterialCategoryDropdown();
+            document.getElementById("spec-materialSpec").value = "";
+            
+            const unitInput = document.getElementById("spec-unit");
+            unitInput.value = "No";
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+
+            document.getElementById("spec-unitRate").value = "";
+            document.getElementById("spec-delete-btn").classList.add("hidden");
+            document.getElementById("material-spec-modal").classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    if (typeof openEditMaterialModal !== 'function') {
+        window.openEditMaterialModal = function(encodedJson) {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            document.getElementById("spec-modal-mode").value = "edit";
+            document.getElementById("modal-spec-title").innerHTML = `<i data-lucide="edit-3" class="text-purple-600 w-4 h-4"></i> Edit Material Specification`;
+            document.getElementById("spec-uniqueId").value = item.uniqueId;
+            document.getElementById("spec-uniqueId").readOnly = true;
+            
+            const selectElem = document.getElementById("spec-materialCategorySelect");
+            const inputElem = document.getElementById("spec-materialCategoryInput");
+            const toggleBtn = document.getElementById("spec-cat-toggle-btn");
+            selectElem.classList.add("hidden");
+            inputElem.classList.remove("hidden");
+            inputElem.value = item.materialCategory || "";
+            toggleBtn.innerText = "Select Existing Category";
+
+            document.getElementById("spec-materialSpec").value = item.materialSpec;
+            
+            const unitInput = document.getElementById("spec-unit");
+            unitInput.value = item.unit;
+            unitInput.readOnly = false;
+            unitInput.classList.remove("bg-slate-100", "cursor-not-allowed");
+
+            document.getElementById("spec-unitRate").value = item.unitRate;
+            document.getElementById("spec-delete-btn").classList.remove("hidden");
+            document.getElementById("material-spec-modal").classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    if (typeof closeMaterialModal !== 'function') {
+        window.closeMaterialModal = function() {
+            document.getElementById("material-spec-modal").classList.add("hidden");
+        };
+    }
+
+    if (typeof submitMaterialSpecForm !== 'function') {
+        window.submitMaterialSpecForm = async function(e) {
+            e.preventDefault();
+            const mode = document.getElementById("spec-modal-mode").value;
+            const btn = document.getElementById("spec-save-btn");
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const selectElem = document.getElementById("spec-materialCategorySelect");
+            const inputElem = document.getElementById("spec-materialCategoryInput");
+            let materialCategory = "";
+
+            if (!selectElem.classList.contains("hidden")) {
+                materialCategory = selectElem.value.trim();
+            } else {
+                materialCategory = inputElem.value.trim();
+            }
+
+            if (!materialCategory) {
+                alert("Please select or enter a material category.");
+                btn.disabled = false;
+                btn.innerText = "Save Specification";
+                return;
+            }
+
+            const payload = {
+                action: mode === "add" ? "addMaterialSpec" : "updateMaterialSpec",
+                uniqueId: document.getElementById("spec-uniqueId").value,
+                materialCategory: materialCategory,
+                materialSpec: document.getElementById("spec-materialSpec").value,
+                unit: document.getElementById("spec-unit").value,
+                unitRate: document.getElementById("spec-unitRate").value
+            };
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+                if (data.status) {
+                    alert(data.message);
+                    closeMaterialModal();
+                    fetchMaterialSpecsData();
+                } else {
+                    alert("Error: " + data.message);
+                    btn.disabled = false;
+                    btn.innerText = "Save Specification";
+                }
+            } catch (err) {
+                alert("Network submission failed.");
+                btn.disabled = false;
+                btn.innerText = "Save Specification";
+            }
+        };
+    }
+
+    if (typeof deleteMaterialRecord !== 'function') {
+        window.deleteMaterialRecord = async function() {
+            const uniqueId = document.getElementById("spec-uniqueId").value;
+            if (!confirm(`Are you sure you want to delete material specification ID: ${uniqueId}?`)) return;
+
+            const btn = document.getElementById("spec-delete-btn");
+            btn.disabled = true;
+            btn.innerText = "Deleting...";
+
+            const payload = {
+                action: "deleteMaterialSpec",
+                uniqueId: uniqueId
+            };
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+                if (data.status) {
+                    alert(data.message);
+                    closeMaterialModal();
+                    fetchMaterialSpecsData();
+                } else {
+                    alert("Error: " + data.message);
+                    btn.disabled = false;
+                    btn.innerText = "Delete Record";
+                }
+            } catch (err) {
+                alert("Network deletion request failed.");
+                btn.disabled = false;
+                btn.innerText = "Delete Record";
+            }
+        };
+    }
+
+    initMaterialSpecsModule();
+</script>

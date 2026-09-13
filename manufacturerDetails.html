@@ -1,0 +1,468 @@
+<div class="max-w-[98%] mx-auto space-y-3 animate-fade-in pb-12">
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-3">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="shield-check" class="text-blue-600 w-5 h-5"></i> Manufacturer Details Directory (Admin Only)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Manage manufacturer names, associated material categories, criteria, and registered values.</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
+                <span id="mfg-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
+                <button onclick="openManufacturerModal()" class="px-4 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow transition cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="plus" class="w-4 h-4"></i> Add Manufacturer
+                </button>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div id="manufacturer-table-wrap" class="overflow-auto h-[72vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
+            <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing manufacturer details...</p>
+        </div>
+    </div>
+</div>
+
+<!-- Add / Edit Manufacturer Modal -->
+<div id="manufacturer-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 relative border space-y-4">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 id="modal-mfg-title" class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="edit-3" class="text-blue-600 w-4 h-4"></i> Add Manufacturer Details
+            </h3>
+            <button onclick="closeManufacturerModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+        </div>
+
+        <form id="manufacturer-form" onsubmit="submitManufacturerForm(event)" class="space-y-3">
+            <input type="hidden" id="mfg-modal-mode" value="add">
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Unique ID</label>
+                <input type="text" id="mfg-uniqueId" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-50" placeholder="e.g. MFG01">
+            </div>
+            
+            <!-- Manufacturer Name (Toggle between select existing or type new) -->
+            <div>
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[10px] font-black uppercase text-slate-500">Manufacturer Name</label>
+                    <button type="button" onclick="toggleMfgNameInputMode()" id="mfg-name-toggle-btn" class="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer">+ Type New Name</button>
+                </div>
+                <!-- Existing Select Dropdown -->
+                <select id="mfg-manufacturerSelect" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="">-- Select Existing Manufacturer --</option>
+                </select>
+                <!-- Text Input for New Name (Hidden by default) -->
+                <input type="text" id="mfg-manufacturerName" class="hidden w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. M/s ABB India Ltd">
+            </div>
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material Category</label>
+                <select id="mfg-materialCategory" onchange="handleManufacturerCategoryChange()" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="">-- Select Material Category --</option>
+                </select>
+            </div>
+            <div id="mfg-new-cat-wrap" class="hidden">
+                <label class="block text-[10px] font-black uppercase text-purple-600 mb-1">New Material Category Name</label>
+                <input type="text" id="mfg-new-cat-input" class="w-full p-2.5 border border-purple-300 rounded-xl text-xs font-bold outline-none bg-white" placeholder="Enter new category name...">
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Criteria</label>
+                <select id="mfg-criteria" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="Value Percent">Value Percent</option>
+                    <option value="Per Unit">Per Unit</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Value</label>
+                <input type="number" step="any" id="mfg-value" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 150000">
+            </div>
+            <div class="flex justify-between items-center pt-3 border-t">
+                <button type="button" id="mfg-delete-btn" onclick="deleteManufacturerRecord()" class="hidden px-4 py-2.5 bg-rose-50 hover:bg-rose-100 text-rose-600 font-bold text-xs rounded-xl cursor-pointer">Delete Record</button>
+                <div class="flex gap-2 ml-auto">
+                    <button type="button" onclick="closeManufacturerModal()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+                    <button type="submit" id="mfg-save-btn" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow cursor-pointer">Save Details</button>
+                </div>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+    if (typeof window.windowManufacturers === 'undefined') {
+        window.windowManufacturers = [];
+    }
+
+    if (typeof window.materialSpecsMasterList === 'undefined') {
+        window.materialSpecsMasterList = [];
+    }
+
+    if (typeof initManufacturerModule !== 'function') {
+        window.initManufacturerModule = async function() {
+            if (!currentMiUser || (currentMiUser.role !== 'admin' && currentMiUser.role !== 'manager')) {
+                const viewport = document.getElementById("mi-viewport");
+                if (viewport) {
+                    viewport.innerHTML = `
+                        <div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm">
+                            <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                            <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                            <p class="text-xs text-slate-500">This module is accessible exclusively to System Administrators.</p>
+                        </div>
+                    `;
+                }
+                if (window.lucide) lucide.createIcons();
+                return;
+            }
+
+            setTimeout(async () => {
+                await Promise.all([
+                    fetchManufacturerData(),
+                    fetchMaterialSpecsForDirectory()
+                ]);
+                if (window.lucide) lucide.createIcons();
+            }, 50);
+        };
+    }
+
+    async function fetchMaterialSpecsForDirectory() {
+        try {
+            const res = await fetch(`${API_URL}?action=getMaterialSpecs`);
+            const data = await res.json();
+            if (data.status) {
+                window.materialSpecsMasterList = data.data || [];
+                populateManufacturerCategoryDropdown();
+                // Re-render table if data is already loaded to update the virtual Unit column
+                if (window.windowManufacturers && window.windowManufacturers.length > 0) {
+                    renderManufacturerTable();
+                }
+            }
+        } catch (e) {
+            console.warn("Could not fetch material specs for directory.");
+        }
+    }
+
+    function populateManufacturerCategoryDropdown() {
+        const selectElem = document.getElementById("mfg-materialCategory");
+        if (!selectElem) return;
+        const uniqueCategories = [...new Set(window.materialSpecsMasterList.map(m => m.materialCategory))].filter(Boolean);
+        uniqueCategories.sort();
+        
+        let optionsHtml = `<option value="">-- Select Material Category --</option>` + 
+            uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
+        
+        optionsHtml += `<option value="ADD_NEW_CAT_MFG" class="font-bold text-purple-600">+ Add New Category...</option>`;
+        selectElem.innerHTML = optionsHtml;
+        
+        const newCatWrap = document.getElementById("mfg-new-cat-wrap");
+        if (newCatWrap) newCatWrap.classList.add("hidden");
+    }
+
+    function populateExistingManufacturerDropdown(selectedName = "") {
+        const selectElem = document.getElementById("mfg-manufacturerSelect");
+        if (!selectElem) return;
+        const uniqueNames = [...new Set(window.windowManufacturers.map(m => m.manufacturerName))].filter(Boolean);
+        uniqueNames.sort();
+        
+        let optionsHtml = `<option value="">-- Select Existing Manufacturer --</option>` + 
+            uniqueNames.map(name => `<option value="${name}">${name}</option>`).join('');
+        selectElem.innerHTML = optionsHtml;
+        if (selectedName) selectElem.value = selectedName;
+    }
+
+    function toggleMfgNameInputMode() {
+        const selectElem = document.getElementById("mfg-manufacturerSelect");
+        const inputElem = document.getElementById("mfg-manufacturerName");
+        const toggleBtn = document.getElementById("mfg-name-toggle-btn");
+
+        if (selectElem.classList.contains("hidden")) {
+            selectElem.classList.remove("hidden");
+            inputElem.classList.add("hidden");
+            inputElem.value = "";
+            toggleBtn.innerText = "+ Type New Name";
+        } else {
+            selectElem.classList.add("hidden");
+            selectElem.value = "";
+            inputElem.classList.remove("hidden");
+            toggleBtn.innerText = "Select Existing Name";
+        }
+    }
+
+    function handleManufacturerCategoryChange() {
+        const selectElem = document.getElementById("mfg-materialCategory");
+        const newCatWrap = document.getElementById("mfg-new-cat-wrap");
+        if (!selectElem) return;
+
+        if (selectElem.value === "ADD_NEW_CAT_MFG") {
+            if (newCatWrap) newCatWrap.classList.remove("hidden");
+            const newCatInput = document.getElementById("mfg-new-cat-input");
+            if (newCatInput) newCatInput.value = "";
+        } else {
+            if (newCatWrap) newCatWrap.classList.add("hidden");
+        }
+    }
+
+    if (typeof fetchManufacturerData !== 'function') {
+        window.fetchManufacturerData = async function() {
+            const wrap = document.getElementById("manufacturer-table-wrap");
+            const badge = document.getElementById("mfg-count-badge");
+            if (!wrap) return;
+
+            try {
+                const res = await fetch(`${API_URL}?action=getManufacturers`);
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+
+                if (data.status) {
+                    window.windowManufacturers = data.data || [];
+                    if (badge) badge.innerText = `${window.windowManufacturers.length} Records Found`;
+                    renderManufacturerTable();
+                } else {
+                    wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Error: ${data.message}</p>`;
+                }
+            } catch (err) {
+                wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Failed to synchronize manufacturer details.</p>`;
+            }
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    function renderManufacturerTable() {
+        const wrap = document.getElementById("manufacturer-table-wrap");
+        if (!wrap) return;
+
+        if (window.windowManufacturers.length === 0) {
+            wrap.innerHTML = `<p class="text-xs text-slate-400 py-12 text-center">No manufacturer records found.</p>`;
+            return;
+        }
+
+        let html = `<table class="w-full text-left text-xs border-collapse table-auto"><thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono"><tr>`;
+        html += `<th class="p-3 border-r border-slate-700 text-center w-12">Sr</th>`;
+        html += `<th class="p-3 border-r border-slate-700 w-32">Unique ID</th>`;
+        html += `<th class="p-3 border-r border-slate-700">Manufacturer Name</th>`;
+        html += `<th class="p-3 border-r border-slate-700 w-48">Material Category</th>`;
+        html += `<th class="p-3 border-r border-slate-700 w-24 text-center">Unit</th>`; // 🎯 Virtual Column for Unit
+        html += `<th class="p-3 border-r border-slate-700 w-32">Criteria</th>`;
+        html += `<th class="p-3 border-r border-slate-700 w-28 text-right">Value</th>`;
+        html += `<th class="p-3 text-center w-20">Action</th>`;
+        html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
+
+        window.windowManufacturers.forEach((row, idx) => {
+            const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            const payloadStr = encodeURIComponent(JSON.stringify(row));
+            
+            // 🎯 Match unit from material specifications master list
+            let matchedUnit = "-";
+            if (row.materialCategory && window.materialSpecsMasterList.length > 0) {
+                const foundSpec = window.materialSpecsMasterList.find(m => 
+                    m.materialCategory && m.materialCategory.trim().toLowerCase() === row.materialCategory.trim().toLowerCase()
+                );
+                if (foundSpec && foundSpec.unit) {
+                    matchedUnit = foundSpec.unit.replace(/unit\s*:/gi, "").replace(/[()]/g, "").trim();
+                }
+            }
+
+            html += `
+                <tr class="${bg} hover:bg-blue-50/40 transition">
+                    <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                    <td class="p-3 border-r font-mono font-bold text-blue-700">${row.uniqueId}</td>
+                    <td class="p-3 border-r font-bold text-slate-800">${row.manufacturerName}</td>
+                    <td class="p-3 border-r font-semibold text-slate-600">${row.materialCategory || '-'}</td>
+                    <td class="p-3 border-r text-center font-bold text-purple-600">${matchedUnit}</td>
+                    <td class="p-3 border-r font-bold text-purple-700">${row.criteria || 'Value Percent'}</td>
+                    <td class="p-3 border-r text-right font-mono font-bold text-slate-900">${row.value}</td>
+                    <td class="p-3 text-center"><button onclick="openEditManufacturerModal('${payloadStr}')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg text-[10px] transition cursor-pointer border border-blue-200">Edit</button></td>
+                </tr>
+            `;
+        });
+        html += `</tbody></table>`;
+        wrap.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    if (typeof openManufacturerModal !== 'function') {
+        window.openManufacturerModal = function() {
+            document.getElementById("mfg-modal-mode").value = "add";
+            document.getElementById("modal-mfg-title").innerHTML = `<i data-lucide="plus-circle" class="text-blue-600 w-4 h-4"></i> Add Manufacturer Details`;
+            document.getElementById("mfg-uniqueId").value = "MFG-" + Date.now().toString().slice(-6);
+            document.getElementById("mfg-uniqueId").readOnly = true;
+            
+            const selectElem = document.getElementById("mfg-manufacturerSelect");
+            const inputElem = document.getElementById("mfg-manufacturerName");
+            const toggleBtn = document.getElementById("mfg-name-toggle-btn");
+            selectElem.classList.remove("hidden");
+            inputElem.classList.add("hidden");
+            inputElem.value = "";
+            toggleBtn.innerText = "+ Type New Name";
+            
+            populateExistingManufacturerDropdown();
+            populateManufacturerCategoryDropdown();
+            document.getElementById("mfg-criteria").value = "Value Percent";
+            document.getElementById("mfg-value").value = "";
+            document.getElementById("mfg-delete-btn").classList.add("hidden");
+            document.getElementById("manufacturer-modal").classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    if (typeof openEditManufacturerModal !== 'function') {
+        window.openEditManufacturerModal = function(encodedJson) {
+            const item = JSON.parse(decodeURIComponent(encodedJson));
+            document.getElementById("mfg-modal-mode").value = "edit";
+            document.getElementById("modal-mfg-title").innerHTML = `<i data-lucide="edit-3" class="text-blue-600 w-4 h-4"></i> Edit Manufacturer Details`;
+            document.getElementById("mfg-uniqueId").value = item.uniqueId;
+            document.getElementById("mfg-uniqueId").readOnly = true;
+            
+            const selectElem = document.getElementById("mfg-manufacturerSelect");
+            const inputElem = document.getElementById("mfg-manufacturerName");
+            const toggleBtn = document.getElementById("mfg-name-toggle-btn");
+            selectElem.classList.add("hidden");
+            inputElem.classList.remove("hidden");
+            inputElem.value = item.manufacturerName || "";
+            toggleBtn.innerText = "Select Existing Name";
+
+            populateManufacturerCategoryDropdown();
+            const catSelect = document.getElementById("mfg-materialCategory");
+            if (catSelect) {
+                catSelect.value = item.materialCategory || "";
+            }
+            
+            document.getElementById("mfg-criteria").value = item.criteria || "Value Percent";
+            document.getElementById("mfg-value").value = item.value;
+            document.getElementById("mfg-delete-btn").classList.remove("hidden");
+            document.getElementById("manufacturer-modal").classList.remove("hidden");
+            if (window.lucide) lucide.createIcons();
+        };
+    }
+
+    if (typeof closeManufacturerModal !== 'function') {
+        window.closeManufacturerModal = function() {
+            document.getElementById("manufacturer-modal").classList.add("hidden");
+        };
+    }
+
+    if (typeof submitManufacturerForm !== 'function') {
+        window.submitManufacturerForm = async function(e) {
+            e.preventDefault();
+            const btn = document.getElementById("mfg-save-btn");
+            btn.disabled = true;
+            btn.innerText = "Saving...";
+
+            const selectElem = document.getElementById("mfg-manufacturerSelect");
+            const inputElem = document.getElementById("mfg-manufacturerName");
+            let manufacturerName = "";
+
+            if (!selectElem.classList.contains("hidden")) {
+                manufacturerName = selectElem.value.trim();
+            } else {
+                manufacturerName = inputElem.value.trim();
+            }
+
+            if (!manufacturerName) {
+                alert("Please select or enter a manufacturer name.");
+                btn.disabled = false;
+                btn.innerText = "Save Details";
+                return;
+            }
+
+            const catSelect = document.getElementById("mfg-materialCategory");
+            const newCatInput = document.getElementById("mfg-new-cat-input");
+            let materialCategory = catSelect ? catSelect.value.trim() : "";
+
+            if (materialCategory === "ADD_NEW_CAT_MFG") {
+                materialCategory = newCatInput ? newCatInput.value.trim() : "";
+            }
+
+            if (!materialCategory) {
+                alert("Please select or enter a material category.");
+                btn.disabled = false;
+                btn.innerText = "Save Details";
+                return;
+            }
+
+            const uniqueId = document.getElementById("mfg-uniqueId").value;
+            const criteria = document.getElementById("mfg-criteria").value;
+            const value = document.getElementById("mfg-value").value;
+
+            const payload = {
+                action: "saveManufacturer",
+                uniqueId: uniqueId,
+                manufacturerName: manufacturerName,
+                materialCategory: materialCategory,
+                criteria: criteria,
+                value: value
+            };
+
+            let specPayload = null;
+            if (catSelect && catSelect.value === "ADD_NEW_CAT_MFG" && materialCategory) {
+                if (!window.materialSpecsMasterList.some(m => m.materialCategory.toLowerCase() === materialCategory.toLowerCase())) {
+                    specPayload = {
+                        action: "saveMaterialSpec",
+                        uniqueId: "MS-" + Date.now().toString().slice(-6),
+                        materialCategory: materialCategory,
+                        materialSpec: "Standard",
+                        unit: "No",
+                        unitRate: 0
+                    };
+                }
+            }
+
+            try {
+                if (specPayload) {
+                    await fetch(API_URL, { method: 'POST', body: JSON.stringify(specPayload) });
+                }
+
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+                if (data.status) {
+                    alert(data.message);
+                    closeManufacturerModal();
+                    fetchManufacturerData();
+                    fetchMaterialSpecsForDirectory();
+                } else {
+                    alert("Error: " + data.message);
+                    btn.disabled = false;
+                    btn.innerText = "Save Details";
+                }
+            } catch (err) {
+                alert("Network submission failed.");
+                btn.disabled = false;
+                btn.innerText = "Save Details";
+            }
+        };
+    }
+
+    if (typeof deleteManufacturerRecord !== 'function') {
+        window.deleteManufacturerRecord = async function() {
+            const uniqueId = document.getElementById("mfg-uniqueId").value;
+            if (!confirm(`Are you sure you want to delete manufacturer record ID: ${uniqueId}?`)) return;
+
+            const btn = document.getElementById("mfg-delete-btn");
+            btn.disabled = true;
+            btn.innerText = "Deleting...";
+
+            const payload = {
+                action: "deleteManufacturer",
+                uniqueId: uniqueId
+            };
+
+            try {
+                const res = await fetch(API_URL, { method: 'POST', body: JSON.stringify(payload) });
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+                if (data.status) {
+                    alert(data.message);
+                    closeManufacturerModal();
+                    fetchManufacturerData();
+                } else {
+                    alert("Error: " + data.message);
+                    btn.disabled = false;
+                    btn.innerText = "Delete Record";
+                }
+            } catch (err) {
+                alert("Network deletion request failed.");
+                btn.disabled = false;
+                btn.innerText = "Delete Record";
+            }
+        };
+    }
+
+    initManufacturerModule();
+</script>

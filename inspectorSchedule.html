@@ -1,0 +1,857 @@
+<!-- html2pdf Library for PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-4 animate-fade-in pb-12">
+    <!-- Header & Action Bar -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+        <div>
+            <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                <i data-lucide="calendar-check" class="text-blue-600 w-5 h-5"></i> Inspector Daily Schedule Tracker
+            </h3>
+            <p class="text-xs text-slate-500 mt-0.5">Comprehensive real-time status of all inspecting personnel.</p>
+        </div>
+        <div class="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+            <button id="export-schedule-pdf-btn" onclick="window.downloadSchedulePDF()" class="px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 disabled:opacity-70 disabled:cursor-wait">
+                <i data-lucide="download-cloud" class="w-4 h-4"></i> Export PDF
+            </button>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Select Schedule Date</label>
+                <input type="date" id="schedule-filter-date" onchange="window.renderInspectorSchedule()" class="p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer w-full sm:w-auto">
+            </div>
+        </div>
+    </div>
+
+    <!-- Unified Main Content Grid -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-4 relative">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b pb-3 gap-3">
+            <h4 class="font-black text-sm uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                <i data-lucide="users" class="w-5 h-5 text-indigo-600"></i> Personnel Directory (<span id="total-count">0</span>)
+            </h4>
+            <div class="flex items-center gap-3 flex-wrap">
+                <span class="text-[10px] font-black bg-emerald-50 text-emerald-700 border border-emerald-200 px-2.5 py-1 rounded-lg">On Duty: <span id="on-duty-count" class="text-emerald-900">0</span></span>
+                <span class="text-[10px] font-black bg-amber-50 text-amber-700 border border-amber-200 px-2.5 py-1 rounded-lg">Idle: <span id="idle-count" class="text-amber-900">0</span></span>
+            </div>
+        </div>
+        
+        <!-- Target container for PDF Export -->
+        <div id="pdf-schedule-wrapper" class="p-1 max-h-[65vh] overflow-y-auto custom-scrollbar w-full bg-white">
+            <h2 id="pdf-report-title" class="hidden font-black text-lg mb-4 uppercase tracking-wider text-center text-slate-800"></h2>
+            
+            <!-- 🎯 Daily Operations Summary Banner (MOBILE WRAP FIXED) -->
+            <div id="pdf-summary-banner" class="mb-5 bg-slate-50 md:bg-transparent border border-slate-200 md:border-none rounded-2xl md:rounded-none p-4 md:p-0 shadow-sm md:shadow-none hidden">
+                <h4 class="font-black text-[10px] uppercase text-slate-400 mb-3 text-center tracking-widest border-b border-slate-200 pb-2 md:hidden">Daily Operations Summary</h4>
+                
+                <div class="flex flex-wrap sm:grid sm:grid-cols-5 gap-2 sm:gap-4 text-center sm:divide-x divide-slate-200 justify-center">
+                    <div class="w-[48%] sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border border-slate-200 sm:border-none shadow-sm sm:shadow-none">
+                        <p class="text-[9px] font-bold uppercase text-slate-400 whitespace-nowrap">Total Duty</p>
+                        <p id="sum-duty" class="text-lg font-black text-emerald-600">0</p>
+                    </div>
+                    <div class="w-[48%] sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border border-slate-200 sm:border-none shadow-sm sm:shadow-none">
+                        <p class="text-[9px] font-bold uppercase text-slate-400 whitespace-nowrap">Total Idle</p>
+                        <p id="sum-idle" class="text-lg font-black text-amber-500">0</p>
+                    </div>
+                    <div class="w-[100%] sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border border-slate-200 sm:border-none shadow-sm sm:shadow-none flex flex-col justify-center">
+                        <div>
+                            <p class="text-[9px] font-black uppercase text-blue-700 bg-blue-100 px-2 py-0.5 rounded inline-block mb-1">NBPDCL</p>
+                            <p class="text-[11px] font-bold text-slate-600 whitespace-nowrap"><span id="sum-nb-insp" class="text-slate-900 font-black text-sm">0</span> Insps <span class="mx-1 font-normal text-slate-300">|</span> <span id="sum-nb-call" class="text-slate-700 font-black">0</span> Calls</p>
+                        </div>
+                    </div>
+                    <div class="w-[48%] sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border border-slate-200 sm:border-none shadow-sm sm:shadow-none flex flex-col justify-center">
+                        <div>
+                            <p class="text-[9px] font-black uppercase text-purple-700 bg-purple-100 px-2 py-0.5 rounded inline-block mb-1">SBPDCL</p>
+                            <p class="text-[11px] font-bold text-slate-600 whitespace-nowrap"><span id="sum-sb-insp" class="text-slate-900 font-black text-sm">0</span> Insps <span class="mx-1 font-normal text-slate-300 hidden sm:inline">|</span> <br class="sm:hidden" /> <span id="sum-sb-call" class="text-slate-700 font-black">0</span> Calls</p>
+                        </div>
+                    </div>
+                    <div class="w-[48%] sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border border-slate-200 sm:border-none shadow-sm sm:shadow-none flex flex-col justify-center">
+                        <div>
+                            <p class="text-[9px] font-black uppercase text-amber-700 bg-amber-100 px-2 py-0.5 rounded inline-block mb-1">PVVNL</p>
+                            <p class="text-[11px] font-bold text-slate-600 whitespace-nowrap"><span id="sum-pv-insp" class="text-slate-900 font-black text-sm">0</span> Insps <span class="mx-1 font-normal text-slate-300 hidden sm:inline">|</span> <br class="sm:hidden" /> <span id="sum-pv-call" class="text-slate-700 font-black">0</span> Calls</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div id="unified-inspectors-list" class="space-y-3">
+                <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing records...</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Datalist for Inspection ID Search -->
+<datalist id="all-inspection-ids-list"></datalist>
+
+<!-- Comprehensive Inspection Details Modal (Admin Only) -->
+<div id="inspector-detail-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b pb-3">
+            <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="file-text" class="text-blue-600 w-4 h-4"></i> Comprehensive Inspection Assignment Details
+            </h3>
+            <button onclick="window.closeInspectorModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="inspector-modal-body" class="space-y-3 text-xs">
+            <!-- Populated dynamically -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* 🎯 FLAWLESS ANTI-CROP PDF RELOCATION & CONDITIONAL VISIBILITY SETTINGS */
+    .pdf-rendering-active {
+        background: white !important;
+        padding: 20px !important;
+    }
+    .pdf-rendering-active .hide-on-print { display: none !important; }
+    .pdf-rendering-active * { box-sizing: border-box !important; }
+
+    /* 🎯 Hide controls, show clean badges during PDF export */
+    body.pdf-export-mode .pdf-control-row { display: none !important; }
+    body.pdf-export-mode .pdf-read-only-row { display: flex !important; }
+</style>
+
+<script>
+    if (typeof window.materialSpecsMasterList === 'undefined') {
+        window.materialSpecsMasterList = [];
+    }
+    if (typeof window.portalMData === 'undefined') {
+        window.portalMData = [];
+    }
+
+    window.scheduleInspectionsCache = {};
+    window.activeModalFeeContext = { totalMaterialValue: 0, totalQuantitySum: 0, criteria: 'Value Percent' };
+
+    window.convertNumberToWords = function(num) {
+        if (!num || num === 0) return "Zero Rupees Only";
+        const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+        function getWords(n) {
+            if (n === 0) return '';
+            if (n < 20) return a[n] + ' ';
+            if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '') + ' ';
+            return a[Math.floor(n / 100)] + ' Hundred ' + (n % 100 !== 0 ? getWords(n % 100) : '');
+        }
+        let n = Math.floor(num);
+        let str = '';
+        let crore = Math.floor(n / 10000000); n %= 10000000; if (crore > 0) str += getWords(crore) + 'Crore ';
+        let lakh = Math.floor(n / 100000); n %= 100000; if (lakh > 0) str += getWords(lakh) + 'Lakh ';
+        let thousand = Math.floor(n / 1000); n %= 1000; if (thousand > 0) str += getWords(thousand) + 'Thousand ';
+        let hundred = Math.floor(n / 100); n %= 100; if (hundred > 0) str += getWords(hundred) + 'Hundred ';
+        if (n > 0) { if (str !== '') str += 'and '; str += getWords(n); }
+        return 'Rupees ' + str.trim() + ' Only';
+    };
+
+    window.parseDateToKey = function(dateStr) {
+        if (!dateStr || dateStr.trim() === "" || dateStr === "-") return null;
+        let clean = String(dateStr).trim().split('T')[0];
+        if (clean.includes('/')) {
+            const p = clean.split('/');
+            if (p.length === 3) {
+                let d = parseInt(p[0], 10), m = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                if (y < 100) y += 2000;
+                return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+        } else if (clean.includes('-')) {
+            const p = clean.split('-');
+            if (p.length === 3) {
+                let y, m, d;
+                if (p[0].length === 4) { y = parseInt(p[0], 10); m = parseInt(p[1], 10); d = parseInt(p[2], 10); } 
+                else { d = parseInt(p[0], 10); m = parseInt(p[1], 10); y = parseInt(p[2], 10); }
+                if (y < 100) y += 2000;
+                return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+        }
+        return null;
+    };
+
+    window.isInspectionActiveOnDate = function(row, targetKey) {
+        const schedKey = window.parseDateToKey(row.scheduleDate);
+        if (schedKey && schedKey === targetKey) return true;
+        if (schedKey && schedKey < targetKey) {
+            const stat = String(row.status || "").trim().toLowerCase();
+            if (stat.includes("sched")) return true;
+        }
+        const fromKey = window.parseDateToKey(row.dateFrom);
+        if (fromKey && fromKey === targetKey) return true;
+        if (fromKey && row.dateTo) {
+            const fromParts = fromKey.split('-');
+            const fromDate = new Date(parseInt(fromParts[0], 10), parseInt(fromParts[1], 10) - 1, parseInt(fromParts[2], 10));
+            const regex = /(To|And)[\s\n\r]+(\d{2}\/\d{2}\/\d{4})/gi;
+            let match;
+            let currentBase = new Date(fromDate);
+            const activeDates = new Set();
+            activeDates.add(fromKey);
+
+            while ((match = regex.exec(row.dateTo)) !== null) {
+                const kw = match[1].toLowerCase();
+                const targetK = window.parseDateToKey(match[2]);
+                if (targetK) {
+                    const tp = targetK.split('-');
+                    const tDate = new Date(parseInt(tp[0], 10), parseInt(tp[1], 10) - 1, parseInt(tp[2], 10));
+                    if (kw === 'to') {
+                        let cur = new Date(currentBase);
+                        cur.setDate(cur.getDate() + 1);
+                        while (cur <= tDate) {
+                            const y = cur.getFullYear();
+                            const m = String(cur.getMonth() + 1).padStart(2, '0');
+                            const d = String(cur.getDate()).padStart(2, '0');
+                            activeDates.add(`${y}-${m}-${d}`);
+                            cur.setDate(cur.getDate() + 1);
+                        }
+                    } else if (kw === 'and') {
+                        activeDates.add(targetK);
+                    }
+                    currentBase = new Date(tDate);
+                }
+            }
+            if (activeDates.has(targetKey)) return true;
+        }
+        return false;
+    };
+
+    window.cleanInspectorName = function(name) {
+        if (!name) return "";
+        return String(name).toLowerCase().replace(/^(er\.|er\s+|mr\.|mr\s+|engr\.|dr\.)\s*/i, "").replace(/[^a-z0-9]/g, '');
+    };
+
+    window.getInspectorName = function(insp) {
+        if (typeof insp === 'string') return insp;
+        const keys = Object.keys(insp);
+        const nameKey = keys.find(k => {
+            const lk = k.toLowerCase().replace(/[^a-z]/g, '');
+            return lk.includes('name') || lk.includes('inspector') || lk.includes('engineer');
+        });
+        return (nameKey && insp[nameKey]) ? String(insp[nameKey]).trim() : (Object.values(insp)[1] || Object.values(insp)[0] || "Unknown");
+    };
+
+    window.getInspectorPhone = function(insp) {
+        if (typeof insp === 'string') return "N/A";
+        const keys = Object.keys(insp);
+        const phoneKey = keys.find(k => {
+            const lk = k.toLowerCase().replace(/[^a-z]/g, '');
+            return lk.includes('phone') || lk.includes('mobile') || lk.includes('contact');
+        });
+        return (phoneKey && insp[phoneKey]) ? String(insp[phoneKey]).trim() : "N/A";
+    };
+
+    window.updateInspectorState = function(inspectorKey, field, value, rerender = false) {
+        const dateKey = document.getElementById("schedule-filter-date").value;
+        if (!dateKey) return;
+        
+        let cache = JSON.parse(localStorage.getItem('schedule_comments_cache') || '{}');
+        if (!cache[dateKey]) cache[dateKey] = {};
+        
+        if (typeof cache[dateKey][inspectorKey] === 'string') {
+            cache[dateKey][inspectorKey] = { overrideStatus: '', discom: '', inspectionId: '', comment: cache[dateKey][inspectorKey] };
+        }
+        if (!cache[dateKey][inspectorKey]) {
+            cache[dateKey][inspectorKey] = { overrideStatus: '', discom: '', inspectionId: '', comment: '' };
+        }
+        
+        cache[dateKey][inspectorKey][field] = value;
+        localStorage.setItem('schedule_comments_cache', JSON.stringify(cache));
+
+        if (rerender) {
+            window.renderInspectorSchedule();
+        }
+    };
+
+    window.initInspectorScheduleModule = async function() {
+        if (!currentMiUser || (currentMiUser.role !== 'admin' && currentMiUser.role !== 'Coordinator')) {
+            const viewport = document.getElementById("mi-viewport");
+            if (viewport) {
+                viewport.innerHTML = `
+                    <div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm">
+                        <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                        <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                        <p class="text-xs text-slate-500">This module is accessible exclusively to System Administrators and Coordinators.</p>
+                    </div>
+                `;
+            }
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        localStorage.removeItem('schedule_comments_cache');
+
+        const dateField = document.getElementById("schedule-filter-date");
+        if (dateField && !dateField.value) {
+            const d = new Date();
+            const year = d.getFullYear();
+            const month = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateField.value = `${year}-${month}-${day}`;
+        }
+
+        try {
+            const [combRes, specRes, inspRes, portalMRes] = await Promise.all([
+                fetch(`${API_URL}?action=getCombinedInspections`),
+                fetch(`${API_URL}?action=getMaterialSpecs`),
+                fetch(`${API_URL}?action=getInspectors`),
+                fetch(`${API_URL}?action=getPortalMInspections`)
+            ]);
+
+            const textData = await combRes.text();
+            const data = JSON.parse(textData);
+            if (data.status) {
+                window.miMasterData = data.data || [];
+                if (data.inspectors && data.inspectors.length > 0) window.miInspectorsList = data.inspectors;
+                
+                const datalist = document.getElementById("all-inspection-ids-list");
+                if (datalist && window.miMasterData) {
+                    let ids = new Set(window.miMasterData.map(r => r.inspectionId || r.InspectionID).filter(Boolean));
+                    let html = "";
+                    ids.forEach(id => html += `<option value="${id}"></option>`);
+                    datalist.innerHTML = html;
+                }
+            }
+
+            const inspText = await inspRes.text();
+            try {
+                const inspData = JSON.parse(inspText);
+                if (inspData.status && inspData.data && inspData.data.length > 0) window.miInspectorsList = inspData.data;
+            } catch(e){}
+
+            const specData = await specRes.json();
+            if (specData.status) window.materialSpecsMasterList = specData.data || [];
+
+            const portalMDataRaw = await portalMRes.json();
+            if (portalMDataRaw.status && portalMDataRaw.data) window.portalMData = portalMDataRaw.data;
+        } catch (err) {
+            console.warn("Could not synchronize schedule data.", err);
+        }
+
+        if (!window.miInspectorsList || window.miInspectorsList.length === 0) {
+            const uniqueInspNames = [...new Set((window.miMasterData || []).map(r => r.conductedBy || r.tpiaInspector))].filter(Boolean);
+            window.miInspectorsList = uniqueInspNames
+                .filter(n => !["Not Appointed", "Not Updated", "Pending", "-"].includes(n))
+                .map((name, i) => ({ srNo: i + 1, name: name, phone: "N/A" }));
+        }
+
+        window.renderInspectorSchedule();
+        if (window.lucide) lucide.createIcons();
+    };
+    
+    window.renderInspectorSchedule = function() {
+        const dateInputElem = document.getElementById("schedule-filter-date");
+        if (!dateInputElem || !dateInputElem.value) return;
+
+        const targetKey = dateInputElem.value;
+        const unifiedDiv = document.getElementById("unified-inspectors-list");
+        const summaryBanner = document.getElementById("pdf-summary-banner");
+        if (!unifiedDiv) return;
+
+        const commentsCache = JSON.parse(localStorage.getItem('schedule_comments_cache') || '{}')[targetKey] || {};
+
+        window.scheduleInspectionsCache = {};
+        let inspectors = window.miInspectorsList || [];
+        const inspections = window.miMasterData || [];
+
+        inspectors.sort((a, b) => window.getInspectorName(a).localeCompare(window.getInspectorName(b)));
+
+        const matchingInspections = inspections.filter(row => window.isInspectionActiveOnDate(row, targetKey));
+
+        const scheduledMap = {};
+        let discomStats = { NBPDCL: { calls: 0, inspectors: new Set() }, SBPDCL: { calls: 0, inspectors: new Set() }, PVVNL:  { calls: 0, inspectors: new Set() } };
+
+        matchingInspections.forEach(insp => {
+            const rawName = String(insp.conductedBy || insp.tpiaInspector || "").trim();
+            const cleanKey = window.cleanInspectorName(rawName);
+            const discom = String(insp.discom || "").trim().toUpperCase();
+            
+            if (discomStats[discom]) {
+                discomStats[discom].calls++;
+                if (cleanKey && !["notappointed", "notupdated", "pending"].includes(cleanKey)) discomStats[discom].inspectors.add(cleanKey);
+            }
+            if (cleanKey && !["notappointed", "notupdated", "pending"].includes(cleanKey)) {
+                if (!scheduledMap[cleanKey]) scheduledMap[cleanKey] = [];
+                scheduledMap[cleanKey].push(insp);
+            }
+        });
+
+        const canExpand = (currentMiUser && currentMiUser.role === 'admin');
+
+        let unifiedHtml = "";
+        let schedCount = 0;
+        let idleCount = 0;
+
+        inspectors.forEach(insp => {
+            const fullName = window.getInspectorName(insp);
+            const matchKey = window.cleanInspectorName(fullName);
+            const assignedInspections = scheduledMap[matchKey] || [];
+            const phone = window.getInspectorPhone(insp);
+
+            let savedState = commentsCache[matchKey] || { overrideStatus: '', discom: '', inspectionId: '', comment: '' };
+            if (typeof savedState === 'string') savedState = { overrideStatus: '', discom: '', inspectionId: '', comment: savedState };
+            const safeComment = (savedState.comment || "").replace(/"/g, '&quot;');
+            const safeInspId = (savedState.inspectionId || "").replace(/"/g, '&quot;');
+
+            let isNabl = savedState.overrideStatus === 'NABL Witness';
+            let isMatInsp = savedState.overrideStatus === 'Material Inspection';
+            let isLeave = savedState.overrideStatus === 'Leave';
+            let isNoWork = savedState.overrideStatus === 'No Work';
+
+            let isActiveDuty = isNabl || isMatInsp;
+            let effectiveDuty = assignedInspections.length > 0;
+            if (isActiveDuty) effectiveDuty = true;
+
+            if (isActiveDuty && savedState.discom && discomStats[savedState.discom]) {
+                discomStats[savedState.discom].inspectors.add(matchKey);
+                discomStats[savedState.discom].calls++;
+            }
+
+            let statusBadge = "";
+
+            if (effectiveDuty) {
+                schedCount++;
+                let countLabel = assignedInspections.length;
+                let overrideShorthand = isNabl ? "NABL" : "Mat. Insp";
+                
+                if (isActiveDuty && assignedInspections.length === 0) countLabel = overrideShorthand;
+                else if (isActiveDuty) countLabel = `${assignedInspections.length} + ${overrideShorthand}`;
+                
+                statusBadge = `<span class="text-[10px] font-mono px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-800 border-emerald-300 flex items-center gap-1.5 whitespace-nowrap"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> On Duty (${countLabel})</span>`;
+            } else {
+                idleCount++;
+                if (isLeave) {
+                    statusBadge = `<span class="text-[10px] font-mono bg-rose-50 text-rose-700 border border-rose-200 px-2 py-0.5 rounded font-bold whitespace-nowrap">On Leave</span>`;
+                } else if (isNoWork) {
+                    statusBadge = `<span class="text-[10px] font-mono bg-slate-100 text-slate-600 border border-slate-300 px-2 py-0.5 rounded font-bold whitespace-nowrap">No Work</span>`;
+                } else {
+                    statusBadge = `<span class="text-[10px] font-mono bg-amber-50 text-amber-700 border border-amber-200 px-2 py-0.5 rounded font-bold whitespace-nowrap">Idle / Free</span>`;
+                }
+            }
+
+            let activeDutyDisplay = isActiveDuty ? "flex" : "hidden";
+
+            let controlsHtml = `
+                <div class="flex items-center gap-3 flex-wrap w-full pt-2.5 mt-1 border-t border-slate-100 pdf-control-row">
+                    <select onchange="window.updateInspectorState('${matchKey}', 'overrideStatus', this.value, true)" class="p-1.5 text-[10px] font-bold border border-slate-300 rounded outline-none bg-slate-50 text-slate-700 cursor-pointer shadow-2xs w-36">
+                        <option value="" ${!savedState.overrideStatus ? 'selected' : ''}>- No Status Override -</option>
+                        <option value="NABL Witness" ${isNabl ? 'selected' : ''}>NABL Witness</option>
+                        <option value="Material Inspection" ${isMatInsp ? 'selected' : ''}>Material Inspection</option>
+                        <option value="Leave" ${isLeave ? 'selected' : ''}>Leave</option>
+                        <option value="No Work" ${isNoWork ? 'selected' : ''}>No Work</option>
+                    </select>
+
+                    <select onchange="window.updateInspectorState('${matchKey}', 'discom', this.value, true)" class="${activeDutyDisplay} p-1.5 text-[10px] font-bold border border-blue-300 rounded outline-none bg-blue-50 text-blue-800 cursor-pointer shadow-2xs w-28">
+                        <option value="">Discom...</option>
+                        <option value="NBPDCL" ${savedState.discom === 'NBPDCL' ? 'selected' : ''}>NBPDCL</option>
+                        <option value="SBPDCL" ${savedState.discom === 'SBPDCL' ? 'selected' : ''}>SBPDCL</option>
+                        <option value="PVVNL" ${savedState.discom === 'PVVNL' ? 'selected' : ''}>PVVNL</option>
+                    </select>
+
+                    <input type="text" list="all-inspection-ids-list" oninput="window.updateInspectorState('${matchKey}', 'inspectionId', this.value, false)" value="${safeInspId}" placeholder="Search ID..." class="${activeDutyDisplay} flex-1 min-w-[140px] max-w-[200px] p-1.5 text-[10px] border border-blue-300 rounded outline-none focus:border-blue-600 bg-blue-50 text-blue-900 font-bold placeholder-blue-400 shadow-2xs transition">
+
+                    <input type="text" oninput="window.updateInspectorState('${matchKey}', 'comment', this.value, false)" value="${safeComment}" placeholder="Type any temporary remark here..." class="flex-1 min-w-[180px] p-1.5 text-[10px] border border-slate-300 rounded outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-bold placeholder-slate-400 shadow-2xs transition">
+                </div>
+                
+                <div class="hidden pdf-read-only-row w-full flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 pt-2.5 mt-1 border-t border-slate-100">
+                    ${isLeave ? `<span class="text-[10px] font-bold bg-rose-50 text-rose-800 px-2 py-1 rounded border border-rose-200">Status Override: On Leave</span>` : ''}
+                    ${isNoWork ? `<span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-300">Status Override: No Work</span>` : ''}
+                    ${isActiveDuty ? `<span class="text-[10px] font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded border border-blue-200 shadow-xs uppercase tracking-wide">${savedState.overrideStatus} <span class="mx-1">|</span> Discom: ${savedState.discom || 'N/A'} <span class="mx-1">|</span> ID: ${savedState.inspectionId || 'N/A'}</span>` : ''}
+                    ${savedState.comment ? `<span class="text-[11px] font-medium text-slate-700 bg-amber-50 px-3 py-1 rounded border border-amber-200 flex-1 whitespace-pre-wrap leading-tight shadow-xs"><strong class="text-amber-800">Remark:</strong> ${savedState.comment}</span>` : ''}
+                </div>
+            `;
+
+            unifiedHtml += `
+                <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col gap-1 break-inside-avoid">
+                    <div class="flex items-center gap-3 flex-wrap">
+                        <span class="font-black text-sm text-slate-900">${fullName}</span>
+                        <span class="text-[11px] text-slate-500 font-mono flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${phone}</span>
+                        ${statusBadge}
+                    </div>
+                    ${controlsHtml}
+            `;
+
+            if (assignedInspections.length > 0) {
+                unifiedHtml += `<div class="space-y-2 pt-3 mt-1 border-t border-slate-100">`;
+                
+                assignedInspections.forEach(item => {
+                    const safeId = String(item.inspectionId || item.id || Date.now());
+                    window.scheduleInspectionsCache[safeId] = item;
+
+                    let discomBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
+                    if (item.discom === 'SBPDCL') discomBadgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
+                    else if (item.discom === 'PVVNL') discomBadgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
+
+                    const clickAttr = canExpand ? `onclick="window.showInspectionDetailById('${safeId}')"` : '';
+                    const linkClass = canExpand ? 'text-blue-600 hover:text-blue-800 underline cursor-pointer' : 'text-slate-700';
+                    const schedDateStr = item.scheduleDate ? String(item.scheduleDate).replace('T00:00:00.000Z', '').trim() : 'N/A';
+
+                    unifiedHtml += `
+                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg items-start">
+                            <div class="sm:col-span-3 flex flex-col gap-1.5 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0 sm:pr-3">
+                                <div class="flex items-center gap-2 flex-wrap">
+                                    <span class="text-[10px] font-black font-mono px-2 py-0.5 rounded border ${discomBadgeColor} text-center">${item.discom || 'DISCOM'}</span>
+                                    <strong ${clickAttr} class="${linkClass} font-mono text-[13px] tracking-wide transition break-all" title="Click to view details">${item.inspectionId}</strong>
+                                </div>
+                                <span class="text-[9px] font-bold text-blue-700 font-mono bg-blue-50/50 border border-blue-100 rounded px-1.5 py-0.5 w-max">
+                                    <i data-lucide="calendar-clock" class="w-3 h-3 inline relative -top-0.5"></i> Sched Start: ${schedDateStr}
+                                </span>
+                            </div>
+                            <div class="sm:col-span-3 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0">
+                                <span class="text-[11px] font-bold text-slate-800 whitespace-normal break-words leading-relaxed block">${item.manufacturer || 'N/A'}</span>
+                            </div>
+                            <div class="sm:col-span-4 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0">
+                                <span class="text-[11px] text-slate-600 italic whitespace-normal break-words leading-relaxed flex items-start gap-1">
+                                    <i data-lucide="map-pin" class="w-3 h-3 shrink-0 mt-0.5"></i> 
+                                    <span>${item.address || 'Address not listed'}</span>
+                                </span>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <span class="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded block whitespace-normal break-words text-center leading-tight shadow-sm">${item.materialInspected || 'N/A'}</span>
+                            </div>
+                        </div>
+                    `;
+                });
+                unifiedHtml += `</div>`;
+            }
+
+            unifiedHtml += `</div>`;
+        });
+
+        document.getElementById("total-count").innerText = inspectors.length;
+        document.getElementById("on-duty-count").innerText = schedCount;
+        document.getElementById("idle-count").innerText = idleCount;
+
+        document.getElementById("sum-duty").innerText = schedCount;
+        document.getElementById("sum-idle").innerText = idleCount;
+        document.getElementById("sum-nb-insp").innerText = discomStats.NBPDCL.inspectors.size;
+        document.getElementById("sum-nb-call").innerText = discomStats.NBPDCL.calls;
+        document.getElementById("sum-sb-insp").innerText = discomStats.SBPDCL.inspectors.size;
+        document.getElementById("sum-sb-call").innerText = discomStats.SBPDCL.calls;
+        document.getElementById("sum-pv-insp").innerText = discomStats.PVVNL.inspectors.size;
+        document.getElementById("sum-pv-call").innerText = discomStats.PVVNL.calls;
+        
+        if (summaryBanner) summaryBanner.classList.remove('hidden');
+
+        unifiedDiv.innerHTML = unifiedHtml || `<p class="text-xs text-slate-400 py-6 text-center">No inspector records available.</p>`;
+        if (window.lucide) lucide.createIcons();
+    };
+        
+    window.showInspectionDetailById = function(inspectionId) {
+        const item = window.scheduleInspectionsCache[inspectionId];
+        if (!item) return;
+
+        const modalBody = document.getElementById("inspector-modal-body");
+        if (!modalBody) return;
+
+        const rawSpecs = String(item.materialSpec || "").split("\n").filter(Boolean);
+        const rawQtys = String(item.quantity || "").split("\n").filter(Boolean);
+
+        let materialTableRowsHtml = "";
+        let grandTotalValue = 0;
+        let totalQuantitySum = 0;
+
+        if (rawSpecs.length > 0) {
+            rawSpecs.forEach((specLine, idx) => {
+                let cleanSpec = specLine.trim();
+                let sno = (idx + 1) + ".";
+                const matchPrefix = cleanSpec.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                if (matchPrefix) { sno = matchPrefix[1]; cleanSpec = matchPrefix[2]; }
+
+                let unitName = "No";
+                const unitMatch = cleanSpec.match(/\(([^)]+)\)\s*$/);
+                if (unitMatch) { unitName = unitMatch[1].trim(); cleanSpec = cleanSpec.replace(/\([^)]+\)\s*$/, "").trim(); }
+
+                let qtyVal = 0;
+                if (rawQtys[idx]) {
+                    let qLine = rawQtys[idx].trim();
+                    const qMatch = qLine.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                    qtyVal = parseFloat(qMatch ? qMatch[2] : qLine) || 0;
+                }
+
+                totalQuantitySum += qtyVal;
+
+                let unitRate = 0;
+                if (window.materialSpecsMasterList && window.materialSpecsMasterList.length > 0) {
+                    const matchedMaster = window.materialSpecsMasterList.find(m => m.materialSpec && cleanSpec.toLowerCase().includes(m.materialSpec.trim().toLowerCase()));
+                    if (matchedMaster) unitRate = Number(matchedMaster.unitRate || 0);
+                }
+
+                const rowTotalValue = qtyVal * unitRate;
+                grandTotalValue += rowTotalValue;
+
+                materialTableRowsHtml += `
+                    <tr class="hover:bg-slate-50 transition">
+                        <td class="p-2.5 border-r font-mono text-center font-bold text-slate-500">${sno}</td>
+                        <td class="p-2.5 border-r font-bold text-slate-800">${cleanSpec}</td>
+                        <td class="p-2.5 border-r font-mono font-bold text-blue-700 text-center">${qtyVal}</td>
+                        <td class="p-2.5 border-r font-mono font-bold text-purple-700 text-center">${unitName}</td>
+                        <td class="p-2.5 border-r font-mono text-right font-bold text-slate-900">${unitRate > 0 ? unitRate.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-'}</td>
+                        <td class="p-2.5 font-mono text-right font-black text-emerald-700">${rowTotalValue > 0 ? rowTotalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-'}</td>
+                    </tr>
+                `;
+            });
+        } else {
+            materialTableRowsHtml = `<tr><td colspan="6" class="p-4 text-center text-slate-400">No material specifications listed.</td></tr>`;
+        }
+
+        let matchedCriteria = "Value Percent", matchedValueFactor = 0, matchedTotalVal = 0;
+        const portalMRecord = window.portalMData.find(m => String(m.inspectionId).trim() === String(item.inspectionId).trim());
+
+        if (portalMRecord) {
+            matchedTotalVal = Number(portalMRecord.totalMaterialValue) || 0;
+            matchedCriteria = String(portalMRecord.criteria || "Value Percent").trim();
+            if (!matchedCriteria) matchedCriteria = "Value Percent";
+            matchedValueFactor = Number(portalMRecord.criteriaValue) || 0;
+        } else {
+            matchedTotalVal = grandTotalValue; 
+        }
+
+        const isPvvnl = String(item.discom || "").trim().toUpperCase() === "PVVNL";
+        const initialMultiplier = isPvvnl ? 20 : 100;
+
+        window.activeModalFeeContext = { totalMaterialValue: matchedTotalVal, totalQuantitySum: totalQuantitySum, criteria: matchedCriteria };
+
+        modalBody.innerHTML = `
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 bg-slate-50 p-4 rounded-2xl border text-xs">
+                <div><strong class="text-slate-400 block text-[10px] uppercase font-mono">Inspection ID</strong> <span class="font-bold text-blue-600 font-mono text-sm">${item.inspectionId || '-'}</span></div>
+                <div><strong class="text-slate-400 block text-[10px] uppercase font-mono">Discom</strong> <span class="font-bold text-purple-700 font-mono">${item.discom || '-'}</span></div>
+                <div><strong class="text-slate-400 block text-[10px] uppercase font-mono">Scheme</strong> <span class="font-bold text-slate-700">${item.scheme || '-'}</span></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs">
+                <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">District</strong> <span class="font-bold text-slate-800">${item.district || '-'}</span></div>
+                <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Inspection Letter No</strong> <span class="font-bold text-slate-800">${item.letterNo || '-'}</span></div>
+                <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Letter Date</strong> <span class="font-bold text-slate-800">${item.letterDate || '-'}</span></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="p-3 bg-slate-50 border rounded-xl">
+                    <strong class="text-slate-400 block text-[10px] uppercase font-mono mb-1">Manufacturer Name</strong> 
+                    <span class="font-bold text-slate-900 text-sm block">${item.manufacturer || '-'}</span>
+                    <span class="text-[11px] text-slate-500 block mt-1">Address: ${item.address || 'N/A'}</span>
+                </div>
+                <div class="p-3 bg-slate-50 border rounded-xl">
+                    <strong class="text-slate-400 block text-[10px] uppercase font-mono mb-1">Contact Details</strong> 
+                    <span class="text-[11px] text-slate-700 block">Person: <strong>${item.contactPerson || 'N/A'}</strong></span>
+                    <span class="text-[11px] text-slate-700 block mt-0.5">Mobile: <strong class="font-mono">${item.mobile || 'N/A'}</strong></span>
+                </div>
+            </div>
+
+            <div class="bg-slate-50 p-4 rounded-2xl border space-y-3">
+                <strong class="text-slate-400 block text-[10px] uppercase font-mono">Material Inspected: <span class="text-slate-800 font-bold">${item.materialInspected || '-'}</span></strong>
+                <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead class="bg-slate-900 text-white uppercase text-[9px] font-mono">
+                            <tr>
+                                <th class="p-2.5 border-r border-slate-700 text-center w-12">SNo</th>
+                                <th class="p-2.5 border-r border-slate-700">Material Specification</th>
+                                <th class="p-2.5 border-r border-slate-700 text-center w-20">Quantity</th>
+                                <th class="p-2.5 border-r border-slate-700 text-center w-20">Unit</th>
+                                <th class="p-2.5 border-r border-slate-700 text-right w-28">Unit Rate (Rs)</th>
+                                <th class="p-2.5 text-right w-32">Total Value (Rs)</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y font-medium">
+                            ${materialTableRowsHtml}
+                        </tbody>
+                        <tfoot class="bg-slate-100 font-bold border-t">
+                            <tr>
+                                <td colspan="2" class="p-3 text-right uppercase font-mono text-[11px] text-slate-700">Total Quantity & Grand Value:</td>
+                                <td class="p-3 text-center font-mono text-xs text-blue-800 font-black">${totalQuantitySum}</td>
+                                <td colspan="2" class="p-3 text-right uppercase font-mono text-[11px] text-slate-700">Grand Total:</td>
+                                <td class="p-3 text-right font-mono text-xs text-emerald-800 font-black">${grandTotalValue > 0 ? 'Rs ' + grandTotalValue.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : '-'}</td>
+                            </tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <div class="bg-white p-3 rounded-xl border border-slate-200 grid grid-cols-2 sm:grid-cols-6 gap-3 text-center items-center">
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400">Total Material Value (Portal M)</span>
+                        <span class="text-sm font-black text-blue-700 font-mono block">Rs ${matchedTotalVal.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400">Criteria</span>
+                        <span class="text-xs font-bold text-slate-700 whitespace-normal break-words block mt-1">${matchedCriteria}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Value Factor</span>
+                        <input type="number" step="0.1" id="dynamic-fee-value-input" value="${matchedValueFactor}" oninput="window.recalculateDynamicFee()" class="w-full p-1.5 border border-slate-300 rounded-lg text-xs font-bold font-mono text-center bg-slate-50 focus:bg-white outline-none">
+                    </div>
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400 mb-1">Multiplier (%)</span>
+                        <input type="number" step="1" min="0" max="100" id="dynamic-fee-multiplier-input" value="${initialMultiplier}" oninput="window.recalculateDynamicFee()" class="w-full p-1.5 border border-amber-300 rounded-lg text-xs font-bold font-mono text-center bg-amber-50/40 focus:bg-white outline-none text-amber-900" title="Adjust percentage share">
+                    </div>
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400">Total Quantity</span>
+                        <span class="text-xs font-bold text-slate-800 font-mono block mt-1">${totalQuantitySum}</span>
+                    </div>
+                    <div>
+                        <span class="block text-[9px] font-black uppercase text-slate-400">Calculated Fees (Rs)</span>
+                        <span id="dynamic-calculated-fee-display" class="text-sm font-black text-emerald-700 font-mono block">Rs 0.00</span>
+                        <span id="dynamic-calculated-fee-words" class="text-[10px] text-slate-500 font-bold whitespace-normal break-words block mt-0.5">Rupees Zero Only</span>
+                    </div>
+                </div>
+            </div>
+
+            <div class="p-3 bg-slate-50 border rounded-xl text-xs">
+                <strong class="text-slate-400 block text-[10px] uppercase font-mono">Name of TKC</strong> 
+                <span class="font-bold text-slate-900">${item.tkc || '-'}</span>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 text-xs bg-blue-50/50 p-4 rounded-2xl border border-blue-100">
+                <div><strong class="text-blue-500 block text-[10px] uppercase font-mono">Assigned TPIA Inspector</strong> <span class="font-bold text-slate-900">${item.tpiaInspector || '-'}</span></div>
+                <div><strong class="text-blue-500 block text-[10px] uppercase font-mono">Conducted By</strong> <span class="font-bold text-slate-900">${item.conductedBy || 'Pending'}</span></div>
+                <div><strong class="text-blue-500 block text-[10px] uppercase font-mono">Schedule Date</strong> <span class="font-bold text-slate-900 font-mono">${item.scheduleDate || '-'}</span></div>
+            </div>
+
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Status & Sub-Status</strong> <span class="font-bold text-emerald-700">${item.status || 'Pending'} (${item.subStatus || 'Pending'})</span></div>
+                <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Billing Status</strong> <span class="font-bold text-slate-800">${item.billingStatus || 'Pending'}</span></div>
+            </div>
+        `;
+
+        window.recalculateDynamicFee();
+
+        const modalElem = document.getElementById("inspector-detail-modal");
+        if (modalElem) modalElem.classList.remove("hidden");
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.recalculateDynamicFee = function() {
+        const valueInput = document.getElementById("dynamic-fee-value-input");
+        const multiplierInput = document.getElementById("dynamic-fee-multiplier-input");
+        const feeDisplay = document.getElementById("dynamic-calculated-fee-display");
+        const feeWords = document.getElementById("dynamic-calculated-fee-words");
+        if (!valueInput || !multiplierInput || !feeDisplay || !feeWords) return;
+
+        const factor = parseFloat(valueInput.value) || 0;
+        const multiplierPct = parseFloat(multiplierInput.value) || 100;
+        const { totalMaterialValue, totalQuantitySum, criteria } = window.activeModalFeeContext;
+        
+        let calculatedFee = 0;
+
+        if (criteria.toLowerCase() === 'per unit') {
+            calculatedFee = totalQuantitySum * factor;
+        } else {
+            calculatedFee = totalMaterialValue * (factor / 100);
+        }
+
+        calculatedFee = calculatedFee * (multiplierPct / 100);
+
+        feeDisplay.innerText = calculatedFee > 0 ? 'Rs ' + calculatedFee.toLocaleString('en-IN', { minimumFractionDigits: 2 }) : 'Rs 0.00';
+        feeWords.innerText = window.convertNumberToWords(calculatedFee);
+    };
+
+    window.closeInspectorModal = function() {
+        const modalElem = document.getElementById("inspector-detail-modal");
+        if (modalElem) modalElem.classList.add("hidden");
+    };
+
+    window.downloadSchedulePDF = function() {
+        const dateInputElem = document.getElementById("schedule-filter-date");
+        if (!dateInputElem || !dateInputElem.value) {
+            alert("Please select a date first.");
+            return;
+        }
+
+        const reportDate = dateInputElem.value.split("-").reverse().join("/");
+        if (!confirm(`Generate Landscape PDF report for ${reportDate}?`)) return;
+
+        const btn = document.getElementById("export-schedule-pdf-btn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Exporting...`;
+        btn.disabled = true;
+        if (window.lucide) lucide.createIcons();
+
+        window.renderInspectorSchedule();
+
+        const executeExport = () => {
+            const wrapper = document.getElementById('pdf-schedule-wrapper');
+            const titleEl = document.getElementById('pdf-report-title');
+            const summaryBanner = document.getElementById("pdf-summary-banner");
+
+            const originalMaxHeight = wrapper.style.maxHeight;
+            wrapper.classList.remove('max-h-[65vh]', 'overflow-y-auto', 'custom-scrollbar');
+            wrapper.style.maxHeight = 'none';
+            
+            titleEl.innerText = `Inspector Daily Schedule & Status - ${reportDate}`;
+            titleEl.classList.remove('hidden');
+            if (summaryBanner) summaryBanner.classList.remove('hidden');
+
+            document.body.classList.add("pdf-export-mode");
+            
+            const printAnchor = document.createElement('div');
+            printAnchor.style.position = 'absolute';
+            printAnchor.style.top = '0';
+            printAnchor.style.left = '0';
+            printAnchor.style.width = '1200px'; 
+            printAnchor.style.minHeight = '100vh';
+            printAnchor.style.background = 'white';
+            printAnchor.style.zIndex = '99999';
+            
+            printAnchor.classList.add('pdf-rendering-active');
+            
+            const originalParent = wrapper.parentNode;
+            const originalNextSibling = wrapper.nextSibling;
+            
+            printAnchor.appendChild(wrapper);
+            document.body.appendChild(printAnchor);
+
+            const opt = {
+                margin:       [0.4, 0.4, 0.4, 0.4], 
+                filename:     `Inspector_Schedule_${dateInputElem.value}.pdf`,
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { 
+                    scale: 2,             
+                    useCORS: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }, 
+                pagebreak:    { mode: ['css', 'legacy'], avoid: ['.break-inside-avoid'] } 
+            };
+
+            window.html2pdf().set(opt).from(wrapper).save().then(() => {
+                if (originalNextSibling) {
+                    originalParent.insertBefore(wrapper, originalNextSibling);
+                } else {
+                    originalParent.appendChild(wrapper);
+                }
+                document.body.removeChild(printAnchor);
+
+                titleEl.classList.add('hidden');
+                if (summaryBanner) summaryBanner.classList.add('hidden');
+                
+                wrapper.classList.add('max-h-[65vh]', 'overflow-y-auto', 'custom-scrollbar');
+                wrapper.style.maxHeight = originalMaxHeight;
+                
+                document.body.classList.remove("pdf-export-mode");
+
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            });
+        };
+
+        if (typeof window.html2pdf === 'undefined') {
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading...`;
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = executeExport;
+            script.onerror = () => {
+                alert("Failed to download PDF engine. Please disable ad-blockers or check your connection.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            };
+            document.head.appendChild(script);
+        } else {
+            executeExport();
+        }
+    };
+
+    setTimeout(() => {
+        window.initInspectorScheduleModule();
+    }, 50);
+</script>

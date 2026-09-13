@@ -1,0 +1,913 @@
+<div class="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
+    
+    <!-- Top Header & Filter Controls -->
+    <div class="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bell-ring" class="text-rose-500 w-5 h-5"></i> Live Command Center
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Real-time alerts, daily operational targets, and compliance bottlenecks.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="cc-record-count-badge" class="text-[11px] font-mono px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border">
+                    Loading Network Data...
+                </span>
+            </div>
+        </div>
+
+        <div class="flex items-center flex-wrap gap-2 pt-2">
+            <span class="text-[10px] font-black uppercase text-slate-400 mr-2"><i data-lucide="filter" class="w-3 h-3 inline"></i> View:</span>
+            <button onclick="window.filterCommandCenter('ALL')" id="cc-btn-ALL" class="px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-blue-600 text-white shadow-xs">All Operations</button>
+            <button onclick="window.filterCommandCenter('NBPDCL')" id="cc-btn-NBPDCL" class="px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-slate-100 text-slate-600 hover:text-slate-900">NBPDCL</button>
+            <button onclick="window.filterCommandCenter('SBPDCL')" id="cc-btn-SBPDCL" class="px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-slate-100 text-slate-600 hover:text-slate-900">SBPDCL</button>
+            <button onclick="window.filterCommandCenter('PVVNL')" id="cc-btn-PVVNL" class="px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-slate-100 text-slate-600 hover:text-slate-900">PVVNL</button>
+        </div>
+    </div>
+
+    <!-- Live Executive Summary Board -->
+    <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-9 gap-2">
+        <!-- Call Volume -->
+        <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-slate-400 block tracking-wider">Total Calls</span>
+            <p id="cc-total-calls" class="text-lg font-black text-slate-900 mt-1">0</p>
+        </div>
+        <div class="bg-white p-2 rounded-2xl border border-slate-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-blue-600 block tracking-wider">Valid Calls</span>
+            <p id="cc-valid-calls" class="text-lg font-black text-blue-700 mt-1">0</p>
+        </div>
+        <div class="bg-rose-50/50 p-2 rounded-2xl border border-rose-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-rose-600 block tracking-wider" title="Cancelled / Revised / Waivered">Canc / Rev / Wav</span>
+            <p class="text-sm font-black text-rose-700 mt-1"><span id="cc-cancelled">0</span> / <span id="cc-revised">0</span> / <span id="cc-waivered">0</span></p>
+        </div>
+        <div class="bg-amber-50/50 p-2 rounded-2xl border border-amber-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-amber-600 block tracking-wider">Scheduled</span>
+            <p id="cc-scheduled" class="text-lg font-black text-amber-700 mt-1">0</p>
+        </div>
+        <div class="bg-rose-50/50 p-2 rounded-2xl border border-rose-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-rose-600 block tracking-wider">Pending</span>
+            <p id="cc-pending" class="text-lg font-black text-rose-700 mt-1">0</p>
+        </div>
+        <div class="bg-emerald-50/50 p-2 rounded-2xl border border-emerald-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-emerald-600 block tracking-wider">Completed</span>
+            <p id="cc-completed" class="text-lg font-black text-emerald-700 mt-1">0</p>
+        </div>
+        <div class="bg-purple-50/50 p-2 rounded-2xl border border-purple-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-purple-600 block tracking-wider">Billed</span>
+            <p id="cc-billed" class="text-lg font-black text-purple-700 mt-1">0</p>
+        </div>
+        <!-- Reports -->
+        <div class="bg-indigo-50/50 p-2 rounded-2xl border border-indigo-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-indigo-600 block tracking-wider">Rep Recv</span>
+            <p id="cc-rep-recv" class="text-lg font-black text-indigo-700 mt-1">0</p>
+        </div>
+        <div class="bg-cyan-50/50 p-2 rounded-2xl border border-cyan-200 shadow-xs text-center flex flex-col justify-center">
+            <span class="text-[8px] font-black uppercase text-cyan-600 block tracking-wider">Rep Mailed</span>
+            <p id="cc-rep-mail" class="text-lg font-black text-cyan-700 mt-1">0</p>
+        </div>
+    </div>
+
+    <!-- Alert Grids Container (Auto-flowing Grid, 3 Rows x 2 Columns) -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 items-start">
+        
+        <!-- PANEL 1: TODAY'S SCHEDULE -->
+        <div class="bg-white rounded-3xl border border-blue-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-blue-50 p-4 border-b border-blue-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-blue-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="calendar-clock" class="w-5 h-5"></i> Today's Schedule 
+                        <span id="count-today-sched" class="bg-blue-200 text-blue-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-blue-600 font-bold mt-1">Inspections currently active and scheduled for today.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-blue-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-48">Inspector</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-today-sched-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="3" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 2: DYNAMIC CALLS RECEIVED LOG -->
+        <div class="bg-white rounded-3xl border border-emerald-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-emerald-50 p-4 border-b border-emerald-100 shrink-0 flex flex-col sm:flex-row sm:items-center justify-between gap-3 cursor-pointer md:cursor-auto relative" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-8">
+                    <h4 class="font-black text-sm uppercase text-emerald-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="inbox" class="w-5 h-5"></i> Calls Received Log 
+                        <span id="count-dynamic-recv" class="bg-emerald-200 text-emerald-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-emerald-600 font-bold mt-1">Inspection assignments logged on the selected date.</p>
+                </div>
+                <div class="flex items-center gap-2 bg-white px-2 py-1 rounded-lg border border-emerald-200 shadow-2xs shrink-0" onclick="event.stopPropagation()">
+                    <label class="text-[10px] font-black uppercase text-emerald-800">Date:</label>
+                    <input type="date" id="recv-log-filter-date" onchange="window.renderDynamicRecvLog()" class="p-1 border-none rounded-lg text-xs font-bold outline-none bg-transparent cursor-pointer text-emerald-900">
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-emerald-500 block md:hidden transition-transform duration-200 panel-toggle-icon absolute top-4 right-4"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-36">Letter No</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-dynamic-recv-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="3" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 3A: APPOINTED BUT NOT SCHEDULED -->
+        <div class="bg-white rounded-3xl border border-orange-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-orange-50 p-4 border-b border-orange-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-orange-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="user-check" class="w-5 h-5"></i> Appointed but Not Scheduled
+                        <span id="count-appointed-not-sched" class="bg-orange-200 text-orange-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-orange-600 font-bold mt-1">Inspector assigned but schedule date is pending.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-orange-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 text-center w-24">Recv Date</th>
+                            <th class="p-3 text-center w-20">Wait Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-appointed-not-sched-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 3B: NOT APPOINTED - NOT SCHEDULED -->
+        <div class="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-amber-50 p-4 border-b border-amber-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-amber-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="user-x" class="w-5 h-5"></i> Not Appointed - Not Scheduled
+                        <span id="count-not-appointed-not-sched" class="bg-amber-200 text-amber-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-amber-600 font-bold mt-1">Pending calls with neither inspector nor schedule assigned.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-amber-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 text-center w-24">Recv Date</th>
+                            <th class="p-3 text-center w-20">Wait Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-not-appointed-not-sched-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 4: URGENT DEADLINES -->
+        <div class="bg-white rounded-3xl border border-rose-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-rose-50 p-4 border-b border-rose-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-rose-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="alarm-clock" class="w-5 h-5"></i> Approaching Deadlines 
+                        <span id="count-deadlines" class="bg-rose-200 text-rose-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-rose-600 font-bold mt-1">Unfinished inspections approaching target completion dates (<= 3 Days).</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-rose-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 text-center w-24">Deadline</th>
+                            <th class="p-3 text-right w-24">Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-deadlines-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 5: NABL REPORTS PENDING MAILING -->
+        <div class="bg-white rounded-3xl border border-indigo-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-indigo-50 p-4 border-b border-indigo-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-indigo-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="mail-warning" class="w-5 h-5"></i> NABL Dispatched, Unmailed
+                        <span id="count-nabl" class="bg-indigo-200 text-indigo-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-indigo-600 font-bold mt-1">Samples sent to NABL but final report transmission remains pending.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-indigo-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-48">Schedule & Witness</th>
+                            <th class="p-3 text-center w-20">Elapsed</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-nabl-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 6: READY FOR BILLING -->
+        <div class="bg-white rounded-3xl border border-purple-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-purple-50 p-4 border-b border-purple-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-purple-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="receipt" class="w-5 h-5"></i> Ready for Billing
+                        <span id="count-ready-billing" class="bg-purple-200 text-purple-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-purple-600 font-bold mt-1">Inspections successfully completed but billing status is pending.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-purple-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 text-center w-24">Outcome</th>
+                            <th class="p-3 text-center w-20">Man-Days</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-ready-billing-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="4" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 7: FAILED IN NABL LAB -->
+        <div class="bg-white rounded-3xl border border-rose-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-rose-50 p-4 border-b border-rose-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-rose-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="x-circle" class="w-5 h-5"></i> Failed in NABL Lab
+                        <span id="count-failed-nabl" class="bg-rose-200 text-rose-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-rose-600 font-bold mt-1">Inspections with failed NABL lab results.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-rose-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-48">Sub-Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-failed-nabl-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="3" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 8: ON HOLD -->
+        <div class="bg-white rounded-3xl border border-amber-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-amber-50 p-4 border-b border-amber-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-amber-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="pause-circle" class="w-5 h-5"></i> On Hold / Hold by TKC / Mfr
+                        <span id="count-on-hold" class="bg-amber-200 text-amber-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-amber-600 font-bold mt-1">Inspections currently on hold.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-amber-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-48">Sub-Status</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-on-hold-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="3" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+        <!-- PANEL 9: COMPLETED - NABL AWAITED -->
+        <div class="bg-white rounded-3xl border border-cyan-100 shadow-sm overflow-hidden flex flex-col md:h-[55vh]">
+            <div class="bg-cyan-50 p-4 border-b border-cyan-100 shrink-0 flex justify-between items-start md:items-center cursor-pointer md:cursor-auto" onclick="window.togglePanelMobile(this, event)">
+                <div class="pr-4">
+                    <h4 class="font-black text-sm uppercase text-cyan-700 tracking-wider flex items-center gap-2">
+                        <i data-lucide="file-clock" class="w-5 h-5"></i> Completed - NABL Awaited
+                        <span id="count-nabl-awaited" class="bg-cyan-200 text-cyan-800 py-0.5 px-2 rounded-full text-[10px] ml-1 font-black">0</span>
+                    </h4>
+                    <p class="text-[10px] text-cyan-600 font-bold mt-1">Completed inspections awaiting NABL results.</p>
+                </div>
+                <i data-lucide="chevron-down" class="w-5 h-5 text-cyan-500 block md:hidden transition-transform duration-200 panel-toggle-icon shrink-0 mt-0.5"></i>
+            </div>
+            <div class="hidden md:block p-0 md:p-1 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1">
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0 hidden md:table-header-group z-10">
+                        <tr>
+                            <th class="p-3 w-36">Inspection ID</th>
+                            <th class="p-3">Manufacturer</th>
+                            <th class="p-3 w-48">Completed On</th>
+                        </tr>
+                    </thead>
+                    <tbody id="cc-nabl-awaited-body" class="block md:table-row-group divide-y md:divide-y-0 divide-slate-100 font-medium text-slate-700">
+                        <tr><td colspan="3" class="p-8 text-center text-slate-400">Loading alerts...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+
+    </div>
+</div>
+
+<!-- 🎯 COMPREHENSIVE POPUP MODAL FOR INSPECTION DETAILS -->
+<div id="cc-inspection-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10">
+            <h3 id="cc-modal-title-text" class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="file-search" class="text-blue-600 w-5 h-5"></i> Complete Inspection Profile
+            </h3>
+            <button onclick="window.closeCcInspectionModal()" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="cc-inspection-modal-body" class="text-xs">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    window.ccRawData = [];
+    window.ccActiveDiscom = "ALL";
+
+    const safeSetText = (id, text) => { 
+        const el = document.getElementById(id); 
+        if (el) el.innerText = text; 
+    };
+
+    // 🎯 TOGGLE MOBILE PANELS FUNCTION
+    window.togglePanelMobile = function(headerEl, event) {
+        if (window.innerWidth >= 768) return; // Do nothing on desktop screens
+
+        // Prevent toggling if user clicked on an input (like the date picker)
+        if (event && event.target && event.target.tagName && event.target.tagName.toLowerCase() === 'input') return;
+
+        const contentContainer = headerEl.nextElementSibling;
+        const icon = headerEl.querySelector('.panel-toggle-icon');
+
+        if (contentContainer.classList.contains('hidden')) {
+            contentContainer.classList.remove('hidden');
+            if (icon) icon.style.transform = 'rotate(180deg)';
+        } else {
+            contentContainer.classList.add('hidden');
+            if (icon) icon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    // 🎯 OPEN POPUP MODAL FUNCTION (With Proper Sequence for Requested Fields)
+    window.openCcInspectionModal = function(encodedRawData) {
+        if (!encodedRawData) return;
+        const r = JSON.parse(decodeURIComponent(encodedRawData));
+        const modal = document.getElementById("cc-inspection-modal");
+        const body = document.getElementById("cc-inspection-modal-body");
+        const titleText = document.getElementById("cc-modal-title-text");
+
+        const insp = String(r.conductedBy || r.tpiaInspector || "").trim();
+        const isAppointed = insp && insp.toLowerCase() !== "pending" && insp.toLowerCase() !== "not appointed" && insp !== "-";
+        
+        if (titleText) {
+            titleText.innerHTML = `
+                <i data-lucide="file-search" class="text-blue-600 w-5 h-5"></i> Complete Inspection Profile
+                ${isAppointed ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full ml-2 font-black tracking-normal align-middle uppercase border border-emerald-200 shadow-xs">Appointed</span>` : ''}
+            `;
+        }
+
+        body.innerHTML = `
+            <div class="flex flex-col gap-4 p-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection ID</strong><span class="text-sm font-black text-blue-700 font-mono">${r.inspectionId || r.InspectionID || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Discom</strong><span class="text-xs font-bold text-slate-800">${r.discom || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Scheme</strong><span class="text-xs font-bold text-slate-800">${r.scheme || '-'}</span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Letter No & Date</strong><span class="text-xs font-bold text-slate-800">${r.letterNo || '-'} <span class="text-slate-500 font-normal">(${r.letterDate || '-'})</span></span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">TKC</strong><span class="text-xs font-bold text-slate-800">${r.tkc || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Material Category</strong><span class="text-xs font-bold text-purple-700">${r.materialInspected || '-'}</span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Manufacturer & Address</strong><span class="text-xs font-bold text-slate-800">${r.manufacturer || '-'}<br><span class="text-[10px] font-medium text-slate-500 mt-1 inline-block leading-relaxed">${r.address || '-'}</span></span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Contact Person</strong><span class="text-xs font-bold text-slate-800">${r.contactPerson || '-'} <span class="text-slate-500 font-normal block mt-1">${r.mobile || '-'}</span></span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Material Spec</strong><span class="text-[11px] font-medium text-slate-800 whitespace-pre-wrap break-words leading-relaxed">${r.materialSpec || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Quantity</strong><span class="text-[11px] font-medium text-slate-800 whitespace-pre-wrap break-words leading-relaxed">${r.quantity || '-'}</span></div>
+                </div>
+
+                <!-- 🎯 PROPER SEQUENCE FOR APPOINTED INSPECTOR, AUTHORIZATION, SCHEDULE, COMPLETION, DATES, NABL, & REMARKS -->
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-200 pt-4 mt-2">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Name of TPIA Inspector (Appointed)</strong><span class="text-xs font-bold text-blue-700">${r.tpiaInspector || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Contact Number (Formula)</strong><span class="text-xs font-mono font-bold text-slate-800">${r.tpiaContact || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Authorization Letter No</strong><span class="text-xs font-bold text-slate-800 whitespace-pre-wrap break-words">${r.authLetterNo || '-'}</span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Schedule Date (dd/mm/yyyy)</strong><span class="text-xs font-mono font-bold text-slate-800">${r.scheduleDate || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection Completed On</strong><span class="text-xs font-mono font-bold text-slate-800">${r.inspectionCompletedOn || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection Conducted By TPIA Inspector</strong><span class="text-xs font-bold text-blue-700">${r.conductedBy || '-'}</span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Date(s) of Inspection (From - To)</strong><span class="text-xs font-mono font-bold text-slate-800">${r.dateFrom || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Date(s) of NABL Witness (From - To)</strong><span class="text-xs font-mono font-bold text-slate-800">${r.dateTo || '-'}</span></div>
+                </div>
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">NABL Status & Testing Date</strong><span class="text-xs font-bold text-indigo-700">${r.nablStatusDate || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Status / Sub-Status</strong><span class="text-xs font-bold text-emerald-700">${r.status || '-'} (${r.subStatus || '-'})</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Remark</strong><span class="text-xs font-bold text-slate-700 whitespace-pre-wrap break-words">${r.remarks || '-'}</span></div>
+                </div>
+            </div>
+        `;
+        modal.classList.remove("hidden");
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.closeCcInspectionModal = function() {
+        document.getElementById("cc-inspection-modal").classList.add("hidden");
+    };
+
+    async function initCommandCenter() {
+        try {
+            const res = await fetch(`${API_URL}?action=getCombinedInspections`);
+            const textData = await res.text();
+            const parsed = JSON.parse(textData);
+            
+            if (parsed.status && parsed.data) {
+                window.ccRawData = parsed.data;
+                renderCommandCenter();
+            } else {
+                safeSetText("cc-record-count-badge", "Data Unavailable");
+            }
+        } catch (e) {
+            safeSetText("cc-record-count-badge", "Network Error");
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function parseAnyDateObj(str) {
+        if (!str) return null;
+        let s = String(str).trim();
+        let match = s.match(/(\d{2})[-/](\d{2})[-/](\d{4})/);
+        if (match) return new Date(match[3], match[2] - 1, match[1], 0, 0, 0, 0);
+        
+        if (s.includes('T')) {
+            const dp = s.split('T')[0].split('-');
+            if (dp.length === 3) return new Date(dp[0], dp[1]-1, dp[2], 0, 0, 0, 0);
+        }
+        
+        const d = new Date(s);
+        d.setHours(0,0,0,0);
+        return isNaN(d.getTime()) ? null : d;
+    }
+
+    function isSameDate(d1, d2) {
+        if (!d1 || !d2) return false;
+        return d1.getDate() === d2.getDate() && 
+               d1.getMonth() === d2.getMonth() && 
+               d1.getFullYear() === d2.getFullYear();
+    }
+
+    function parseDateToKey(dateStr) {
+        if (!dateStr || String(dateStr).trim() === "" || dateStr === "-") return null;
+        let clean = String(dateStr).trim().split('T')[0];
+        if (clean.includes('/')) {
+            const p = clean.split('/');
+            if (p.length === 3) {
+                let d = parseInt(p[0], 10), m = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                if (y < 100) y += 2000;
+                return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+        } else if (clean.includes('-')) {
+            const p = clean.split('-');
+            if (p.length === 3) {
+                let y, m, d;
+                if (p[0].length === 4) { y = parseInt(p[0], 10); m = parseInt(p[1], 10); d = parseInt(p[2], 10); } 
+                else { d = parseInt(p[0], 10); m = parseInt(p[1], 10); y = parseInt(p[2], 10); }
+                if (y < 100) y += 2000;
+                return `${y}-${String(m).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
+            }
+        }
+        return null;
+    }
+
+    function isInspectionActiveOnDate(row, targetKey) {
+        const stat = String(row.status || "").trim().toLowerCase();
+        if (!stat.includes("sched") && !stat.includes("pend")) return false;
+
+        const schedKey = parseDateToKey(row.scheduleDate);
+        if (!schedKey) return false;
+
+        if (schedKey === targetKey) return true;
+        if (schedKey < targetKey && stat.includes("sched")) return true;
+
+        return false;
+    }
+
+    window.filterCommandCenter = function(discom) {
+        window.ccActiveDiscom = discom;
+        
+        const btns = ["ALL", "NBPDCL", "SBPDCL", "PVVNL"];
+        const activeClass = "px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-blue-600 text-white shadow-xs";
+        const inactiveClass = "px-4 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-slate-100 text-slate-600 hover:text-slate-900";
+
+        btns.forEach(b => {
+            const el = document.getElementById(`cc-btn-${b}`);
+            if (el) {
+                el.className = (b === discom) ? activeClass : inactiveClass;
+            }
+        });
+
+        renderCommandCenter();
+    }
+
+    // 🎯 Universal Discom Grouping Renderer
+    function renderGroupedTable(tbodyId, dataArr, colsHtmlFn) {
+        const tbody = document.getElementById(tbodyId);
+        if (!tbody) return;
+        if (dataArr.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="5" class="p-8 text-center text-slate-400 font-bold block md:table-cell w-full">No records found.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        ["NBPDCL", "SBPDCL", "PVVNL", "OTHER"].forEach(d => {
+            const group = dataArr.filter(a => d === "OTHER" ? !["NBPDCL", "SBPDCL", "PVVNL"].includes(a.discom) : a.discom === d);
+            if (group.length > 0) {
+                let discomColor = d === 'NBPDCL' ? 'text-blue-700 bg-blue-100 border-blue-200' : 
+                                  d === 'SBPDCL' ? 'text-purple-700 bg-purple-100 border-purple-200' : 
+                                  d === 'PVVNL' ? 'text-amber-700 bg-amber-100 border-amber-200' : 
+                                  'text-slate-700 bg-slate-200 border-slate-300';
+                
+                html += `<tr class="bg-slate-50 block md:table-row w-full"><td colspan="5" class="p-2 border-y border-slate-200 block md:table-cell"><span class="px-2 py-1 rounded text-[10px] font-black uppercase border ${discomColor}">${d} (${group.length})</span></td></tr>`;
+                
+                group.forEach(a => {
+                    const encodedPayload = encodeURIComponent(JSON.stringify(a.raw));
+                    html += `
+                    <tr class="flex flex-col md:table-row bg-white hover:bg-blue-50/50 transition border-b border-slate-100 cursor-pointer" data-payload="${encodedPayload}" onclick="window.openCcInspectionModal(this.getAttribute('data-payload'))">
+                        <td class="p-3 flex justify-between items-center md:hidden w-full">
+                            <div class="flex items-center gap-2 flex-1 overflow-hidden">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                <span class="font-mono font-black text-blue-700 truncate">${a.id}</span>
+                            </div>
+                            <span class="text-[10px] text-slate-500 font-bold truncate max-w-[120px] shrink-0 text-right">${a.mfg}</span>
+                        </td>
+                        <td class="p-3 font-mono font-black text-blue-700 border-r border-slate-100 hidden md:table-cell w-36 cursor-pointer">
+                            <div class="flex items-center gap-2">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 shrink-0"></i>
+                                ${a.id}
+                            </div>
+                        </td>
+                        <td class="p-3 font-bold text-slate-800 truncate max-w-[200px] border-r border-slate-100 hidden md:table-cell" title="${a.mfg}">${a.mfg}</td>
+                        ${colsHtmlFn(a)}
+                    </tr>`;
+                });
+            }
+        });
+        tbody.innerHTML = html;
+    }
+
+    // 🎯 Render Dynamic Received Log
+    window.renderDynamicRecvLog = function() {
+        const dateInput = document.getElementById("recv-log-filter-date");
+        const tbodyId = "cc-dynamic-recv-body";
+        const countSpan = document.getElementById("count-dynamic-recv");
+        
+        if (!dateInput || !window.ccRawData) return;
+
+        if (!dateInput.value) {
+            const d = new Date();
+            d.setDate(d.getDate() - 1);
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const day = String(d.getDate()).padStart(2, '0');
+            dateInput.value = `${y}-${m}-${day}`;
+        }
+
+        const targetParts = dateInput.value.split('-');
+        if (targetParts.length !== 3) return;
+        const targetDate = new Date(parseInt(targetParts[0], 10), parseInt(targetParts[1], 10) - 1, parseInt(targetParts[2], 10));
+        targetDate.setHours(0,0,0,0);
+
+        let dynamicRecvAlerts = [];
+
+        window.ccRawData.forEach(r => {
+            if (window.ccActiveDiscom !== "ALL" && String(r.discom || "").trim().toUpperCase() !== window.ccActiveDiscom) return;
+            
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            let dRec = parseAnyDateObj(r.receivedDate);
+            if (isSameDate(dRec, targetDate)) {
+                dynamicRecvAlerts.push({
+                    id: r.inspectionId || r.InspectionID || 'N/A',
+                    discom: String(r.discom || "OTHER").trim().toUpperCase(),
+                    mfg: r.manufacturer || 'N/A',
+                    letter: r.letterNo || 'N/A',
+                    raw: r
+                });
+            }
+        });
+
+        if (countSpan) countSpan.innerText = dynamicRecvAlerts.length;
+
+        renderGroupedTable(tbodyId, dynamicRecvAlerts, a => `<td class="p-3 font-mono text-emerald-700 hidden md:table-cell w-36 truncate" title="${a.letter}">${a.letter}</td>`);
+        if (window.lucide) lucide.createIcons();
+    };
+
+    function renderCommandCenter() {
+        if (!window.ccRawData) return;
+
+        const records = window.ccRawData.filter(r => {
+            if (window.ccActiveDiscom !== "ALL" && String(r.discom || "").trim().toUpperCase() !== window.ccActiveDiscom) return false;
+            return true;
+        });
+
+        safeSetText("cc-record-count-badge", `Live Scanning: ${records.length} Records`);
+
+        let tTotal = records.length;
+        let tCancelled = 0, tRevised = 0, tWaivered = 0, tValid = 0, tSched = 0, tPend = 0, tComp = 0, tBill = 0, tRepRecv = 0, tRepMail = 0;
+
+        let todaySchedAlerts = [];
+        let deadlineAlerts = [], appointedNotSchedAlerts = [], notAppointedNotSchedAlerts = [], nablAlerts = [], readyBillingAlerts = [];
+        let failedNablAlerts = [], onHoldAlerts = [], nablAwaitedAlerts = [];
+
+        const today = new Date();
+        today.setHours(0,0,0,0);
+        
+        const y_str = today.getFullYear();
+        const m_str = String(today.getMonth() + 1).padStart(2, '0');
+        const d_str = String(today.getDate()).padStart(2, '0');
+        const todayKey = `${y_str}-${m_str}-${d_str}`;
+
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            const bill = String(r.billingStatus || "").trim().toLowerCase();
+            const discom = String(r.discom || "OTHER").trim().toUpperCase();
+
+            const isCancelled = stat.includes("cancel");
+            const isRevised = stat.includes("revis");
+            const isWaivered = stat.includes("waiver") || sub.includes("waiver");
+
+            if (isCancelled) { tCancelled++; return; }
+            if (isRevised) { tRevised++; return; }
+            if (isWaivered) { tWaivered++; return; }
+
+            tValid++;
+            if (stat === "schedule" || stat === "scheduled") tSched++;
+            else if (stat.includes("pend") || sub.includes("pend")) tPend++;
+            if (sub.includes("pass") || sub.includes("mom")) tComp++;
+
+            if (bill === "billed") tBill++;
+            if (String(r.reportReceived || "").trim().toLowerCase() === "yes") tRepRecv++;
+            if (String(r.reportMail || "").trim().toLowerCase() === "yes") tRepMail++;
+
+            const isFailedNabl = sub.includes("failed in nabl");
+            const isOnHold = stat.includes("on hold") || sub.includes("on hold") || sub.includes("hold by manufacturer") || sub.includes("hold by tkc");
+            const isNablAwaited = stat === "completed" && sub.includes("nabl awaited");
+
+            if (isFailedNabl) {
+                failedNablAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, subStat: r.subStatus || 'N/A', mfg: r.manufacturer || 'N/A', raw: r });
+                return;
+            }
+            if (isOnHold) {
+                onHoldAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, subStat: r.subStatus || 'N/A', mfg: r.manufacturer || 'N/A', raw: r });
+                return;
+            }
+            if (isNablAwaited) {
+                nablAwaitedAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, compDate: r.inspectionCompletedOn || 'N/A', mfg: r.manufacturer || 'N/A', raw: r });
+                return;
+            }
+
+            let dSch = parseAnyDateObj(r.scheduleDate);
+            let dRec = parseAnyDateObj(r.receivedDate);
+
+            // TODAY SCHEDULE
+            if (isInspectionActiveOnDate(r, todayKey)) {
+                todaySchedAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, insp: r.conductedBy || r.tpiaInspector || 'Not Appointed', mfg: r.manufacturer || 'N/A', raw: r });
+            }
+
+            // 🎯 CALLS NOT SCHEDULED (Split strictly into Appointed & Not Appointed)
+            if (stat.includes("pend")) {
+                let diffDays = 0;
+                if (dRec) diffDays = Math.floor((today - dRec) / (1000 * 60 * 60 * 24));
+                
+                const inspName = String(r.conductedBy || r.tpiaInspector || "").trim();
+                const isAppointed = inspName && inspName.toLowerCase() !== "pending" && inspName.toLowerCase() !== "not appointed" && inspName !== "-";
+                
+                const itemObj = { 
+                    id: r.inspectionId || r.InspectionID || 'N/A', 
+                    discom: discom, 
+                    mfg: r.manufacturer || 'N/A', 
+                    recvDate: dRec ? `${String(dRec.getDate()).padStart(2,'0')}/${String(dRec.getMonth()+1).padStart(2,'0')}/${dRec.getFullYear()}` : 'N/A', 
+                    daysWait: diffDays, 
+                    raw: r 
+                };
+
+                if (isAppointed) {
+                    appointedNotSchedAlerts.push(itemObj);
+                } else {
+                    notAppointedNotSchedAlerts.push(itemObj);
+                }
+            }
+
+            // READY FOR BILLING
+            if ((sub.includes("pass") || sub.includes("mom")) && bill !== "billed") {
+                readyBillingAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, mfg: r.manufacturer || 'N/A', outcome: sub.includes("pass") ? "Material Pass" : "MOM Notice", md: r.manDays || "0", raw: r });
+            }
+
+            // APPROACHING DEADLINES
+            if (!sub.includes("pass") && !sub.includes("mom")) {
+                if (dRec) {
+                    let dl = new Date(dRec);
+                    dl.setDate(dl.getDate() + (discom === 'PVVNL' ? 7 : 15));
+                    dl.setHours(0,0,0,0);
+                    let diffDays = Math.ceil((dl - today) / (1000 * 60 * 60 * 24));
+                    if (diffDays <= 3) {
+                        deadlineAlerts.push({ id: r.inspectionId || r.InspectionID || 'N/A', discom: discom, mfg: r.manufacturer || 'N/A', deadlineDate: `${String(dl.getDate()).padStart(2,'0')}/${String(dl.getMonth()+1).padStart(2,'0')}/${dl.getFullYear()}`, daysLeft: diffDays, raw: r });
+                    }
+                }
+            }
+
+            // NABL ALERTS
+            const nablRaw = String(r.nablStatusDate || "").trim();
+            const nablLower = nablRaw.toLowerCase();
+
+            // Check for "Sample Sent" (or "Send" just in case of typos) and ensure it hasn't been mailed
+            if ((nablLower.includes("sample sent for nabl test") || nablLower.includes("sample send for nabl test")) && String(r.reportMail || "").trim().toLowerCase() !== "yes") {
+                
+                let extractedDateStr = "No Date Found";
+                let witnessName = "Not Specified";
+                let diffDays = 0;
+                
+                // 1. Extract the Schedule Date string
+                let schedMatch = nablRaw.match(/Schedule Test on Date\s+(.*?)(?:,\s*Witnessed by|$)/i);
+                if (schedMatch) {
+                    extractedDateStr = schedMatch[1].trim();
+                } else {
+                    // Fallback: If exact words aren't used, just grab all dates
+                    let dates = nablRaw.match(/\d{2}[-/]\d{2}[-/]\d{4}/g);
+                    if (dates) extractedDateStr = dates.join(', ');
+                }
+
+                // 2. Extract the Witness Name
+                let witnessMatch = nablRaw.match(/Witnessed by\s+(.*)/i);
+                if (witnessMatch) {
+                    witnessName = witnessMatch[1].trim();
+                }
+
+                // 3. Find the LATEST date in the string to calculate elapsed time
+                let allDates = nablRaw.match(/\d{2}[-/]\d{2}[-/]\d{4}/g);
+                if (allDates && allDates.length > 0) {
+                    let maxDate = null;
+                    allDates.forEach(dStr => {
+                        let parts = dStr.match(/(\d{2})[-/](\d{2})[-/](\d{4})/);
+                        if (parts) {
+                            let d = new Date(parts[3], parts[2] - 1, parts[1]);
+                            d.setHours(0,0,0,0);
+                            if (!maxDate || d > maxDate) {
+                                maxDate = d;
+                            }
+                        }
+                    });
+                    
+                    // Calculate days elapsed from the max (last) date
+                    if (maxDate) {
+                        diffDays = Math.ceil((today - maxDate) / (1000 * 60 * 60 * 24));
+                    }
+                }
+
+                nablAlerts.push({ 
+                    id: r.inspectionId || r.InspectionID || 'N/A', 
+                    discom: discom, 
+                    mfg: r.manufacturer || 'N/A', 
+                    scheduleStr: extractedDateStr,
+                    witness: witnessName,
+                    daysElapsed: diffDays, 
+                    raw: r 
+                });
+            }
+        });
+
+        safeSetText("cc-total-calls", tTotal);
+        safeSetText("cc-valid-calls", tValid);
+        safeSetText("cc-cancelled", tCancelled);
+        safeSetText("cc-revised", tRevised);
+        safeSetText("cc-waivered", tWaivered);
+        safeSetText("cc-scheduled", tSched);
+        safeSetText("cc-pending", tPend);
+        safeSetText("cc-completed", tComp);
+        safeSetText("cc-billed", tBill);
+        safeSetText("cc-rep-recv", tRepRecv);
+        safeSetText("cc-rep-mail", tRepMail);
+
+        safeSetText("count-today-sched", todaySchedAlerts.length);
+        safeSetText("count-appointed-not-sched", appointedNotSchedAlerts.length);
+        safeSetText("count-not-appointed-not-sched", notAppointedNotSchedAlerts.length);
+        safeSetText("count-deadlines", deadlineAlerts.length);
+        safeSetText("count-nabl", nablAlerts.length);
+        safeSetText("count-ready-billing", readyBillingAlerts.length);
+        safeSetText("count-failed-nabl", failedNablAlerts.length);
+        safeSetText("count-on-hold", onHoldAlerts.length);
+        safeSetText("count-nabl-awaited", nablAwaitedAlerts.length);
+
+        // 🎯 RENDER GROUPED TABLES
+        renderGroupedTable("cc-today-sched-body", todaySchedAlerts, a => `<td class="p-3 text-slate-600 hidden md:table-cell w-48 truncate" title="${a.insp}">${a.insp}</td>`);
+        
+        renderGroupedTable("cc-appointed-not-sched-body", appointedNotSchedAlerts, a => `<td class="p-3 font-mono font-bold text-orange-700 text-center border-r border-slate-100 hidden md:table-cell w-24">${a.recvDate}</td><td class="p-3 text-center font-black text-orange-600 hidden md:table-cell w-20">${a.daysWait} d</td>`);
+        
+        renderGroupedTable("cc-not-appointed-not-sched-body", notAppointedNotSchedAlerts, a => `<td class="p-3 font-mono font-bold text-amber-700 text-center border-r border-slate-100 hidden md:table-cell w-24">${a.recvDate}</td><td class="p-3 text-center font-black text-amber-600 hidden md:table-cell w-20">${a.daysWait} d</td>`);
+
+        renderGroupedTable("cc-deadlines-body", deadlineAlerts, a => {
+            let statusBadge = a.daysLeft < 0 ? `<span class="px-2 py-0.5 rounded bg-rose-100 text-rose-800 font-bold shadow-xs">Overdue ${Math.abs(a.daysLeft)}d</span>` : a.daysLeft === 0 ? `<span class="px-2 py-0.5 rounded bg-orange-100 text-orange-800 font-bold shadow-xs">Due Today</span>` : `<span class="px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold shadow-xs">Due in ${a.daysLeft}d</span>`;
+            return `<td class="p-3 font-mono font-bold text-slate-600 text-center border-r border-slate-100 hidden md:table-cell w-24">${a.deadlineDate}</td><td class="p-3 text-right hidden md:table-cell w-24">${statusBadge}</td>`;
+        });
+        
+        renderGroupedTable("cc-nabl-body", nablAlerts, a => {
+            let elapsedBadge = "";
+            if (a.daysElapsed > 15) {
+                elapsedBadge = `<span class="text-rose-600">${a.daysElapsed} d</span>`;
+            } else if (a.daysElapsed > 0) {
+                elapsedBadge = `<span class="text-indigo-600">${a.daysElapsed} d</span>`;
+            } else {
+                elapsedBadge = `<span class="text-amber-500 text-[9px] uppercase tracking-wider bg-amber-50 px-2 py-1 rounded border border-amber-200">Awaiting</span>`;
+            }
+
+            return `<td class="p-3 border-r border-slate-100 hidden md:table-cell w-48">
+                <div class="font-mono font-bold text-indigo-700 text-[10px] leading-snug whitespace-normal">${a.scheduleStr}</div>
+                <div class="text-[9px] text-slate-500 font-bold mt-1 uppercase flex items-center gap-1">
+                    <i data-lucide="eye" class="w-3 h-3"></i> By: ${a.witness}
+                </div>
+            </td>
+            <td class="p-3 text-center font-black hidden md:table-cell w-20">
+                ${elapsedBadge}
+            </td>`;
+        });
+        
+        renderGroupedTable("cc-ready-billing-body", readyBillingAlerts, a => {
+            const outColor = a.outcome === "Material Pass" ? "text-emerald-700" : "text-purple-700";
+            return `<td class="p-3 font-bold ${outColor} text-center border-r border-slate-100 hidden md:table-cell w-24">${a.outcome}</td><td class="p-3 text-center font-mono font-bold text-slate-600 hidden md:table-cell w-20">${a.md}</td>`;
+        });
+        renderGroupedTable("cc-failed-nabl-body", failedNablAlerts, a => `<td class="p-3 text-rose-700 font-bold hidden md:table-cell w-48 truncate" title="${a.subStat}">${a.subStat}</td>`);
+        renderGroupedTable("cc-on-hold-body", onHoldAlerts, a => `<td class="p-3 text-amber-700 font-bold hidden md:table-cell w-48 truncate" title="${a.subStat}">${a.subStat}</td>`);
+        renderGroupedTable("cc-nabl-awaited-body", nablAwaitedAlerts, a => `<td class="p-3 font-mono font-black text-cyan-700 text-center hidden md:table-cell w-48">${a.compDate}</td>`);
+
+        // Initialize Dynamic Logs Panel
+        window.renderDynamicRecvLog();
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    setTimeout(initCommandCenter, 50);
+</script>

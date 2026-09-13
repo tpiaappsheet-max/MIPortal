@@ -1,0 +1,1239 @@
+<!-- html2pdf Library for PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-4 animate-fade-in pb-12" id="main-container">
+    
+    <!-- Tab Navigation -->
+    <div class="bg-white p-2 rounded-2xl border shadow-sm flex items-center gap-2 mb-4 w-fit hide-on-print">
+        <button onclick="window.switchSealTab('inventory')" id="tab-btn-inventory" class="px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2 cursor-pointer">
+            <i data-lucide="edit-3" class="w-4 h-4"></i> Seal Inventory Entry
+        </button>
+        <button onclick="window.switchSealTab('tracker')" id="tab-btn-tracker" class="px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-100 flex items-center gap-2 cursor-pointer">
+            <i data-lucide="radar" class="w-4 h-4"></i> Seal Usage Tracker
+        </button>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 1: INVENTORY ENTRY                     -->
+    <!-- ========================================== -->
+    <div id="tab-inventory" class="space-y-4 block">
+        <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="lock" class="text-amber-600 w-5 h-5"></i> <span>Seal Inventory Entry</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Procure, allocate, and manage seal numbering sequences.</p>
+            </div>
+            <button onclick="window.openSealModal()" class="px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer bg-blue-600 hover:bg-blue-700 text-white shadow-md flex items-center gap-2 w-full sm:w-auto justify-center">
+                <i data-lucide="plus" class="w-4 h-4"></i> <span>Add New Allocation</span>
+            </button>
+        </div>
+
+        <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm">
+            <div class="overflow-x-hidden md:overflow-x-auto custom-scrollbar w-full">
+                <!-- 🎯 Made the Inventory Table Mobile Responsive -->
+                <table class="w-full text-left text-xs border-collapse block md:table">
+                    <thead class="bg-slate-900 text-white uppercase text-[10px] font-mono hidden md:table-header-group">
+                        <tr>
+                            <th class="p-3 border-r border-slate-700 w-12 text-center">Sr No</th>
+                            <th class="p-3 border-r border-slate-700 w-48">Type of Seal</th>
+                            <th class="p-3 border-r border-slate-700 text-amber-300">TPIA Inspector (Issued To)</th>
+                            <th class="p-3 border-r border-slate-700 w-32">Seal No From</th>
+                            <th class="p-3 border-r border-slate-700 w-32">Seal No To</th>
+                            <th class="p-3 border-r border-slate-700 text-center w-24">Total</th>
+                            <th class="p-3 text-center w-24">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="seal-table-body" class="divide-y md:divide-y-0 divide-slate-200 font-medium text-slate-700 block md:table-row-group">
+                        <tr><td colspan="7" class="p-12 text-center text-slate-400 animate-pulse block md:table-cell w-full">Synchronizing inventory data...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========================================== -->
+    <!-- TAB 2: USAGE TRACKER                       -->
+    <!-- ========================================== -->
+    <div id="tab-tracker" class="space-y-4 hidden">
+        <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm flex flex-col sm:flex-row items-center justify-between gap-4 hide-on-print">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="radar" class="text-rose-600 w-5 h-5"></i> <span>Seal Usage & Cross-Transfer Tracker</span>
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Real-time breakdown of assigned stock, field execution, and borrowed/lent inventory.</p>
+            </div>
+            <div class="flex items-center gap-3 w-full sm:w-auto flex-wrap">
+                <button id="export-tracker-pdf-btn" onclick="window.downloadTrackerPDF()" class="px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 w-full sm:w-auto justify-center">
+                    <i data-lucide="download-cloud" class="w-4 h-4"></i> <span>Export PDF Report</span>
+                </button>
+                <div class="w-full sm:w-auto">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter Usage By Discom</label>
+                    <select id="tracker-discom-filter" onchange="window.processAndRenderTracker()" class="p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white cursor-pointer w-full sm:w-48 transition shadow-xs">
+                        <option value="ALL">All Discoms (Combined)</option>
+                        <option value="NBPDCL">NBPDCL</option>
+                        <option value="SBPDCL">SBPDCL</option>
+                        <option value="PVVNL">PVVNL</option>
+                    </select>
+                </div>
+            </div>
+        </div>
+
+        <!-- 🎯 Container for Tracker Data -->
+        <div id="pdf-tracker-wrapper" class="space-y-6 bg-white p-4 sm:p-6 rounded-3xl border shadow-sm w-full block">
+            <h2 id="pdf-tracker-title" class="hidden font-black text-lg mb-6 uppercase tracking-wider text-center text-slate-800">
+                <span>Detailed Seal Inventory & Usage Report</span>
+            </h2>
+
+            <!-- Type-wise Summary Banner -->
+            <div>
+                <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2 mb-3">
+                    <i data-lucide="pie-chart" class="w-4 h-4 text-blue-600"></i> <span>Type-Wise Summary Breakdown</span>
+                </h4>
+                <div id="dynamic-summary-banner" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                    <!-- Populated via JS -->
+                </div>
+            </div>
+
+            <!-- 1. Central Inventory (Unassigned) -->
+            <div class="pt-2 w-full overflow-hidden">
+                <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2 mb-3">
+                    <i data-lucide="box" class="w-4 h-4 text-amber-600"></i> <span>Central Inventory (Unassigned Stock)</span>
+                </h4>
+                <div class="overflow-x-auto border border-slate-200 rounded-xl scroll-lockable custom-scrollbar w-full">
+                    <table class="w-full text-left text-xs border-collapse table-fixed resizable-table min-w-[700px]">
+                        <thead class="bg-slate-100 text-slate-600 uppercase text-[10px] font-black border-b">
+                            <tr>
+                                <th data-col-index="c0" data-default-width="20%" style="width: 250px; min-width: 250px;" class="p-3 border-r resizable-th relative">Seal Type<div class="resizer hide-on-print"></div></th>
+                                <th data-col-index="c1" data-default-width="10%" style="width: 120px; min-width: 120px;" class="p-3 border-r text-center resizable-th relative">Stock Qty<div class="resizer hide-on-print"></div></th>
+                                <th data-col-index="c2" data-default-width="70%" style="width: 600px; min-width: 600px;" class="p-3 font-mono resizable-th relative">Available Sequences<div class="resizer hide-on-print"></div></th>
+                            </tr>
+                        </thead>
+                        <tbody id="tracker-central-body" class="divide-y font-medium text-slate-700 bg-white">
+                            <!-- Populated dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- 2. Inspector Allocations -->
+            <div class="pt-4 border-t border-slate-200 w-full overflow-hidden">
+                <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2 mb-4">
+                    <i data-lucide="users" class="w-4 h-4 text-blue-600"></i> <span>Inspector-Wise Allocations, Discom Usage & Cross-Transfers</span>
+                </h4>
+                <div id="tracker-inspectors-body" class="space-y-4 w-full">
+                    <!-- Populated dynamically -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Modal for Add/Edit Inventory -->
+<div id="seal-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-4">
+    <div class="bg-white w-full max-w-lg rounded-3xl shadow-2xl p-6 sm:p-8 relative border">
+        <div class="flex items-center justify-between border-b pb-4 mb-4">
+            <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="lock" class="text-amber-600 w-5 h-5"></i> <span id="seal-modal-title">Add Seal Allocation</span>
+            </h3>
+            <button onclick="window.closeSealModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+
+        <form onsubmit="window.handleSaveSeal(event)" class="space-y-4">
+            <input type="hidden" id="seal-id">
+            
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Type of Seal</label>
+                    <select id="seal-type" required class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-amber-500 cursor-pointer shadow-xs">
+                        <option value="">-- Select Type --</option>
+                        <option value="Polycarbonate Seal">Polycarbonate Seal</option>
+                        <option value="Holographic Seal">Holographic Seal</option>
+                        <option value="HS Cable Seal">HS Cable Seal</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">TPIA Inspector (Issue To)</label>
+                    <select id="seal-tpia" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-blue-500 cursor-pointer text-blue-700 shadow-xs">
+                        <option value="">-- Unassigned (Inventory) --</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="grid grid-cols-2 gap-4">
+                <div>
+                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Seal No From</label>
+                    <input type="text" id="seal-from" oninput="window.autoCalculateSeals()" required placeholder="e.g. SL-1001" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-amber-500 font-mono shadow-xs">
+                </div>
+                <div>
+                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Seal No To</label>
+                    <input type="text" id="seal-to" oninput="window.autoCalculateSeals()" required placeholder="e.g. SL-1500" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-amber-500 font-mono shadow-xs">
+                </div>
+            </div>
+
+            <div>
+                <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Total Number of Seals</label>
+                <input type="number" id="seal-total" required placeholder="Auto-calculated or enter manually" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-black outline-none bg-slate-50 focus:border-amber-500 focus:bg-white shadow-xs">
+            </div>
+
+            <div class="flex justify-end gap-3 pt-4 border-t mt-6">
+                <button type="button" onclick="window.closeSealModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" id="save-seal-btn" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer flex items-center gap-2">
+                    <i data-lucide="save" class="w-4 h-4"></i> <span>Save Record</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+    /* 🎯 Enhanced Mobile Scrollbar Support */
+    .custom-scrollbar {
+        -webkit-overflow-scrolling: touch; /* smooth scrolling on iOS */
+    }
+    .custom-scrollbar::-webkit-scrollbar { width: 6px; height: 6px; }
+    @media (min-width: 768px) {
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+    /* Dynamic Column Resizer Styles */
+    .resizer { position: absolute; top: 0; right: 0; width: 6px; cursor: col-resize; user-select: none; touch-action: none; height: 100%; background-color: rgba(0, 0, 0, 0.05); transition: background-color 0.2s; z-index: 10; }
+    .resizer:hover, .resizing { background-color: #38bdf8; }
+    th.resizable-th { position: relative; }
+
+    /* 🎯 PDF Print Active State Styles */
+    body.pdf-mode-active {
+        background: white !important;
+    }
+    body.pdf-mode-active #main-container {
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 0 !important;
+    }
+    body.pdf-mode-active #pdf-tracker-wrapper {
+        width: 1250px !important; 
+        max-width: none !important;
+        margin: 0 !important;
+        padding: 20px !important;
+        border: none !important;
+        box-shadow: none !important;
+    }
+    body.pdf-mode-active .hide-on-print {
+        display: none !important;
+    }
+    body.pdf-mode-active .scroll-lockable {
+        overflow: visible !important;
+    }
+    body.pdf-mode-active table {
+        width: 100% !important;
+        table-layout: fixed !important;
+    }
+    body.pdf-mode-active th, 
+    body.pdf-mode-active td {
+        white-space: pre-wrap !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: normal !important;
+    }
+    body.pdf-mode-active, 
+    body.pdf-mode-active * {
+        letter-spacing: normal !important;
+    }
+</style>
+
+<script>
+    // Global Scopes mapped to Window to prevent Reference Errors dynamically
+    window.sealRecordsData = [];
+    window.trackerMasterInspections = [];
+    window.miInspectorsList = [];
+    window.trackerDataLoaded = false;
+    window.hierarchySortModes = {}; 
+
+    window.initSealModule = async function() {
+        try {
+            const [sealsRes, inspRes, masterRes] = await Promise.all([
+                fetch(`${API_URL}?action=getSealDetails`),
+                fetch(`${API_URL}?action=getInspectors`),
+                fetch(`${API_URL}?action=getCombinedInspections`)
+            ]);
+
+            const sealData = await sealsRes.json();
+            if (sealData.status) window.sealRecordsData = sealData.data || [];
+
+            const inspText = await inspRes.text();
+            try {
+                const inspData = JSON.parse(inspText);
+                if (inspData.status && inspData.data) window.miInspectorsList = inspData.data;
+            } catch(e) {}
+
+            const masterText = await masterRes.text();
+            try {
+                const masterData = JSON.parse(masterText);
+                if (masterData.status && masterData.data) window.trackerMasterInspections = masterData.data;
+            } catch(e) {}
+
+            window.trackerDataLoaded = true;
+
+            window.renderSealTable();
+            window.populateInspectorDropdown();
+        } catch (err) {
+            document.getElementById("seal-table-body").innerHTML = `<tr><td colspan="7" class="p-8 text-center text-rose-500 font-bold">Network Error loading core data.</td></tr>`;
+        }
+    };
+
+    window.switchSealTab = function(tabId) {
+        document.getElementById("tab-inventory").classList.add("hidden");
+        document.getElementById("tab-tracker").classList.add("hidden");
+        
+        document.getElementById("tab-btn-inventory").className = "px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-100 flex items-center gap-2 cursor-pointer";
+        document.getElementById("tab-btn-tracker").className = "px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-transparent text-slate-500 hover:bg-slate-100 flex items-center gap-2 cursor-pointer";
+
+        document.getElementById(`tab-${tabId}`).classList.remove("hidden");
+        
+        if (tabId === 'inventory') {
+            document.getElementById("tab-btn-inventory").className = "px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2 cursor-pointer";
+            window.renderSealTable();
+        } else if (tabId === 'tracker') {
+            document.getElementById("tab-btn-tracker").className = "px-5 py-2 text-xs font-black rounded-xl transition-all duration-200 bg-blue-600 text-white shadow-md flex items-center gap-2 cursor-pointer";
+            if (window.trackerDataLoaded) window.processAndRenderTracker();
+        }
+    };
+
+    window.cleanInspectorName = function(name) {
+        if (!name) return "";
+        return String(name).toLowerCase().replace(/^(er\.|er\s+|mr\.|mr\s+|engr\.|dr\.)\s*/i, "").replace(/[^a-z0-9]/g, '');
+    };
+
+    window.getInspectorName = function(insp) {
+        if (typeof insp === 'string') return insp;
+        const keys = Object.keys(insp);
+        const nameKey = keys.find(k => {
+            const lk = k.toLowerCase().replace(/[^a-z]/g, '');
+            return lk.includes('name') || lk.includes('inspector') || lk.includes('engineer');
+        });
+        return (nameKey && insp[nameKey]) ? String(insp[nameKey]).trim() : (Object.values(insp)[1] || Object.values(insp)[0] || "Unknown");
+    };
+
+    window.autoCalculateSeals = function() {
+        let fromStr = document.getElementById("seal-from").value.trim();
+        let toStr = document.getElementById("seal-to").value.trim();
+        let fromNum = fromStr.match(/\d+$/);
+        let toNum = toStr.match(/\d+$/);
+        
+        if (fromNum && toNum) {
+            let total = parseInt(toNum[0], 10) - parseInt(fromNum[0], 10) + 1;
+            if (total > 0) document.getElementById("seal-total").value = total;
+        }
+    };
+
+    window.populateInspectorDropdown = function() {
+        if (!window.miInspectorsList || window.miInspectorsList.length === 0) return;
+        const uniqueNames = [...new Set(window.miInspectorsList.map(i => window.getInspectorName(i)))].filter(Boolean);
+        uniqueNames.sort();
+
+        const tpiaSelect = document.getElementById("seal-tpia");
+        if (tpiaSelect) {
+            tpiaSelect.innerHTML = `<option value="">-- Unassigned (Inventory) --</option>` + uniqueNames.map(n => `<option value="${n}">${n}</option>`).join('');
+        }
+    };
+
+    // 🎯 MOBILE-RESPONSIVE CARD RENDER FOR TAB 1
+    window.renderSealTable = function() {
+        const tbody = document.getElementById("seal-table-body");
+        if (window.sealRecordsData.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-8 text-center text-slate-400 block md:table-cell w-full">No seal allocations found.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        window.sealRecordsData.forEach((row, index) => {
+            const bg = index % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            const encodedData = encodeURIComponent(JSON.stringify(row));
+            const inspectorLabel = row.tpiaInspector ? `<span class="font-bold text-blue-700">${row.tpiaInspector}</span>` : `<span class="italic text-slate-400">Inventory (Unassigned)</span>`;
+            
+            html += `<tr class="flex flex-col md:table-row ${bg} hover:bg-amber-50/40 transition border-b md:border-b-0 border-slate-200">
+                <td class="p-3 flex md:hidden items-center justify-between w-full gap-2">
+                    <div class="flex flex-col gap-1 min-w-0 flex-1">
+                        <span class="font-bold text-slate-800 text-xs truncate">${row.sealType || '-'}</span>
+                        <span class="text-[10px] text-slate-500 truncate">${inspectorLabel}</span>
+                    </div>
+                    <div class="flex flex-col items-end gap-1.5 shrink-0">
+                        <span class="text-[10px] font-black bg-slate-200 text-slate-800 px-2 py-0.5 rounded border border-slate-300 whitespace-nowrap">${row.totalSeals || 0} Seals</span>
+                        <div class="flex items-center gap-2">
+                            <button onclick="window.openSealModal('${encodedData}')" class="p-1.5 bg-blue-50 text-blue-600 rounded-lg shadow-sm border border-blue-200"><i data-lucide="edit-2" class="w-3 h-3"></i></button>
+                            <button onclick="window.deleteSealRecord('${row.sealId}')" class="p-1.5 bg-rose-50 text-rose-600 rounded-lg shadow-sm border border-rose-200"><i data-lucide="trash-2" class="w-3 h-3"></i></button>
+                        </div>
+                    </div>
+                </td>
+                <td class="p-3 border-r text-center font-mono text-slate-400 hidden md:table-cell">${index + 1}</td>
+                <td class="p-3 border-r font-bold text-slate-800 hidden md:table-cell">${row.sealType || '-'}</td>
+                <td class="p-3 border-r text-sm hidden md:table-cell">${inspectorLabel}</td>
+                <td class="p-3 border-r font-mono text-slate-700 font-bold hidden md:table-cell">${row.sealFrom || '-'}</td>
+                <td class="p-3 border-r font-mono text-slate-700 font-bold hidden md:table-cell">${row.sealTo || '-'}</td>
+                <td class="p-3 border-r text-center font-black text-slate-900 hidden md:table-cell">${row.totalSeals || 0}</td>
+                <td class="p-3 text-center hidden md:table-cell">
+                    <div class="flex items-center justify-center gap-2">
+                        <button onclick="window.openSealModal('${encodedData}')" class="p-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded-lg transition cursor-pointer border border-blue-200" title="Edit"><i data-lucide="edit-2" class="w-4 h-4"></i></button>
+                        <button onclick="window.deleteSealRecord('${row.sealId}')" class="p-1.5 bg-rose-50 text-rose-600 hover:bg-rose-100 rounded-lg transition cursor-pointer border border-rose-200" title="Delete"><i data-lucide="trash-2" class="w-4 h-4"></i></button>
+                    </div>
+                </td>
+            </tr>`;
+        });
+
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.openSealModal = function(encodedData = null) {
+        const modal = document.getElementById("seal-modal");
+        const title = document.getElementById("seal-modal-title");
+        
+        document.getElementById("seal-id").value = "";
+        document.getElementById("seal-type").value = "";
+        document.getElementById("seal-tpia").value = "";
+        document.getElementById("seal-from").value = "";
+        document.getElementById("seal-to").value = "";
+        document.getElementById("seal-total").value = "";
+
+        if (encodedData) {
+            title.innerText = "Edit Seal Allocation";
+            const row = JSON.parse(decodeURIComponent(encodedData));
+            document.getElementById("seal-id").value = row.sealId;
+            
+            const typeSelect = document.getElementById("seal-type");
+            let optionExists = Array.from(typeSelect.options).some(opt => opt.value === row.sealType);
+            if (!optionExists && row.sealType) typeSelect.add(new Option(row.sealType, row.sealType));
+            typeSelect.value = row.sealType;
+
+            const tpiaSelect = document.getElementById("seal-tpia");
+            let tpiaExists = Array.from(tpiaSelect.options).some(opt => opt.value === row.tpiaInspector);
+            if (!tpiaExists && row.tpiaInspector) tpiaSelect.add(new Option(row.tpiaInspector, row.tpiaInspector));
+            tpiaSelect.value = row.tpiaInspector || "";
+
+            document.getElementById("seal-from").value = row.sealFrom;
+            document.getElementById("seal-to").value = row.sealTo;
+            document.getElementById("seal-total").value = row.totalSeals;
+        } else {
+            title.innerText = "Add New Allocation";
+            document.getElementById("seal-id").value = "SL-" + Date.now().toString().slice(-6);
+        }
+
+        modal.classList.remove("hidden");
+    };
+
+    window.closeSealModal = function() { document.getElementById("seal-modal").classList.add("hidden"); };
+
+    window.handleSaveSeal = async function(e) {
+        e.preventDefault();
+        const btn = document.getElementById("save-seal-btn");
+        const origText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...`;
+        btn.disabled = true;
+
+        const payload = {
+            action: "saveSealDetails",
+            sealId: document.getElementById("seal-id").value,
+            sealType: document.getElementById("seal-type").value,
+            tpiaInspector: document.getElementById("seal-tpia").value,
+            sealFrom: document.getElementById("seal-from").value,
+            sealTo: document.getElementById("seal-to").value,
+            totalSeals: document.getElementById("seal-total").value
+        };
+
+        try {
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
+            const data = await res.json();
+            if (data.status) {
+                window.closeSealModal();
+                const sealsRes = await fetch(`${API_URL}?action=getSealDetails`);
+                const sealData = await sealsRes.json();
+                if (sealData.status) window.sealRecordsData = sealData.data || [];
+                window.renderSealTable();
+                if (!document.getElementById("tab-tracker").classList.contains("hidden")) window.processAndRenderTracker();
+            } else alert("Error: " + data.message);
+        } catch (err) { alert("Network error while saving."); }
+
+        btn.innerHTML = origText;
+        btn.disabled = false;
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.deleteSealRecord = async function(sealId) {
+        if (!confirm("Permanently delete this seal allocation?")) return;
+        try {
+            const res = await fetch(API_URL, { method: "POST", body: JSON.stringify({ action: "deleteSealDetails", sealId: sealId }) });
+            const data = await res.json();
+            if (data.status) {
+                const sealsRes = await fetch(`${API_URL}?action=getSealDetails`);
+                const sealData = await sealsRes.json();
+                if (sealData.status) window.sealRecordsData = sealData.data || [];
+                window.renderSealTable();
+                if (!document.getElementById("tab-tracker").classList.contains("hidden")) window.processAndRenderTracker();
+            } else alert("Error deleting record: " + data.message);
+        } catch (err) { alert("Network error while deleting."); }
+    };
+
+    // ==========================================
+    // TRACKER MATH & EXACT APPS SCRIPT PARITY LOGIC
+    // ==========================================
+    function extractPrefixAndNum(str) {
+        let match = String(str).trim().match(/^([A-Za-z_-]+)?(\d+)$/);
+        if (match) return { prefix: match[1] || "", num: parseInt(match[2], 10), padding: match[2].length, original: String(str).trim() };
+        return null;
+    }
+
+    function expandSealRange(inputStr) {
+        if (!inputStr || String(inputStr).trim() === "") return [];
+        
+        let textStr = String(inputStr).trim();
+        let lines = textStr.split(/[\r\n]+/);
+        let normalizedLines = [];
+        
+        for (let i = 0; i < lines.length; i++) {
+            let line = lines[i].trim();
+            if (!line) continue;
+            
+            if (i > 0) {
+                let prevLine = lines[i - 1].trim();
+                let endsWithTo = /\bto\s*$/i.test(prevLine);
+                let startsWithConnector = /^(to|and|&)\b/i.test(line);
+                
+                if (!endsWithTo && !startsWithConnector) {
+                    normalizedLines.push("And " + line);
+                } else {
+                    normalizedLines.push(" " + line);
+                }
+            } else {
+                normalizedLines.push(line);
+            }
+        }
+        
+        let processedStr = normalizedLines.join(" ");
+        let segments = processedStr.split(/\s+(?:and|AND|And|&)\s+|[,;]+/i);
+        let uniqueSeals = new Set();
+        
+        segments.forEach(segment => {
+            let segTrimmed = segment.trim();
+            if (!segTrimmed) return;
+            
+            let rangeMatch = segTrimmed.match(/(.+?)\s+(?:to|TO|To|-)\s+(.+)/i);
+            if (rangeMatch) {
+                let fromStr = rangeMatch[1].trim();
+                let toStr = rangeMatch[2].trim();
+                
+                let fromParsed = extractPrefixAndNum(fromStr);
+                let toParsed = extractPrefixAndNum(toStr);
+                
+                if (fromParsed && !toParsed) {
+                    let numOnly = toStr.match(/^(\d+)$/);
+                    if (numOnly) {
+                        toParsed = {
+                            prefix: fromParsed.prefix,
+                            num: parseInt(numOnly[1], 10),
+                            padding: numOnly[1].length
+                        };
+                    }
+                }
+                
+                if (fromParsed && toParsed && fromParsed.prefix === toParsed.prefix) {
+                    let start = Math.min(fromParsed.num, toParsed.num);
+                    let end = Math.max(fromParsed.num, toParsed.num);
+                    for (let i = start; i <= end; i++) {
+                        let formattedNum = String(i).padStart(fromParsed.padding, '0');
+                        uniqueSeals.add(fromParsed.prefix + formattedNum);
+                    }
+                } else {
+                    uniqueSeals.add(fromStr);
+                    uniqueSeals.add(toStr);
+                }
+            } else {
+                let subTokens = segTrimmed.split(/\s+/);
+                subTokens.forEach(token => {
+                    let cleanToken = token.replace(/[^A-Za-z0-9_-]/g, "");
+                    if (cleanToken) {
+                        uniqueSeals.add(cleanToken);
+                    }
+                });
+            }
+        });
+        
+        return Array.from(uniqueSeals);
+    }
+
+    function compressToRanges(sealArray) {
+        if (!sealArray || sealArray.length === 0) return `<span class="text-slate-300 italic">- None -</span>`;
+
+        let parsed = sealArray.map(s => {
+            let p = extractPrefixAndNum(s);
+            return p ? { ...p, valid: true } : { original: s, valid: false };
+        });
+
+        let valids = parsed.filter(p => p.valid);
+        let invalids = parsed.filter(p => !p.valid).map(p => p.original);
+
+        let groups = {};
+        valids.forEach(p => {
+            if (!groups[p.prefix]) groups[p.prefix] = [];
+            groups[p.prefix].push(p);
+        });
+
+        let ranges = [];
+        for (let prefix in groups) {
+            let items = groups[prefix].sort((a, b) => a.num - b.num);
+            let start = items[0];
+            let prev = items[0];
+
+            for (let i = 1; i < items.length; i++) {
+                let curr = items[i];
+                if (curr.num !== prev.num + 1 && curr.num !== prev.num) {
+                    if (start.num === prev.num) ranges.push(start.original);
+                    else ranges.push(`${start.original} to ${prev.original}`);
+                    start = curr;
+                }
+                prev = curr;
+            }
+            if (start.num === prev.num) ranges.push(start.original);
+            else ranges.push(`${start.original} to ${prev.original}`);
+        }
+
+        const finalArr = [...ranges, ...invalids];
+        return finalArr.join(", ");
+    }
+
+    window.toggleAccordion = function(id, iconId) {
+        const el = document.getElementById(id);
+        const icon = document.getElementById(iconId);
+        if (el.classList.contains("hidden")) {
+            el.classList.remove("hidden");
+            if(icon) icon.style.transform = "rotate(180deg)";
+        } else {
+            el.classList.add("hidden");
+            if(icon) icon.style.transform = "rotate(0deg)";
+        }
+    };
+
+    window.toggleNestedAccordion = function(id, iconId) {
+        const el = document.getElementById(id);
+        const icon = document.getElementById(iconId);
+        if (el.classList.contains("hidden")) {
+            el.classList.remove("hidden");
+            if (icon) icon.style.transform = "rotate(90deg)";
+        } else {
+            el.classList.add("hidden");
+            if (icon) icon.style.transform = "rotate(0deg)";
+        }
+    };
+
+    window.switchHierarchySort = function(safeKey, type, sortMode) {
+        window.hierarchySortModes[`${safeKey}-${window.cleanInspectorName(type)}`] = sortMode;
+        window.processAndRenderTracker();
+    };
+
+    function createInspObj(name) { return { name: name, types: {}, rawExecutions: [] }; }
+    function createTypeObj() {
+        return { issued: new Set(), usedFromOwn: new Set(), lentOut: {}, borrowedFrom: {}, discomUsage: {}, discomCounts: {} }; 
+    }
+
+    window.processAndRenderTracker = function() {
+        const filterDiscom = document.getElementById("tracker-discom-filter").value;
+        const centralBody = document.getElementById("tracker-central-body");
+        const inspBody = document.getElementById("tracker-inspectors-body");
+        const summaryBanner = document.getElementById("dynamic-summary-banner");
+
+        let centralMap = {}; 
+        let globalProcuredMap = {}; 
+        let globalUsedMap = {}; 
+        let sealOwnerMap = {}; 
+        let inspectorData = {}; 
+
+        // 1. Build Procurement
+        window.sealRecordsData.forEach(row => {
+            let type = String(row.sealType || "Unknown").trim();
+            let insp = String(window.getInspectorName(row.tpiaInspector || row.inspector || "")).trim();
+            let expanded = expandSealRange(`${row.sealFrom} to ${row.sealTo}`);
+
+            if (!globalProcuredMap[type]) globalProcuredMap[type] = new Set();
+            expanded.forEach(s => globalProcuredMap[type].add(s));
+
+            let ownerKey = window.cleanInspectorName(insp);
+            let ownerName = insp;
+
+            if (!ownerKey || ["notappointed", "notupdated", "pending", "-"].includes(ownerKey)) {
+                ownerKey = "CENTRAL";
+                ownerName = "Central Inventory";
+                if (!centralMap[type]) centralMap[type] = new Set();
+                expanded.forEach(s => centralMap[type].add(s));
+            } else {
+                if (!inspectorData[ownerKey]) inspectorData[ownerKey] = createInspObj(ownerName);
+                if (!inspectorData[ownerKey].types[type]) inspectorData[ownerKey].types[type] = createTypeObj();
+                expanded.forEach(s => inspectorData[ownerKey].types[type].issued.add(s));
+            }
+
+            expanded.forEach(s => { sealOwnerMap[s] = { name: ownerName, key: ownerKey }; });
+        });
+
+        // 2. Process Usage
+        window.trackerMasterInspections.forEach(row => {
+            let type = String(row.sealType || "").trim();
+            let serials = String(row.sealSerial || "").trim();
+            let insp = String(window.getInspectorName(row.conductedBy || row.tpiaInspector || row.inspector || "")).trim();
+            let discom = String(row.discom || "").trim().toUpperCase();
+
+            if (!type || !serials) return;
+
+            let expanded = expandSealRange(serials);
+            if (!globalUsedMap[type]) globalUsedMap[type] = new Set();
+            expanded.forEach(s => globalUsedMap[type].add(s));
+
+            let userKey = window.cleanInspectorName(insp);
+            let userName = insp;
+            if (!userKey || ["notappointed", "notupdated", "pending", "-"].includes(userKey)) {
+                userKey = "UNKNOWN_USER";
+                userName = "Unknown User";
+            }
+
+            if (userKey !== "UNKNOWN_USER") {
+                if (!inspectorData[userKey]) inspectorData[userKey] = createInspObj(userName);
+                if (!inspectorData[userKey].types[type]) inspectorData[userKey].types[type] = createTypeObj();
+                inspectorData[userKey].rawExecutions.push(row);
+
+                if (!discom) discom = "UNKNOWN";
+                if (!inspectorData[userKey].types[type].discomCounts[discom]) {
+                    inspectorData[userKey].types[type].discomCounts[discom] = 0;
+                }
+                inspectorData[userKey].types[type].discomCounts[discom] += expanded.length;
+            }
+
+            expanded.forEach(s => {
+                if (userKey !== "UNKNOWN_USER") {
+                    if (!discom) discom = "UNKNOWN";
+                    if (!inspectorData[userKey].types[type].discomUsage[discom]) {
+                        inspectorData[userKey].types[type].discomUsage[discom] = new Set();
+                    }
+                    inspectorData[userKey].types[type].discomUsage[discom].add(s);
+                }
+
+                let ownerInfo = sealOwnerMap[s];
+                if (ownerInfo) {
+                    let ownerKey = ownerInfo.key;
+                    let ownerName = ownerInfo.name;
+
+                    if (ownerKey === userKey) {
+                        inspectorData[userKey].types[type].usedFromOwn.add(s);
+                    } else {
+                        if (userKey !== "UNKNOWN_USER") {
+                            if (!inspectorData[userKey].types[type].borrowedFrom[ownerName]) {
+                                inspectorData[userKey].types[type].borrowedFrom[ownerName] = new Set();
+                            }
+                            inspectorData[userKey].types[type].borrowedFrom[ownerName].add(s);
+                        }
+                        if (ownerKey !== "CENTRAL") {
+                            if (!inspectorData[ownerKey].types[type].lentOut[userName]) {
+                                inspectorData[ownerKey].types[type].lentOut[userName] = new Set();
+                            }
+                            inspectorData[ownerKey].types[type].lentOut[userName].add(s);
+                        }
+                    }
+                }
+            });
+        });
+
+        // 3. Render Summary
+        const allTypesSet = new Set([...Object.keys(globalProcuredMap), ...Object.keys(globalUsedMap)]);
+        let allTypes = Array.from(allTypesSet).sort();
+        let summaryHtml = "";
+
+        allTypes.forEach(type => {
+            let pCount = (globalProcuredMap[type] || new Set()).size;
+            let globalUCount = (globalUsedMap[type] || new Set()).size; 
+            let trueAvailable = Math.max(0, pCount - globalUCount); 
+
+            let filteredUCount = 0;
+            if (filterDiscom === "ALL") {
+                filteredUCount = globalUCount;
+            } else {
+                Object.values(inspectorData).forEach(inspObj => {
+                    if (inspObj.types[type] && inspObj.types[type].discomUsage[filterDiscom]) {
+                        filteredUCount += inspObj.types[type].discomUsage[filterDiscom].size;
+                    }
+                });
+            }
+
+            summaryHtml += `
+                <div class="bg-white p-4 rounded-3xl border border-slate-200 shadow-sm transition hover:shadow-md">
+                    <h4 class="font-black text-[11px] uppercase text-slate-700 mb-3 border-b border-slate-100 pb-2">${type}</h4>
+                    <div class="flex justify-between text-center divide-x divide-slate-100">
+                        <div class="flex-1 px-1">
+                            <p class="text-[9px] font-bold uppercase text-slate-400">Procured</p>
+                            <p class="text-base font-black text-blue-600">${pCount}</p>
+                        </div>
+                        <div class="flex-1 px-1">
+                            <p class="text-[9px] font-bold uppercase text-slate-400">Used${filterDiscom !== 'ALL' ? ` (${filterDiscom})` : ''}</p>
+                            <p class="text-base font-black text-emerald-600">${filteredUCount}</p>
+                        </div>
+                        <div class="flex-1 px-1">
+                            <p class="text-[9px] font-bold uppercase text-slate-400">Available</p>
+                            <p class="text-base font-black text-amber-600">${trueAvailable}</p>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+        if (allTypes.length === 0) summaryHtml = `<div class="col-span-full p-4 text-center text-slate-400 text-xs">No summary data available.</div>`;
+        summaryBanner.innerHTML = summaryHtml;
+
+        // 4. Render Central Inventory 
+        let centralHtml = "";
+        let centralTypes = Object.keys(centralMap).sort();
+        
+        centralTypes.forEach((type, idx) => {
+            let availArr = Array.from(centralMap[type]).filter(s => !(globalUsedMap[type] && globalUsedMap[type].has(s)));
+            const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            centralHtml += `
+                <tr class="${bg}">
+                    <td data-col-index="c0" data-default-width="20%" style="width: 250px; min-width: 250px;" class="p-3 border-r font-black text-slate-800 break-words">${type}</td>
+                    <td data-col-index="c1" data-default-width="10%" style="width: 120px; min-width: 120px;" class="p-3 border-r text-center font-mono font-bold text-amber-600 bg-amber-50/30">${availArr.length}</td>
+                    <td data-col-index="c2" data-default-width="70%" style="width: 600px; min-width: 600px;" class="p-3 font-mono text-[11px] leading-relaxed text-slate-600 whitespace-pre-wrap break-words">${compressToRanges(availArr)}</td>
+                </tr>
+            `;
+        });
+        if (centralTypes.length === 0) centralHtml = `<tr><td colspan="3" class="p-6 text-center text-slate-400">No unassigned inventory available.</td></tr>`;
+        centralBody.innerHTML = centralHtml;
+
+        // 5. Render Inspector Cards with Original Summary + Clean Arrow Expansion
+        let inspHtml = "";
+        let sortedInsps = Object.values(inspectorData).sort((a, b) => a.name.localeCompare(b.name));
+
+        sortedInsps.forEach(inspObj => {
+            let typesObj = inspObj.types;
+            let typesList = Object.keys(typesObj).sort();
+            
+            let inspTotalIssued = 0;
+            let inspTotalFilteredExecuted = 0;
+            let inspTotalAvailable = 0;
+            let rowsHtml = "";
+
+            typesList.forEach(type => {
+                let issuedArr = Array.from(typesObj[type].issued);
+                let discomUsage = typesObj[type].discomUsage; 
+                let availArr = issuedArr.filter(x => !(globalUsedMap[type] && globalUsedMap[type].has(x)));
+
+                inspTotalIssued += issuedArr.length;
+                inspTotalAvailable += availArr.length;
+
+                let discomBreakdownHtml = "";
+                let typeFilteredExecutedCount = 0;
+                let activeDiscoms = Object.keys(discomUsage).sort();
+                if (filterDiscom !== "ALL") activeDiscoms = activeDiscoms.filter(d => d === filterDiscom);
+
+                if (activeDiscoms.length > 0) {
+                    let breakdownParts = [];
+                    activeDiscoms.forEach(d => {
+                        let dArr = Array.from(discomUsage[d]);
+                        let totalExecutedInDiscom = typesObj[type].discomCounts[d] || dArr.length;
+                        typeFilteredExecutedCount += totalExecutedInDiscom;
+                        breakdownParts.push(`<strong class="text-slate-800">${d}:</strong> ${totalExecutedInDiscom} (${compressToRanges(dArr)})`);
+                    });
+                    discomBreakdownHtml = breakdownParts.join("<br/>");
+                } else {
+                    discomBreakdownHtml = `<span class="text-slate-300 italic">- None -</span>`;
+                }
+
+                inspTotalFilteredExecuted += typeFilteredExecutedCount;
+
+                let rawExecutions = inspObj.rawExecutions.filter(r => String(r.sealType || "").trim() === type);
+                if (filterDiscom !== "ALL") {
+                    rawExecutions = rawExecutions.filter(r => String(r.discom || "").trim().toUpperCase() === filterDiscom);
+                }
+
+                const safeKey = window.cleanInspectorName(inspObj.name);
+                const safeType = window.cleanInspectorName(type);
+                const nestedId = `nested-${safeKey}-${safeType}`;
+                const sortModeKey = `${safeKey}-${safeType}`;
+                const currentSortMode = window.hierarchySortModes[sortModeKey] || 'hierarchy';
+
+                let nestedHtml = "";
+
+                if (currentSortMode === 'hierarchy') {
+                    let mfgMap = {};
+                    rawExecutions.forEach(r => {
+                        let mfg = String(r.manufacturer || "Unspecified Manufacturer").trim();
+                        let cat = String(r.materialInspected || "Unspecified Category").trim();
+                        let inspId = String(r.inspectionId || r.InspectionID || "Unknown ID").trim();
+                        let serialsStr = String(r.sealSerial || "").trim();
+                        let discom = String(r.discom || "-").toUpperCase();
+                        
+                        let expandedSerials = expandSealRange(serialsStr);
+                        let sealCount = expandedSerials.length;
+                        let compressedSerials = compressToRanges(expandedSerials);
+
+                        if (!mfgMap[mfg]) mfgMap[mfg] = {};
+                        if (!mfgMap[mfg][cat]) mfgMap[mfg][cat] = [];
+                        if (!mfgMap[mfg][cat].some(existing => existing.id === inspId && existing.serials === compressedSerials)) {
+                            mfgMap[mfg][cat].push({ id: inspId, serials: compressedSerials, count: sealCount, discom: discom });
+                        }
+                    });
+
+                    let mfgKeys = Object.keys(mfgMap).sort();
+                    if (mfgKeys.length > 0) {
+                        mfgKeys.forEach(mfg => {
+                            nestedHtml += `<div class="mb-3 bg-white p-3 rounded-xl border border-slate-200 shadow-2xs">
+                                <div class="text-[11px] font-black text-slate-900 uppercase mb-2 bg-slate-100 px-2.5 py-1 rounded-md border-l-4 border-blue-600">
+                                    🏢 Manufacturer: ${mfg}
+                                </div>
+                                <div class="pl-3 space-y-2">`;
+                            
+                            let catKeys = Object.keys(mfgMap[mfg]).sort();
+                            catKeys.forEach(cat => {
+                                nestedHtml += `<div class="bg-slate-50 p-2 rounded-lg border border-slate-100">
+                                    <div class="text-[10px] font-bold text-indigo-700 mb-1.5 flex items-center gap-1.5">
+                                        <i data-lucide="layers" class="w-3.5 h-3.5 text-indigo-600"></i> Category: ${cat}
+                                    </div>
+                                    <div class="pl-3 space-y-1.5">`;
+                                
+                                mfgMap[mfg][cat].forEach(rec => {
+                                    nestedHtml += `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-slate-200 rounded p-2">
+                                        <div class="flex items-center gap-2">
+                                            <span class="font-mono font-black text-blue-700 text-xs">Inspection ID: ${rec.id}</span>
+                                            <span class="bg-slate-100 border px-1.5 py-0.5 rounded text-[8px] font-bold text-slate-600">${rec.discom}</span>
+                                            <span class="bg-emerald-50 text-emerald-800 border border-emerald-200 px-2 py-0.5 rounded-full text-[9px] font-bold">${rec.count} seals</span>
+                                        </div>
+                                        <div class="text-emerald-700 font-mono font-bold text-[10px] sm:text-right max-w-md break-words">
+                                            ${rec.serials}
+                                        </div>
+                                    </div>`;
+                                });
+                                
+                                nestedHtml += `</div></div>`;
+                            });
+                            nestedHtml += `</div></div>`;
+                        });
+                    } else {
+                        nestedHtml = `<div class="text-xs text-slate-400 italic py-2">No execution records found for this seal type.</div>`;
+                    }
+                } else {
+                    if (rawExecutions.length > 0) {
+                        rawExecutions.forEach((r, idx) => {
+                            let inspId = String(r.inspectionId || r.InspectionID || "Unknown ID").trim();
+                            let mfg = String(r.manufacturer || "Unspecified Mfg").trim();
+                            let cat = String(r.materialInspected || "Unspecified Category").trim();
+                            let serialsStr = String(r.sealSerial || "").trim();
+                            let discom = String(r.discom || "-").toUpperCase();
+                            
+                            let expandedSerials = expandSealRange(serialsStr);
+                            let sealCount = expandedSerials.length;
+                            let compressedSerials = compressToRanges(expandedSerials);
+
+                            nestedHtml += `<div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 bg-white border border-slate-200 rounded p-2 mb-2">
+                                <div class="flex items-center gap-2">
+                                    <span class="font-mono font-bold text-slate-400 text-xs">#${idx + 1}</span>
+                                    <span class="font-mono font-black text-blue-700 text-xs">Inspection ID: ${inspId}</span>
+                                    <span class="bg-slate-100 border px-1.5 py-0.5 rounded text-[8px] font-bold text-slate-600">${discom}</span>
+                                    <span class="bg-blue-50 text-blue-800 border border-blue-200 px-2 py-0.5 rounded-full text-[9px] font-bold">${sealCount} seals</span>
+                                </div>
+                                <div class="text-slate-700 text-[10px] font-medium sm:text-right">
+                                    <span class="text-slate-500">${mfg} > ${cat}</span>: <strong class="text-emerald-700 font-mono">${compressedSerials}</strong>
+                                </div>
+                            </div>`;
+                        });
+                    } else {
+                        nestedHtml = `<div class="text-xs text-slate-400 italic py-2">No execution records found for this seal type.</div>`;
+                    }
+                }
+
+                let crossHtml = "";
+                for (let [lentTo, sealsSet] of Object.entries(typesObj[type].lentOut)) {
+                    let sArr = Array.from(sealsSet);
+                    crossHtml += `<div class="text-rose-600 mb-1"><strong class="uppercase text-[9px]">Lent to ${lentTo}:</strong> ${sArr.length} <br/><span class="text-[9px]">(${compressToRanges(sArr)})</span></div>`;
+                }
+                
+                for (let [borrowedFrom, sealsSet] of Object.entries(typesObj[type].borrowedFrom)) {
+                    if (borrowedFrom !== "Out of System") {
+                        let sArr = Array.from(sealsSet);
+                        crossHtml += `<div class="text-indigo-600 mb-1"><strong class="uppercase text-[9px]">Borrowed from ${borrowedFrom}:</strong> ${sArr.length} <br/><span class="text-[9px]">(${compressToRanges(sArr)})</span></div>`;
+                    }
+                }
+                
+                if (!crossHtml) crossHtml = `<span class="text-slate-300 italic">- None -</span>`;
+
+                rowsHtml += `
+                    <tr class="hover:bg-slate-50 transition border-b border-slate-200 align-top">
+                        <td data-col-index="i0" data-default-width="12%" style="width: 150px; min-width: 120px;" class="p-2.5 border-r font-bold text-slate-700 break-words"><strong>${type}</strong></td>
+                        <td data-col-index="i1" data-default-width="6%" style="width: 80px; min-width: 60px;" class="p-2.5 border-r text-center font-mono font-bold text-blue-700 bg-blue-50/30">${issuedArr.length}</td>
+                        <td data-col-index="i2" data-default-width="20%" style="width: 250px; min-width: 180px;" class="p-2.5 border-r font-mono text-[9px] leading-tight text-slate-600 whitespace-pre-wrap break-words">${compressToRanges(issuedArr)}</td>
+                        
+                        <!-- Original Summary + Clean Arrow on the right -->
+                        <td data-col-index="i3" data-default-width="26%" style="width: 280px; min-width: 220px;" class="p-2.5 border-r font-mono text-[10px] leading-tight text-slate-700">
+                            <div class="flex items-start justify-between gap-2">
+                                <div class="flex-1 break-words">${discomBreakdownHtml}</div>
+                                <button onclick="window.toggleNestedAccordion('${nestedId}', 'icon-${nestedId}')" class="p-1.5 bg-slate-100 hover:bg-blue-100 text-slate-600 hover:text-blue-700 rounded-lg transition cursor-pointer shrink-0 border hide-on-print shadow-2xs" title="Expand Hierarchy">
+                                    <i data-lucide="chevron-right" class="w-4 h-4 transition-transform duration-200" id="icon-${nestedId}"></i>
+                                </button>
+                            </div>
+                        </td>
+
+                        <td data-col-index="i4" data-default-width="16%" style="width: 280px; min-width: 160px;" class="p-2.5 border-r font-mono text-[10px] leading-tight text-slate-700 break-words whitespace-pre-wrap">${crossHtml}</td>
+                        <td data-col-index="i5" data-default-width="6%" style="width: 80px; min-width: 60px;" class="p-2.5 border-r text-center font-mono font-bold text-amber-700 bg-amber-50/30">${availArr.length}</td>
+                        <td data-col-index="i6" data-default-width="14%" style="width: 250px; min-width: 140px;" class="p-2.5 font-mono text-[9px] leading-tight text-slate-600 whitespace-pre-wrap break-words">${compressToRanges(availArr)}</td>
+                    </tr>
+                    
+                    <!-- 🎯 Hierarchical Sub-Row Expansion with Sort Selector -->
+                    <tr id="${nestedId}" class="hidden bg-slate-100 border-b border-slate-300 shadow-inner">
+                        <td colspan="7" class="p-4">
+                            <div class="space-y-3 pl-4 border-l-4 border-blue-600 max-h-[350px] overflow-y-auto custom-scrollbar">
+                                <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b pb-2">
+                                    <h5 class="font-black text-xs uppercase text-slate-900 flex items-center gap-2">
+                                        <i data-lucide="git-branch" class="w-4 h-4 text-blue-600"></i> Execution Breakdown (${type})
+                                    </h5>
+                                    <div class="flex items-center gap-2">
+                                        <label class="text-[10px] font-bold text-slate-500 uppercase">Sort Order:</label>
+                                        <select onchange="window.switchHierarchySort('${safeKey}', '${type}', this.value)" class="p-1 border border-slate-300 rounded-lg text-[10px] font-bold bg-white text-slate-800 cursor-pointer shadow-2xs">
+                                            <option value="hierarchy" ${currentSortMode === 'hierarchy' ? 'selected' : ''}>Manufacturer > Category > ID</option>
+                                            <option value="sheet" ${currentSortMode === 'sheet' ? 'selected' : ''}>Sheet Order / Sr No</option>
+                                        </select>
+                                    </div>
+                                </div>
+                                ${nestedHtml}
+                            </div>
+                        </td>
+                    </tr>
+                `;
+            });
+
+            if (typesList.length === 0) return;
+
+            const safeKey = window.cleanInspectorName(inspObj.name);
+
+            inspHtml += `
+                <div class="border border-slate-200 rounded-2xl shadow-sm break-inside-avoid pdf-accordion bg-white overflow-hidden">
+                    <div class="bg-slate-50 p-4 cursor-pointer flex justify-between items-center hover:bg-blue-50/50 transition" onclick="window.toggleAccordion('acc-${safeKey}', 'icon-${safeKey}')">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white rounded-lg border border-slate-200 shadow-xs"><i data-lucide="user" class="text-blue-600 w-4 h-4"></i></div>
+                            <span class="font-black text-sm text-slate-800">${inspObj.name}</span>
+                        </div>
+                        <div class="flex items-center gap-2 sm:gap-4 flex-wrap">
+                            <span class="text-[10px] font-bold bg-blue-100 text-blue-800 px-2.5 py-1 rounded-md border border-blue-200 shadow-xs whitespace-nowrap">Issued: ${inspTotalIssued}</span>
+                            <span class="text-[10px] font-bold bg-emerald-100 text-emerald-800 px-2.5 py-1 rounded-md border border-emerald-200 shadow-xs whitespace-nowrap">Executed${filterDiscom!=='ALL'?` (${filterDiscom})`:''}: ${inspTotalFilteredExecuted}</span>
+                            <span class="text-[10px] font-bold bg-amber-100 text-amber-800 px-2.5 py-1 rounded-md border border-amber-200 shadow-xs whitespace-nowrap">Available: ${inspTotalAvailable}</span>
+                            <i data-lucide="chevron-down" class="w-5 h-5 text-slate-400 transition-transform duration-300 ml-1" id="icon-${safeKey}"></i>
+                        </div>
+                    </div>
+                    <div id="acc-${safeKey}" class="hidden border-t border-slate-200">
+                        <div class="overflow-x-auto w-full custom-scrollbar scroll-lockable">
+                            <table class="w-full text-left text-xs border-collapse resizable-table min-w-[900px]">
+                                <thead class="bg-slate-100 text-slate-500 uppercase text-[9px] font-black">
+                                    <tr>
+                                        <th data-col-index="i0" data-default-width="12%" style="width: 150px; min-width: 120px;" class="p-2.5 border-r border-b resizable-th relative">Type<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i1" data-default-width="6%" style="width: 80px; min-width: 60px;" class="p-2.5 border-r border-b text-center resizable-th relative">Issued<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i2" data-default-width="20%" style="width: 250px; min-width: 180px;" class="p-2.5 border-r border-b resizable-th relative">Allocated Sequences<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i3" data-default-width="26%" style="width: 280px; min-width: 220px;" class="p-2.5 border-r border-b resizable-th relative">Execution (Discom Wise)<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i4" data-default-width="16%" style="width: 280px; min-width: 160px;" class="p-2.5 border-r border-b resizable-th relative">Cross-Usage<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i5" data-default-width="6%" style="width: 80px; min-width: 60px;" class="p-2.5 border-r border-b text-center resizable-th relative">Avail<div class="resizer hide-on-print"></div></th>
+                                        <th data-col-index="i6" data-default-width="14%" style="width: 250px; min-width: 140px;" class="p-2.5 border-b resizable-th relative">In-Hand Sequences<div class="resizer hide-on-print"></div></th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    ${rowsHtml}
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            `;
+        });
+
+        if (!inspHtml) inspHtml = `<div class="p-6 text-center text-slate-400 text-xs">No inspector allocations found.</div>`;
+        inspBody.innerHTML = inspHtml;
+
+        if (window.lucide) lucide.createIcons();
+        window.initTrackerColumnResizer();
+    };
+
+    // ==========================================
+    // COLUMN RESIZER LOGIC
+    // ==========================================
+    window.initTrackerColumnResizer = function() {
+        const tables = document.querySelectorAll('.resizable-table');
+        tables.forEach(table => {
+            const cols = table.querySelectorAll('th.resizable-th');
+            cols.forEach((th) => {
+                const resizer = th.querySelector('.resizer');
+                if (!resizer) return;
+                const colIndex = th.getAttribute('data-col-index');
+                const targetCells = table.querySelectorAll(`[data-col-index="${colIndex}"]`);
+                let x = 0, w = 0;
+                
+                const mouseDownHandler = function (e) {
+                    x = e.clientX;
+                    w = th.offsetWidth;
+                    resizer.classList.add('resizing');
+                    document.addEventListener('mousemove', mouseMoveHandler);
+                    document.addEventListener('mouseup', mouseUpHandler);
+                };
+                
+                const mouseMoveHandler = function (e) {
+                    const dx = e.clientX - x;
+                    const newWidth = Math.max(50, w + dx);
+                    targetCells.forEach(cell => {
+                        cell.style.width = `${newWidth}px`;
+                        cell.style.minWidth = `${newWidth}px`;
+                        cell.style.maxWidth = `${newWidth}px`;
+                    });
+                };
+                
+                const mouseUpHandler = function () {
+                    resizer.classList.remove('resizing');
+                    document.removeEventListener('mousemove', mouseMoveHandler);
+                    document.removeEventListener('mouseup', mouseUpHandler);
+                };
+                
+                resizer.addEventListener('mousedown', mouseDownHandler);
+            });
+        });
+    };
+
+    // ==========================================
+    // FLAWLESS ANTI-CROP PDF EXPORT
+    // ==========================================
+    window.downloadTrackerPDF = function() {
+        const filterDiscom = document.getElementById("tracker-discom-filter").value;
+        const dStr = filterDiscom === 'ALL' ? 'ALL_DISCOMS' : filterDiscom;
+        
+        if (!confirm(`Export A4 Landscape PDF tracking report for ${dStr}?`)) return;
+
+        const btn = document.getElementById("export-tracker-pdf-btn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Preparing PDF...`;
+        btn.disabled = true;
+
+        const executeExport = () => {
+            if (!window.html2pdf) {
+                alert("PDF Engine failed to load. Please check network connection.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                return;
+            }
+
+            const wrapper = document.getElementById('pdf-tracker-wrapper');
+            const titleEl = document.getElementById('pdf-tracker-title');
+            
+            const accordions = wrapper.querySelectorAll('.pdf-accordion > div.hidden');
+            accordions.forEach(el => el.classList.remove('hidden'));
+
+            titleEl.innerText = `Detailed Seal Inventory & Usage Report - ${dStr}`;
+            titleEl.classList.remove('hidden');
+
+            const allCells = wrapper.querySelectorAll('th, td');
+            allCells.forEach(cell => {
+                if (cell.hasAttribute('data-default-width')) {
+                    cell.style.width = cell.getAttribute('data-default-width');
+                    cell.style.minWidth = "";
+                    cell.style.maxWidth = "";
+                }
+            });
+
+            const scrollContainers = wrapper.querySelectorAll('.scroll-lockable, .overflow-x-auto, .custom-scrollbar');
+            scrollContainers.forEach(el => {
+                el.classList.remove('overflow-x-auto', 'custom-scrollbar');
+                el.style.overflow = 'visible';
+            });
+
+            const originalParent = wrapper.parentNode;
+            const originalNextSibling = wrapper.nextSibling;
+            
+            const printAnchor = document.createElement('div');
+            printAnchor.style.position = 'absolute';
+            printAnchor.style.top = '0';
+            printAnchor.style.left = '0';
+            printAnchor.style.width = '1250px'; 
+            printAnchor.style.minHeight = '100vh';
+            printAnchor.style.background = 'white';
+            printAnchor.style.zIndex = '99999';
+            
+            printAnchor.classList.add('pdf-rendering-active');
+            printAnchor.appendChild(wrapper);
+            document.body.appendChild(printAnchor);
+
+            wrapper.querySelectorAll('.resizer, .hide-on-print, button').forEach(el => el.style.display = 'none');
+            
+            wrapper.querySelectorAll('table').forEach(table => {
+                table.style.width = '100%';
+                table.style.tableLayout = 'fixed';
+                table.style.minWidth = '100%';
+            });
+            wrapper.querySelectorAll('th, td').forEach(cell => {
+                cell.style.whiteSpace = "pre-wrap";
+                cell.style.wordBreak = "break-word";
+                cell.style.overflowWrap = "break-word";
+            });
+
+            const opt = {
+                margin:       [0.3, 0.3, 0.3, 0.3], 
+                filename:     `Seal_Tracker_Report_${dStr}.pdf`,
+                image:        { type: 'jpeg', quality: 1.0 },
+                html2canvas:  { 
+                    scale: 2,             
+                    useCORS: true,
+                    scrollX: 0,
+                    scrollY: 0
+                },
+                jsPDF:        { unit: 'in', format: 'a4', orientation: 'landscape' }, 
+                pagebreak:    { mode: ['css', 'legacy'], avoid: ['.pdf-accordion', 'tr', 'thead'] } 
+            };
+
+            window.html2pdf().set(opt).from(wrapper).save().then(() => {
+                if (originalNextSibling) {
+                    originalParent.insertBefore(wrapper, originalNextSibling);
+                } else {
+                    originalParent.appendChild(wrapper);
+                }
+                document.body.removeChild(printAnchor);
+                
+                wrapper.querySelectorAll('table').forEach(table => {
+                    table.style.width = '';
+                    table.style.tableLayout = '';
+                    table.style.minWidth = '';
+                });
+                wrapper.querySelectorAll('.resizer, .hide-on-print, button').forEach(el => el.style.display = '');
+
+                scrollContainers.forEach(el => {
+                    el.classList.add('overflow-x-auto', 'custom-scrollbar');
+                    el.style.overflow = '';
+                });
+
+                titleEl.classList.add('hidden');
+                accordions.forEach(el => el.classList.add('hidden'));
+
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                
+                window.processAndRenderTracker(); 
+                if (window.lucide) lucide.createIcons();
+            });
+        };
+
+        if (typeof window.html2pdf === 'undefined') {
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading Engine...`;
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = executeExport;
+            script.onerror = () => {
+                alert("Failed to download PDF engine. Please disable ad-blockers or check your connection.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            };
+            document.head.appendChild(script);
+        } else {
+            executeExport();
+        }
+    };
+    
+    setTimeout(() => {
+        window.initSealModule();
+    }, 100);
+</script>

@@ -1,0 +1,77 @@
+<div class="max-w-[98%] mx-auto space-y-3 animate-fade-in">
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-3">
+            <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                <i data-lucide="users" class="text-blue-600 w-4 h-4"></i> Inspecting Engineers Directory (Admin Only)
+            </h3>
+            <div class="flex items-center gap-2 w-full sm:w-auto">
+                <span id="inspector-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Table Container -->
+        <div id="inspectors-table-wrap" class="overflow-auto h-[74vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
+            <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing inspector records...</p>
+        </div>
+    </div>
+</div>
+
+<script>
+    (async function () {
+        // Enforce strict Admin Access Guard
+        if (!currentMiUser || currentMiUser.role !== 'admin') {
+            document.getElementById("inspectors-viewport-wrap") || document.getElementById("mi-viewport").innerHTML = `
+                <div class="p-12 text-center space-y-3">
+                    <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                    <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                    <p class="text-xs text-slate-500">This module is accessible exclusively to System Administrators.</p>
+                </div>
+            `;
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}?action=getInspectors`);
+            const data = await res.json();
+            
+            if (data.status) {
+                const inspectors = data.data;
+                const wrap = document.getElementById("inspectors-table-wrap");
+                document.getElementById("inspector-count-badge").innerText = `${inspectors.length} Records Found`;
+
+                if (inspectors.length === 0) {
+                    wrap.innerHTML = `<p class="text-xs text-slate-400 py-8 text-center">No inspector records found in sheet.</p>`;
+                    return;
+                }
+
+                const keys = Object.keys(inspectors[0]).filter(k => k !== 'srNo');
+
+                let html = `<table class="w-full text-left text-xs border-collapse table-auto"><thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono"><tr>`;
+                html += `<th class="p-3 border-r border-slate-700 text-center w-12">Sr</th>`;
+                keys.forEach(k => {
+                    html += `<th class="p-3 border-r border-slate-700 truncate">${k}</th>`;
+                });
+                html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
+
+                inspectors.forEach((row, idx) => {
+                    const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                    html += `<tr class="${bg} hover:bg-blue-50/40 transition">`;
+                    html += `<td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>`;
+                    keys.forEach(key => {
+                        const val = row[key] !== undefined && row[key] !== "" ? row[key] : "-";
+                        html += `<td class="p-3 border-r text-slate-700 whitespace-pre-wrap break-words">${val}</td>`;
+                    });
+                    html += `</tr>`;
+                });
+                html += `</tbody></table>`;
+                wrap.innerHTML = html;
+            } else {
+                document.getElementById("inspectors-table-wrap").innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Error: ${data.message}</p>`;
+            }
+        } catch (e) {
+            document.getElementById("inspectors-table-wrap").innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Failed to synchronize inspectors data.</p>`;
+        }
+        if (window.lucide) lucide.createIcons();
+    })();
+</script>
