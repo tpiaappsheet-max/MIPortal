@@ -29,7 +29,7 @@
 </div>
 
 <!-- ========================================== -->
-<!-- ACTION MODAL (Fully Mobile Responsive) -->
+<!-- ACTION MODAL -->
 <!-- ========================================== -->
 <div id="insp-action-modal" class="hidden fixed inset-0 z-[100] bg-slate-900/60 backdrop-blur-sm flex justify-center items-center p-3 sm:p-4">
     <div class="bg-white rounded-3xl shadow-2xl w-full max-w-2xl max-h-[92vh] overflow-y-auto custom-scrollbar flex flex-col relative">
@@ -47,13 +47,13 @@
             <input type="hidden" id="modal-discom">
             <input type="hidden" id="modal-type">
 
-            <!-- ================= STATE 1: DATA ENTRY ================= -->
+            <!-- STATE 1: DATA ENTRY -->
             <div id="modal-entry-state" class="space-y-4 sm:space-y-5">
                 
-                <!-- 1. NOT SCHEDULED FIELDS -->
+                <!-- 1. NOT SCHEDULED / RESCHEDULE FIELDS -->
                 <div id="fields-schedule" class="hidden">
                     <div class="bg-blue-50/50 border border-blue-100 p-4 rounded-2xl">
-                        <label class="block text-xs font-black uppercase text-blue-800 mb-2">Assign Schedule Date</label>
+                        <label id="schedule-label-text" class="block text-xs font-black uppercase text-blue-800 mb-2">Assign Schedule Date</label>
                         <input type="date" id="input-schedule-date" class="w-full px-4 py-3 border border-slate-300 rounded-xl text-sm font-bold outline-none focus:border-blue-500 shadow-sm bg-white cursor-pointer">
                         <p class="text-[10px] text-slate-500 mt-2 font-bold"><i data-lucide="info" class="w-3 h-3 inline-block mb-0.5 text-blue-500"></i> The status will automatically update to 'Schedule' upon saving.</p>
                     </div>
@@ -121,9 +121,9 @@
                             </div>
                         </div>
                         <div class="flex gap-1.5 sm:gap-2 flex-wrap">
-                            <button type="button" onclick="window.openDatePrompt('Inspection', 'Initial')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ Start</button>
-                            <button type="button" onclick="window.openDatePrompt('Inspection', 'To')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ To</button>
-                            <button type="button" onclick="window.openDatePrompt('Inspection', 'And')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ And</button>
+                            <button type="button" onclick="window.openDatePrompt('Initial')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ Start</button>
+                            <button type="button" onclick="window.openDatePrompt('To')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ To</button>
+                            <button type="button" onclick="window.openDatePrompt('And')" class="px-3 py-1.5 bg-white border border-slate-300 text-[10px] font-bold rounded-lg shadow-sm hover:bg-slate-50 cursor-pointer">+ And</button>
                             <button type="button" onclick="window.clearDateSequence()" class="px-3 py-1.5 bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-bold rounded-lg shadow-sm cursor-pointer">Clear</button>
                         </div>
                     </div>
@@ -159,7 +159,7 @@
                 </div>
             </div>
 
-            <!-- ================= STATE 2: CONFIRMATION ================= -->
+            <!-- STATE 2: CONFIRMATION -->
             <div id="modal-confirm-state" class="hidden space-y-4">
                 <div class="bg-amber-50 border border-amber-200 text-amber-800 p-3 sm:p-4 rounded-xl text-xs font-bold flex gap-3">
                     <i data-lucide="alert-triangle" class="w-5 h-5 shrink-0"></i> 
@@ -263,7 +263,7 @@
         }
     }
 
-    // 🎯 MOBILE-FIRST RESPONSIVE CARDS & SUMMARY
+    // 🎯 RENDER WORKFLOW LIST WITH SEPARATE BUTTONS FOR SCHEDULED TAB
     window.renderWorkflowList = function() {
         const container = document.getElementById("insp-container");
 
@@ -314,6 +314,8 @@
 
                 let letterDisplay = rec.letterNo || "No Letter";
                 if(rec.letterDate && rec.letterDate !== "-") letterDisplay += ` (${rec.letterDate})`;
+
+                const isScheduledTab = window.activeWorkflowTab === 'scheduled';
 
                 html += `
                     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm transition overflow-hidden">
@@ -371,10 +373,21 @@
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">PQCC Name</span><span class="font-bold text-slate-700">${rec.pqccName || '-'}</span></div>
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">TKC</span><span class="font-bold text-blue-700">${rec.tkc || '-'}</span></div>
                             </div>
-                            <div class="flex justify-end pt-2 border-t border-slate-200/60">
-                                <button onclick="window.openInspModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-xl shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
-                                    <i data-lucide="edit-3" class="w-4 h-4"></i> Update Record
-                                </button>
+                            
+                            <!-- 🎯 ACTION BUTTONS: Inspection Completed & Re-Schedule (For Scheduled Tab) OR Update Record (For Not Scheduled Tab) -->
+                            <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
+                                ${isScheduledTab ? `
+                                    <button onclick="window.openRescheduleModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                                        <i data-lucide="calendar-days" class="w-4 h-4"></i> Re-Schedule
+                                    </button>
+                                    <button onclick="window.openInspModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                                        <i data-lucide="check-circle" class="w-4 h-4"></i> Inspection Completed
+                                    </button>
+                                ` : `
+                                    <button onclick="window.openInspModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
+                                        <i data-lucide="edit-3" class="w-4 h-4"></i> Update Schedule
+                                    </button>
+                                `}
                             </div>
                         </div>
                     </div>
@@ -399,7 +412,6 @@
         document.getElementById("insp-action-form").reset();
         document.getElementById("input-conducted-by").value = currentMiUser.name;
 
-        // Reset dropdowns explicitly
         document.getElementById("input-status").selectedIndex = 0;
         document.getElementById("input-sub-status").selectedIndex = 0;
         
@@ -407,6 +419,7 @@
 
         if (window.activeWorkflowTab === 'not-scheduled') {
             document.getElementById("modal-title").innerText = "Schedule Assignment";
+            document.getElementById("schedule-label-text").innerText = "Assign Schedule Date";
             document.getElementById("fields-schedule").classList.remove("hidden");
             document.getElementById("fields-complete").classList.add("hidden");
         } else {
@@ -414,6 +427,25 @@
             document.getElementById("fields-schedule").classList.add("hidden");
             document.getElementById("fields-complete").classList.remove("hidden");
         }
+
+        document.getElementById("insp-action-modal").classList.remove("hidden");
+    }
+
+    // 🎯 Dedicated Re-Schedule Modal Launcher
+    window.openRescheduleModal = function(inspId, discom) {
+        document.getElementById("modal-insp-id").value = inspId;
+        document.getElementById("modal-discom").value = discom;
+        document.getElementById("modal-type").value = "scheduled-reschedule";
+        
+        document.getElementById("modal-id-label").innerText = inspId;
+        document.getElementById("insp-action-form").reset();
+        
+        window.hideConfirmationState();
+
+        document.getElementById("modal-title").innerText = "Re-Schedule Inspection";
+        document.getElementById("schedule-label-text").innerText = "Assign New Schedule Date";
+        document.getElementById("fields-schedule").classList.remove("hidden");
+        document.getElementById("fields-complete").classList.add("hidden");
 
         document.getElementById("insp-action-modal").classList.remove("hidden");
     }
@@ -429,11 +461,12 @@
         const box = document.getElementById("confirm-summary-box");
         let summary = '';
 
-        if (type === 'not-scheduled') {
+        if (type === 'not-scheduled' || type === 'scheduled-reschedule') {
             const dt = document.getElementById("input-schedule-date").value;
             if (!dt) { alert("Please select a schedule date."); return; }
+            const actionLabel = type === 'scheduled-reschedule' ? 'Mark as Re-Scheduled' : 'Mark as Scheduled';
             summary = `
-                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-slate-500">Action:</span><span class="font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">Mark as Scheduled</span></div>
+                <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-slate-500">Action:</span><span class="font-black text-blue-600 bg-blue-50 px-2 py-1 rounded">${actionLabel}</span></div>
                 <div class="flex justify-between items-center"><span class="text-slate-500">Schedule Date:</span><strong class="text-slate-800">${dt}</strong></div>
             `;
         } else {
@@ -490,7 +523,7 @@
                 discom: document.getElementById("modal-discom").value
             };
 
-            if (type === 'not-scheduled') {
+            if (type === 'not-scheduled' || type === 'scheduled-reschedule') {
                 payload.scheduleDate = document.getElementById("input-schedule-date").value;
                 payload.status = "Schedule";
             } else {
@@ -544,10 +577,9 @@
         return null;
     }
 
-    window.openDatePrompt = function(category, type) {
-        window.activeSequenceCategory = category;
+    window.openDatePrompt = function(type) {
         window.activeSequenceType = type;
-        document.getElementById("date-dialog-title").innerText = `Select ${category} Date (${type})`;
+        document.getElementById("date-dialog-title").innerText = `Select Inspection Date (${type})`;
         document.getElementById("dialog-date-input").value = "";
         document.getElementById("date-picker-dialog").classList.remove("hidden");
     }
