@@ -264,7 +264,7 @@
     };
 
     window.initInspectorScheduleModule = async function() {
-        if (!currentMiUser || (currentMiUser.role !== 'admin' && currentMiUser.role !== 'Coordinator')) {
+        if (!currentMiUser || (currentMiUser.role !== 'admin' && currentMiUser.role !== 'coordinator')) {
             const viewport = document.getElementById("mi-viewport");
             if (viewport) {
                 viewport.innerHTML = `
