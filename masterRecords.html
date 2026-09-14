@@ -2,16 +2,21 @@
     <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
         <div class="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-3">
             <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
-                <i data-lucide="table" class="text-emerald-600 w-4 h-4"></i> Master Inspection Records (<span id="active-discom-label">NBPDCL</span>)
+                <i data-lucide="table" class="text-emerald-600 w-4 h-4"></i> Master Inspection Records (<span
+                    id="active-discom-label">NBPDCL</span>)
             </h3>
-            
+
             <div class="flex items-center gap-3">
                 <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200">
-                    <button onclick="window.switchMasterDiscom('NBPDCL')" id="master-btn-NBPDCL" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-blue-600 text-white shadow-xs">NBPDCL</button>
-                    <button onclick="window.switchMasterDiscom('SBPDCL')" id="master-btn-SBPDCL" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900">SBPDCL</button>
-                    <button onclick="window.switchMasterDiscom('PVVNL')" id="master-btn-PVVNL" class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900">PVVNL</button>
+                    <button onclick="window.switchMasterDiscom('NBPDCL')" id="master-btn-NBPDCL"
+                        class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer bg-blue-600 text-white shadow-xs">NBPDCL</button>
+                    <button onclick="window.switchMasterDiscom('SBPDCL')" id="master-btn-SBPDCL"
+                        class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900">SBPDCL</button>
+                    <button onclick="window.switchMasterDiscom('PVVNL')" id="master-btn-PVVNL"
+                        class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900">PVVNL</button>
                 </div>
-                <span id="record-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
+                <span id="record-count-badge"
+                    class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
             </div>
         </div>
 
@@ -19,7 +24,8 @@
             <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600">
                 <i data-lucide="filter" class="w-4 h-4 text-blue-600"></i> Filter By:
             </div>
-            <select id="filter-field-select" onchange="window.populateFilterDropdown()" class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+            <select id="filter-field-select" onchange="window.populateFilterDropdown()"
+                class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
                 <option value="inspectionId">Inspection ID</option>
                 <option value="scheme">Scheme</option>
                 <option value="letterNo">Letter No</option>
@@ -34,32 +40,43 @@
                 <option value="month">Month</option>
                 <option value="conductedBy">Conducted By</option>
             </select>
-            
+
             <div class="flex-1 min-w-[220px] flex items-center gap-2 relative">
-                <input type="text" id="filter-value-input" list="filter-value-datalist" oninput="window.applyTableFilter()" class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition" placeholder="Type or select value to filter...">
+                <input type="text" id="filter-value-input" list="filter-value-datalist"
+                    oninput="window.applyTableFilter()"
+                    class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition"
+                    placeholder="Type or select value to filter...">
                 <datalist id="filter-value-datalist"></datalist>
-                
-                <button onclick="window.clearTableFilter()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition cursor-pointer">Reset</button>
+
+                <button onclick="window.clearTableFilter()"
+                    class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition cursor-pointer">Reset</button>
             </div>
         </div>
-        
-        <div id="mi-master-table-wrap" class="overflow-x-hidden md:overflow-auto h-[74vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
+
+        <div id="mi-master-table-wrap"
+            class="overflow-x-hidden md:overflow-auto h-[74vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
             <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing spreadsheet records...</p>
         </div>
     </div>
 </div>
 
 <!-- Unified Workflow Edit Modal (Edit All) -->
-<div id="edit-inspection-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
-    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-5 my-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
+<div id="edit-inspection-modal"
+    class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-2 sm:p-6 overflow-y-auto">
+    <div
+        class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-5 my-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
         <div class="flex items-center justify-between border-b pb-4 sticky top-0 bg-white z-10">
             <div>
                 <h3 class="font-black text-base uppercase text-slate-900 flex items-center gap-2">
-                    <i data-lucide="edit-3" class="text-blue-600 w-5 h-5"></i> Edit Master Record: (<span id="modal-edit-id-lbl" class="text-blue-700 font-mono"></span>)
+                    <i data-lucide="edit-3" class="text-blue-600 w-5 h-5"></i> Edit Master Record: (<span
+                        id="modal-edit-id-lbl" class="text-blue-700 font-mono"></span>)
                 </h3>
-                <p class="text-xs text-slate-500 mt-0.5">Modify all inspection attributes across the 42-column database structure.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Modify all inspection attributes across the 42-column database
+                    structure.</p>
             </div>
-            <button type="button" onclick="window.closeEditModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 cursor-pointer"><i data-lucide="x" class="w-6 h-6"></i></button>
+            <button type="button" onclick="window.closeEditModal()"
+                class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-100 cursor-pointer"><i
+                    data-lucide="x" class="w-6 h-6"></i></button>
         </div>
 
         <form id="edit-inspection-form" onsubmit="window.submitEditedInspection(event)" class="space-y-5">
@@ -73,22 +90,77 @@
                     <i data-lucide="database" class="w-4 h-4 text-slate-500"></i> General Information
                 </h4>
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Scheme</label><input type="text" id="edit-scheme" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">District</label><input type="text" id="edit-district" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Manufacturer</label><input type="text" id="edit-manufacturer" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Letter No</label><input type="text" id="edit-letterNo" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Letter Date</label><input type="date" id="edit-letterDate" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Received Date</label><input type="date" id="edit-receivedDate" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">PQCC Name</label><input type="text" id="edit-pqccName" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Officials</label><input type="text" id="edit-officials" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Nodal CE</label><input type="text" id="edit-nodalCe" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div class="sm:col-span-3"><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Address</label><input type="text" id="edit-address" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Contact Person</label><input type="text" id="edit-contactPerson" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Mobile</label><input type="text" id="edit-mobile" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">TKC</label><input type="text" id="edit-tkc" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div class="sm:col-span-3"><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material Inspected</label><input type="text" id="edit-materialInspected" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500"></div>
-                    <div class="sm:col-span-3"><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material Spec</label><textarea id="edit-materialSpec" rows="3" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500 custom-scrollbar"></textarea></div>
-                    <div class="sm:col-span-3"><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Quantity</label><textarea id="edit-quantity" rows="2" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500 custom-scrollbar"></textarea></div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Scheme</label><input
+                            type="text" id="edit-scheme"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">District</label><input
+                            type="text" id="edit-district"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Manufacturer</label><input
+                            type="text" id="edit-manufacturer"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Letter
+                            No</label><input type="text" id="edit-letterNo"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Letter
+                            Date</label><input type="date" id="edit-letterDate"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Received
+                            Date</label><input type="date" id="edit-receivedDate"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">PQCC
+                            Name</label><input type="text" id="edit-pqccName"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Officials</label><input
+                            type="text" id="edit-officials"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Nodal
+                            CE</label><input type="text" id="edit-nodalCe"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div class="sm:col-span-3"><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Address</label><input
+                            type="text" id="edit-address"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Contact
+                            Person</label><input type="text" id="edit-contactPerson"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Mobile</label><input
+                            type="text" id="edit-mobile"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div><label class="block text-[10px] font-black uppercase text-slate-500 mb-1">TKC</label><input
+                            type="text" id="edit-tkc"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div class="sm:col-span-3"><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material
+                            Inspected</label><input type="text" id="edit-materialInspected"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500">
+                    </div>
+                    <div class="sm:col-span-3"><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material
+                            Spec</label><textarea id="edit-materialSpec" rows="3"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500 custom-scrollbar"></textarea>
+                    </div>
+                    <div class="sm:col-span-3"><label
+                            class="block text-[10px] font-black uppercase text-slate-500 mb-1">Quantity</label><textarea
+                            id="edit-quantity" rows="2"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white border-slate-300 focus:border-blue-500 custom-scrollbar"></textarea>
+                    </div>
                 </div>
             </div>
 
@@ -99,41 +171,57 @@
                 </h4>
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">TPIA Inspector Appointed</label>
-                        <select id="edit-tpiaInspector" onchange="window.autofillTpiaContact()" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">TPIA Inspector
+                            Appointed</label>
+                        <select id="edit-tpiaInspector" onchange="window.autofillTpiaContact()"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                             <option value="">-- Select Inspector --</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">TPIA Contact Number (Formula)</label>
-                        <input type="text" id="edit-tpiaContact" readonly class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-100" placeholder="Auto-filled contact...">
+                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">TPIA Contact Number
+                            (Formula)</label>
+                        <input type="text" id="edit-tpiaContact" readonly
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-100"
+                            placeholder="Auto-filled contact...">
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2 border-t border-blue-200">
                     <div>
                         <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Auth Letter No</label>
-                        <input type="text" id="edit-authLetterNo" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 55">
+                        <input type="text" id="edit-authLetterNo"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white"
+                            placeholder="e.g. 55">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Auth Letter Date</label>
-                        <input type="date" id="edit-authLetterDate" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Auth Letter
+                            Date</label>
+                        <input type="date" id="edit-authLetterDate"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                     </div>
                 </div>
 
                 <div class="bg-white p-3 rounded-xl border border-blue-200 space-y-3">
                     <label class="flex items-center gap-2 cursor-pointer select-none">
-                        <input type="checkbox" id="edit-isAuthRevised" onchange="window.toggleRevisedAuthInputs()" class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
+                        <input type="checkbox" id="edit-isAuthRevised" onchange="window.toggleRevisedAuthInputs()"
+                            class="w-4 h-4 text-blue-600 rounded border-slate-300 focus:ring-blue-500">
                         <span class="text-xs font-black uppercase text-blue-900">Is Auth Letter Revised?</span>
                     </label>
-                    <div id="revised-auth-wrap" class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
+                    <div id="revised-auth-wrap"
+                        class="hidden grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-100">
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">New Revised Auth Letter No</label>
-                            <input type="text" id="edit-revisedAuthNo" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 88">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">New Revised Auth
+                                Letter No</label>
+                            <input type="text" id="edit-revisedAuthNo"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white"
+                                placeholder="e.g. 88">
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">New Revised Auth Letter Date</label>
-                            <input type="date" id="edit-revisedAuthDate" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">New Revised Auth
+                                Letter Date</label>
+                            <input type="date" id="edit-revisedAuthDate"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                         </div>
                     </div>
                 </div>
@@ -141,11 +229,14 @@
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 pt-2 border-t border-blue-200">
                     <div>
                         <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Schedule Date</label>
-                        <input type="date" id="edit-scheduleDate" onchange="window.handleScheduleDateChange()" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <input type="date" id="edit-scheduleDate" onchange="window.handleScheduleDateChange()"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Inspection Status</label>
-                        <select id="edit-status" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Inspection
+                            Status</label>
+                        <select id="edit-status"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                             <option value="Pending">Pending</option>
                             <option value="Schedule">Schedule</option>
                             <option value="Completed">Completed</option>
@@ -156,8 +247,10 @@
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Inspection Sub Status</label>
-                        <select id="edit-subStatus" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-blue-900 mb-1">Inspection Sub
+                            Status</label>
+                        <select id="edit-subStatus"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                             <option value="Completed - Material Pass">Completed - Material Pass</option>
                             <option value="Completed - MOM">Completed - MOM</option>
                             <option value="Completed - Failed in NABL Lab">Completed - Failed in NABL Lab</option>
@@ -179,29 +272,40 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Inspection Completed On</label>
-                        <input type="date" id="edit-inspectionCompletedOn" onchange="window.updateDerivedMonth()" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Inspection Completed
+                            On</label>
+                        <input type="date" id="edit-inspectionCompletedOn" onchange="window.updateDerivedMonth()"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Report / OM No and Date</label>
-                        <input type="text" id="edit-reportOm" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="Enter Report or OM reference...">
+                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Report / OM No and
+                            Date</label>
+                        <input type="text" id="edit-reportOm"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white"
+                            placeholder="Enter Report or OM reference...">
                     </div>
                 </div>
 
                 <div>
-                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Inspection conducted by TPIA Inspector</label>
-                    <select id="edit-conductedBy" onchange="window.updateInspectorSealPreview(); window.recalculateManDays();" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Inspection conducted by
+                        TPIA Inspector</label>
+                    <select id="edit-conductedBy"
+                        onchange="window.updateInspectorSealPreview(); window.recalculateManDays();"
+                        class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                         <option value="">-- Select Inspector --</option>
                     </select>
                 </div>
 
                 <!-- Seal Availability Warning Box -->
-                <div id="inspector-seal-availability-box" class="hidden p-4 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-2">
+                <div id="inspector-seal-availability-box"
+                    class="hidden p-4 bg-amber-50/60 border border-amber-200 rounded-2xl space-y-2">
                     <div class="flex items-center justify-between">
                         <span class="font-black text-xs uppercase text-amber-900 flex items-center gap-1.5">
                             <i data-lucide="lock" class="w-4 h-4 text-amber-600"></i> Inspector Seal Inventory In-Hand
                         </span>
-                        <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">Live Tracking</span>
+                        <span
+                            class="text-[10px] font-mono px-2 py-0.5 rounded bg-amber-100 text-amber-800 font-bold">Live
+                            Tracking</span>
                     </div>
                     <div id="inspector-seal-details-content" class="text-xs text-slate-700 space-y-1 font-mono"></div>
                 </div>
@@ -210,8 +314,10 @@
                     <h5 class="font-black text-[10px] uppercase text-emerald-900 tracking-wider">Seal Configuration</h5>
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-3">
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Type of Seal</label>
-                            <select id="edit-sealType" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Type of
+                                Seal</label>
+                            <select id="edit-sealType"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                                 <option value="">-- Select Seal Type --</option>
                                 <option value="Polycarbonate Seal">Polycarbonate Seal</option>
                                 <option value="Holographic Seal">Holographic Seal</option>
@@ -219,82 +325,122 @@
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Seal Serial No Used in Inspection</label>
-                            <input type="text" id="edit-sealSerial" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. SL-99201 to 99250">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Seal Serial No
+                                Used in Inspection</label>
+                            <input type="text" id="edit-sealSerial"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white"
+                                placeholder="e.g. SL-99201 to 99250">
                         </div>
                         <div>
                             <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">No of Seal</label>
-                            <input type="number" id="edit-sealNoCount" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 50">
+                            <input type="number" id="edit-sealNoCount"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white"
+                                placeholder="e.g. 50">
                         </div>
                     </div>
                 </div>
 
                 <!-- Date(s) of Inspection (From - To) & Man Days -->
                 <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-3">
-                    <h5 class="font-black text-[10px] uppercase text-emerald-900 tracking-wider">Date(s) of Inspection (From - To) & Man Days</h5>
+                    <h5 class="font-black text-[10px] uppercase text-emerald-900 tracking-wider">Date(s) of Inspection
+                        (From - To) & Man Days</h5>
                     <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Inspection Dates Sequence (Col AC)</label>
-                        <input type="text" id="edit-inspectionDatesSequence" readonly class="w-full p-2.5 border rounded-xl text-xs font-medium outline-none bg-slate-50 font-mono text-emerald-800" placeholder="e.g. 09/09/2026 To 11/09/2026 And 14/09/2026">
+                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Inspection Dates
+                            Sequence (Col AC)</label>
+                        <input type="text" id="edit-inspectionDatesSequence" readonly
+                            class="w-full p-2.5 border rounded-xl text-xs font-medium outline-none bg-slate-50 font-mono text-emerald-800"
+                            placeholder="e.g. 09/09/2026 To 11/09/2026 And 14/09/2026">
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Man Days (Auto)</label>
-                        <input type="number" step="0.5" id="edit-manDays" value="0" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-100" readonly>
+                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Man Days
+                            (Auto)</label>
+                        <input type="number" step="0.5" id="edit-manDays" value="0"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-slate-100" readonly>
                     </div>
                     <div class="flex gap-2 pt-1 flex-wrap items-center">
-                        <button type="button" onclick="window.openDatePrompt('Inspection', 'Initial')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-300 cursor-pointer">+ Add Date</button>
-                        <button type="button" onclick="window.openDatePrompt('Inspection', 'To')" class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-black rounded-xl border border-blue-200 cursor-pointer">+ Add 'To' Date</button>
-                        <button type="button" onclick="window.openDatePrompt('Inspection', 'And')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 cursor-pointer">+ Add 'And' Date</button>
-                        <button type="button" onclick="window.clearDateSequence('Inspection')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black rounded-xl border border-rose-200 cursor-pointer">Clear Sequence</button>
+                        <button type="button" onclick="window.openDatePrompt('Inspection', 'Initial')"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-300 cursor-pointer">+
+                            Add Date</button>
+                        <button type="button" onclick="window.openDatePrompt('Inspection', 'To')"
+                            class="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 text-xs font-black rounded-xl border border-blue-200 cursor-pointer">+
+                            Add 'To' Date</button>
+                        <button type="button" onclick="window.openDatePrompt('Inspection', 'And')"
+                            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 cursor-pointer">+
+                            Add 'And' Date</button>
+                        <button type="button" onclick="window.clearDateSequence('Inspection')"
+                            class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black rounded-xl border border-rose-200 cursor-pointer">Clear
+                            Sequence</button>
                     </div>
                 </div>
 
                 <!-- Date(s) of NABL Witness (From - To) & NABL Status -->
                 <div class="bg-white p-3 rounded-xl border border-emerald-200 space-y-3">
-                    <h5 class="font-black text-[10px] uppercase text-emerald-900 tracking-wider">Date(s) of NABL Witness (From - To) & NABL Status</h5>
+                    <h5 class="font-black text-[10px] uppercase text-emerald-900 tracking-wider">Date(s) of NABL Witness
+                        (From - To) & NABL Status</h5>
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">NABL Status</label>
-                            <select id="edit-nablStatusOpt" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">NABL
+                                Status</label>
+                            <select id="edit-nablStatusOpt"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                                 <option value="">-- Select Status --</option>
                                 <option value="Sample send for NABL Test">Sample send for NABL Test</option>
                                 <option value="Not Sent">Not Sent</option>
                             </select>
                         </div>
                         <div>
-                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Tentative date of Test</label>
-                            <input type="date" id="edit-nablDateInput" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                            <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Tentative date of
+                                Test</label>
+                            <input type="date" id="edit-nablDateInput"
+                                class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                         </div>
                     </div>
                     <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Witnessed By (Inspector)</label>
-                        <select id="edit-nablWitnessInspector" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Witnessed By
+                            (Inspector)</label>
+                        <select id="edit-nablWitnessInspector"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                             <option value="">-- Select Witness Inspector --</option>
                         </select>
                     </div>
 
                     <div>
-                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">NABL Witness Dates Sequence (Col AD)</label>
-                        <input type="text" id="edit-nablDatesSequence" readonly class="w-full p-2.5 border rounded-xl text-xs font-medium outline-none bg-slate-50 font-mono text-indigo-800" placeholder="e.g. 24/09/2026 To 26/09/2026 And 29/09/2026">
+                        <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">NABL Witness Dates
+                            Sequence (Col AD)</label>
+                        <input type="text" id="edit-nablDatesSequence" readonly
+                            class="w-full p-2.5 border rounded-xl text-xs font-medium outline-none bg-slate-50 font-mono text-indigo-800"
+                            placeholder="e.g. 24/09/2026 To 26/09/2026 And 29/09/2026">
                     </div>
                     <div class="flex gap-2 pt-1 flex-wrap items-center">
-                        <button type="button" onclick="window.openDatePrompt('NABL', 'Initial')" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-300 cursor-pointer">+ Add Date</button>
-                        <button type="button" onclick="window.openDatePrompt('NABL', 'To')" class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black rounded-xl border border-indigo-200 cursor-pointer">+ Add 'To' Date</button>
-                        <button type="button" onclick="window.openDatePrompt('NABL', 'And')" class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 cursor-pointer">+ Add 'And' Date</button>
-                        <button type="button" onclick="window.clearDateSequence('NABL')" class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black rounded-xl border border-rose-200 cursor-pointer">Clear Sequence</button>
+                        <button type="button" onclick="window.openDatePrompt('NABL', 'Initial')"
+                            class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-800 text-xs font-black rounded-xl border border-slate-300 cursor-pointer">+
+                            Add Date</button>
+                        <button type="button" onclick="window.openDatePrompt('NABL', 'To')"
+                            class="px-3 py-1.5 bg-indigo-50 hover:bg-indigo-100 text-indigo-700 text-xs font-black rounded-xl border border-indigo-200 cursor-pointer">+
+                            Add 'To' Date</button>
+                        <button type="button" onclick="window.openDatePrompt('NABL', 'And')"
+                            class="px-3 py-1.5 bg-emerald-50 hover:bg-emerald-100 text-emerald-700 text-xs font-black rounded-xl border border-emerald-200 cursor-pointer">+
+                            Add 'And' Date</button>
+                        <button type="button" onclick="window.clearDateSequence('NABL')"
+                            class="px-3 py-1.5 bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-black rounded-xl border border-rose-200 cursor-pointer">Clear
+                            Sequence</button>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Report Received</label>
-                        <select id="edit-reportReceived" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Report
+                            Received</label>
+                        <select id="edit-reportReceived"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
                         </select>
                     </div>
                     <div>
                         <label class="block text-[11px] font-black uppercase text-slate-500 mb-1">Report Mail</label>
-                        <select id="edit-reportMail" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <select id="edit-reportMail"
+                            class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white">
                             <option value="Yes">Yes</option>
                             <option value="No">No</option>
                         </select>
@@ -310,19 +456,26 @@
 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Billing Status</label>
-                        <select id="edit-billingStatus" class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white focus:border-purple-500">
+                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Billing
+                            Status</label>
+                        <select id="edit-billingStatus"
+                            class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white focus:border-purple-500">
                             <option value="Billed">Billed</option>
                             <option value="Pending">Pending</option>
                         </select>
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Invoice Number</label>
-                        <input type="text" id="edit-invoiceNo" class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white focus:border-purple-500" placeholder="Enter invoice ref...">
+                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Invoice
+                            Number</label>
+                        <input type="text" id="edit-invoiceNo"
+                            class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white focus:border-purple-500"
+                            placeholder="Enter invoice ref...">
                     </div>
                     <div>
-                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Letter Revision Status</label>
-                        <select id="edit-letterRevision" class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white">
+                        <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Letter Revision
+                            Status</label>
+                        <select id="edit-letterRevision"
+                            class="w-full p-3 border rounded-xl text-xs font-bold outline-none bg-white">
                             <option value="None">None</option>
                             <option value="Authorization revised">Authorization revised</option>
                             <option value="DISCOM Letter revised">DISCOM Letter revised</option>
@@ -331,49 +484,123 @@
                 </div>
                 <div>
                     <label class="block text-[11px] font-black uppercase text-purple-900 mb-1">Remark</label>
-                    <input type="text" id="edit-remarks" class="w-full p-3 border rounded-xl text-xs font-medium outline-none bg-white focus:border-purple-500" placeholder="Add remarks...">
+                    <input type="text" id="edit-remarks"
+                        class="w-full p-3 border rounded-xl text-xs font-medium outline-none bg-white focus:border-purple-500"
+                        placeholder="Add remarks...">
                 </div>
             </div>
 
             <div class="flex justify-end gap-3 pt-4 border-t sticky bottom-0 bg-white z-10 py-2">
-                <button type="button" onclick="window.closeEditModal()" class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
-                <button type="submit" id="edit-save-btn" class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">Save Changes</button>
+                <button type="button" onclick="window.closeEditModal()"
+                    class="px-5 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 font-bold text-xs rounded-xl cursor-pointer">Cancel</button>
+                <button type="submit" id="edit-save-btn"
+                    class="px-6 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs rounded-xl shadow-md cursor-pointer">Save
+                    Changes</button>
             </div>
         </form>
     </div>
 </div>
 
 <!-- Interactive Date Picker Dialog Modal -->
-<div id="date-picker-dialog" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-slate-200 space-y-4 animate-fade-in relative">
+<div id="date-picker-dialog"
+    class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+    <div
+        class="bg-white w-full max-w-sm rounded-3xl shadow-2xl p-6 border border-slate-200 space-y-4 animate-fade-in relative">
         <div class="flex items-center justify-between border-b pb-3">
-            <h4 id="date-dialog-title" class="font-black text-xs uppercase text-slate-800 tracking-wider">Select Date</h4>
-            <button type="button" onclick="window.closeDatePrompt()" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <h4 id="date-dialog-title" class="font-black text-xs uppercase text-slate-800 tracking-wider">Select Date
+            </h4>
+            <button type="button" onclick="window.closeDatePrompt()"
+                class="text-slate-400 hover:text-slate-600 p-1 rounded-lg"><i data-lucide="x"
+                    class="w-5 h-5"></i></button>
         </div>
         <div>
             <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Choose Date</label>
-            <input type="date" id="dialog-date-input" class="w-full p-3 border border-slate-300 rounded-xl text-sm font-bold outline-none bg-white focus:border-blue-500">
+            <input type="date" id="dialog-date-input"
+                class="w-full p-3 border border-slate-300 rounded-xl text-sm font-bold outline-none bg-white focus:border-blue-500">
         </div>
         <div class="flex justify-end gap-2 pt-2 border-t">
-            <button type="button" onclick="window.closeDatePrompt()" class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
-            <button type="button" onclick="window.confirmDatePrompt()" class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-md cursor-pointer">Add Date</button>
+            <button type="button" onclick="window.closeDatePrompt()"
+                class="px-4 py-2.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl cursor-pointer">Cancel</button>
+            <button type="button" onclick="window.confirmDatePrompt()"
+                class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-black rounded-xl shadow-md cursor-pointer">Add
+                Date</button>
         </div>
     </div>
 </div>
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar { width: 10px; height: 10px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-    .resizer { position: absolute; top: 0; right: 0; width: 6px; cursor: col-resize; user-select: none; touch-action: none; height: 100%; background-color: rgba(255, 255, 255, 0.2); transition: background-color 0.2s; }
-    .resizer:hover, .resizing { background-color: #38bdf8; }
-    th.resizable-th { position: relative; overflow: hidden; }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 10px;
+        height: 10px;
+    }
 
-    .sticky-actions-th { position: sticky; left: 0; z-index: 30; background-color: #0f172a; }
-    .sticky-deadline-th { position: sticky; left: 90px; z-index: 30; background-color: #0f172a; }
-    .sticky-actions-td { position: sticky; left: 0; z-index: 10; background-color: inherit; border-right: 1px solid #e2e8f0; }
-    .sticky-deadline-td { position: sticky; left: 90px; z-index: 10; background-color: inherit; border-right: 1px solid #e2e8f0; }
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+        border: 2px solid #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    .resizer {
+        position: absolute;
+        top: 0;
+        right: 0;
+        width: 6px;
+        cursor: col-resize;
+        user-select: none;
+        touch-action: none;
+        height: 100%;
+        background-color: rgba(255, 255, 255, 0.2);
+        transition: background-color 0.2s;
+    }
+
+    .resizer:hover,
+    .resizing {
+        background-color: #38bdf8;
+    }
+
+    th.resizable-th {
+        position: relative;
+        overflow: hidden;
+    }
+
+    .sticky-actions-th {
+        position: sticky;
+        left: 0;
+        z-index: 30;
+        background-color: #0f172a;
+    }
+
+    .sticky-deadline-th {
+        position: sticky;
+        left: 90px;
+        z-index: 30;
+        background-color: #0f172a;
+    }
+
+    .sticky-actions-td {
+        position: sticky;
+        left: 0;
+        z-index: 10;
+        background-color: inherit;
+        border-right: 1px solid #e2e8f0;
+    }
+
+    .sticky-deadline-td {
+        position: sticky;
+        left: 90px;
+        z-index: 10;
+        background-color: inherit;
+        border-right: 1px solid #e2e8f0;
+    }
 </style>
 
 <script>
@@ -394,7 +621,7 @@
         return null;
     }
 
-    window.switchMasterDiscom = function(discomName) {
+    window.switchMasterDiscom = function (discomName) {
         window.masterDiscom = discomName;
         const nbBtn = document.getElementById("master-btn-NBPDCL");
         const sbBtn = document.getElementById("master-btn-SBPDCL");
@@ -411,7 +638,7 @@
         window.fetchMasterRecords();
     };
 
-    window.fetchMasterRecords = async function() {
+    window.fetchMasterRecords = async function () {
         const wrap = document.getElementById("mi-master-table-wrap");
         if (wrap) wrap.innerHTML = `<p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing ${window.masterDiscom} records...</p>`;
         try {
@@ -461,7 +688,7 @@
         return `${dd}/${mm}/${yyyy}`;
     }
 
-    window.populateInspectorDropdowns = function() {
+    window.populateInspectorDropdowns = function () {
         if (!window.miInspectorsList || window.miInspectorsList.length === 0) return;
         const sample = window.miInspectorsList[0];
         const keys = Object.keys(sample);
@@ -469,17 +696,17 @@
         const uniqueNames = [...new Set(window.miInspectorsList.map(i => i[nameKey]))].filter(Boolean);
         uniqueNames.sort();
         const optionsHtml = `<option value="">-- Select Inspector --</option>` + uniqueNames.map(n => `<option value="${n}">${n}</option>`).join('');
-        
+
         const tpiaSelect = document.getElementById("edit-tpiaInspector");
         const conductedSelect = document.getElementById("edit-conductedBy");
         const nablWitnessSelect = document.getElementById("edit-nablWitnessInspector");
-        
+
         if (tpiaSelect) tpiaSelect.innerHTML = optionsHtml;
         if (conductedSelect) conductedSelect.innerHTML = optionsHtml;
         if (nablWitnessSelect) nablWitnessSelect.innerHTML = optionsHtml;
     };
 
-    window.autofillTpiaContact = function() {
+    window.autofillTpiaContact = function () {
         const val = document.getElementById("edit-tpiaInspector").value.trim().toLowerCase();
         if (!window.miInspectorsList || window.miInspectorsList.length === 0) return;
         const sample = window.miInspectorsList[0];
@@ -494,7 +721,7 @@
         }
     };
 
-    window.toggleRevisedAuthInputs = function() {
+    window.toggleRevisedAuthInputs = function () {
         const isChecked = document.getElementById("edit-isAuthRevised").checked;
         const wrap = document.getElementById("revised-auth-wrap");
         if (wrap) {
@@ -509,7 +736,7 @@
 
     function renderTableRows(recordsToRender) {
         document.getElementById("record-count-badge").innerText = `${recordsToRender.length} of ${window.miMasterData.length} Records`;
-        
+
         if (recordsToRender.length === 0) {
             document.getElementById("mi-master-table-wrap").innerHTML = `<p class="text-xs text-slate-400 py-8 text-center">No matching inspection records found.</p>`;
             return;
@@ -519,18 +746,23 @@
 
         let html = `<table id="resizable-table" class="w-full text-left text-xs border-collapse table-fixed block md:table">
                     <thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono hidden md:table-header-group"><tr>`;
-        
+
         if (canEdit) {
             let deadlineTitle = window.masterDiscom === 'PVVNL' ? 'Deadline (7d)' : 'Deadline (15d)';
             html += `<th style="width: 90px; min-width: 90px;" class="p-3 border-r border-slate-700 text-center sticky-actions-th">Action</th>`;
             html += `<th style="width: 110px; min-width: 110px;" class="p-3 border-r border-slate-700 text-center font-bold text-amber-300 sticky-deadline-th">${deadlineTitle}</th>`;
         }
 
+        // Inside renderTableRows function:
+        const isPVVNL = window.masterDiscom === 'PVVNL';
+
         const headerCustomNames = {
             "srNo": "Sr No", "inspectionId": "Inspection ID", "discom": "Discom", "scheme": "Scheme",
-            "district": "District", "letterNo": "Inspection Letter No", "letterDate": "Letter Date",
-            "receivedDate": "Date of received Inspection Call", "pqccName": "PQCC Name",
-            "officials": "Name of Officials", "nodalCe": "Nodal Chief Engineer",
+            "district": isPVVNL ?"District/Location": "District", "letterNo": "Inspection Letter No", "letterDate": "Letter Date",
+            "receivedDate":isPVVNL ?"Tentative Date of Inspection / Status of Material": "Date of received Inspection Call", 
+            "pqccName": isPVVNL ?"Letter Authority":"PQCC Name",
+            "officials": "Name of Officials", 
+            "nodalCe":isPVVNL ?"PVVNL Office Contact No": "Nodal Chief Engineer",
             "manufacturer": "Manufacturer Name", "address": "Address", "contactPerson": "Contact Person",
             "mobile": "Mobile No", "materialInspected": "Material Inspected", "materialSpec": "Material Specification",
             "quantity": "Quantity", "tkc": "Name of TKC", "tpiaInspector": "Name of TPIA Inspector (Appointed)",
@@ -538,12 +770,13 @@
             "scheduleDate": "Schedule Date", "status": "Inspection Status", "subStatus": "Inspection Sub Status",
             "inspectionCompletedOn": "Inspection Completed On", "reportOm": "Report/ OM No and Date",
             "conductedBy": "Inspection conducted by TPIA Inspector", "dateFrom": "Date(s) of Inspection (From - To)",
-            "dateTo": "Date(s) of NABL Witness (From - To)", "manDays": "Man Days", "sealType": "Type of Seal",
+            "dateTo": isPVVNL ? "Calculated Man days" : "Date(s) of NABL Witness (From - To)",
+            "manDays": isPVVNL ? "Corrected Man days (Claimed)" : "Man Days",
+            "sealType": "Type of Seal",
             "sealSerial": "Seal Serial No Used in Inspection", "sealNoCount": "No of Seal", "nablStatusDate": "NABL Status and Testing Date",
             "reportReceived": "Report Received", "reportMail": "Report Mail", "letterRevision": "Letter Revision Status",
             "remarks": "Remark", "month": "Month of Inspection (conducted)", "billingStatus": "Billing Status", "invoiceNo": "Invoice No"
         };
-
         window.miKeys.forEach((key, index) => {
             let defaultWidth = "150px";
             const lk = key.toLowerCase();
@@ -560,7 +793,7 @@
         recordsToRender.forEach((row, idx) => {
             const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
             const rawId = String(row.inspectionId || row.InspectionID || row.inspectionID || row.id || '');
-            const safeId = rawId.replace(/'/g, "\\'"); 
+            const safeId = rawId.replace(/'/g, "\\'");
 
             html += `<tr class="flex flex-col md:table-row ${bg} hover:bg-blue-50/40 transition border-b md:border-b-0 cursor-pointer md:cursor-auto" onclick="window.toggleMobileRow(this)">`;
 
@@ -639,8 +872,8 @@
         initColumnResizer();
     }
 
-    window.toggleMobileRow = function(element) {
-        if (window.innerWidth >= 768) return; 
+    window.toggleMobileRow = function (element) {
+        if (window.innerWidth >= 768) return;
         const row = element.closest('tr');
         const drawer = row.nextElementSibling;
         const icon = row.querySelector('.toggle-icon');
@@ -658,13 +891,13 @@
         }
     };
 
-    window.populateFilterDropdown = function() {
+    window.populateFilterDropdown = function () {
         const field = document.getElementById("filter-field-select").value;
         const dataList = document.getElementById("filter-value-datalist");
         const filterInput = document.getElementById("filter-value-input");
-        
+
         const matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(field.toLowerCase()));
-        
+
         dataList.innerHTML = "";
         filterInput.value = "";
         filterInput.placeholder = `Type or select to filter by ${field}...`;
@@ -679,11 +912,11 @@
             opt.value = val;
             dataList.appendChild(opt);
         });
-        
-        window.applyTableFilter(); 
+
+        window.applyTableFilter();
     };
 
-    window.applyTableFilter = function() {
+    window.applyTableFilter = function () {
         const field = document.getElementById("filter-field-select").value;
         const selectedValue = document.getElementById("filter-value-input").value.trim().toLowerCase();
 
@@ -702,17 +935,17 @@
             const cellVal = String(row[matchingKey] || "").trim().toLowerCase();
             return cellVal.includes(selectedValue);
         });
-        
+
         renderTableRows(filtered);
     };
 
-    window.clearTableFilter = function() {
+    window.clearTableFilter = function () {
         document.getElementById("filter-value-input").value = "";
         renderTableRows(window.miMasterData);
     };
 
-    window.parseDateToYYYYMMDD = function(dateStr) {
-        if (!dateStr || String(dateStr).trim() === "" || String(dateStr).trim() === "-") return ""; 
+    window.parseDateToYYYYMMDD = function (dateStr) {
+        if (!dateStr || String(dateStr).trim() === "" || String(dateStr).trim() === "-") return "";
         if (dateStr.includes("/")) {
             const parts = dateStr.split("/");
             if (parts.length === 3) return `${parts[2]}-${parts[1]}-${parts[0]}`;
@@ -720,7 +953,7 @@
         return dateStr.split("T")[0];
     };
 
-    window.parseSafeLocalMidnight = function(str) {
+    window.parseSafeLocalMidnight = function (str) {
         if (!str) return null;
         let clean = String(str).trim().replace(/^(to|and)\s+/i, "").split("T")[0];
         if (clean.includes('/')) {
@@ -736,13 +969,13 @@
         return null;
     };
 
-    window.handleScheduleDateChange = function() {
+    window.handleScheduleDateChange = function () {
         const scheduleInput = document.getElementById("edit-scheduleDate");
         const statusSelect = document.getElementById("edit-status");
         if (scheduleInput.value && statusSelect.value === "Pending") statusSelect.value = "Schedule";
     };
 
-    window.updateDerivedMonth = function() {
+    window.updateDerivedMonth = function () {
         const compDateVal = document.getElementById("edit-inspectionCompletedOn").value;
         if (!compDateVal) { document.getElementById("edit-month").value = ""; return; }
         const d = window.parseSafeLocalMidnight(compDateVal);
@@ -753,7 +986,7 @@
     };
 
     // 🎯 OPEN MODAL (EDIT ALL)
-    window.openEditModal = function(inspectionId) {
+    window.openEditModal = function (inspectionId) {
         const row = window.miMasterData.find(r => {
             const idVal = r.inspectionId || r.InspectionID || r.inspectionID || r.id;
             return String(idVal).trim() === String(inspectionId).trim();
@@ -763,60 +996,60 @@
 
         const resolvedId = row.inspectionId || row.InspectionID || row.inspectionID || row.id || inspectionId;
         const setVal = (id, val) => { const el = document.getElementById(id); if (el) el.value = val !== undefined && val !== null ? val : ""; };
-        
+
         setVal("modal-edit-id-lbl", resolvedId);
         setVal("edit-inspectionId", resolvedId);
 
-        setVal("edit-scheme", row.scheme || ""); 
-        setVal("edit-district", row.district || ""); 
-        setVal("edit-manufacturer", row.manufacturer || ""); 
-        setVal("edit-letterNo", row.letterNo || ""); 
-        setVal("edit-letterDate", window.parseDateToYYYYMMDD(row.letterDate)); 
-        setVal("edit-receivedDate", window.parseDateToYYYYMMDD(row.receivedDate)); 
-        setVal("edit-pqccName", row.pqccName || ""); 
-        setVal("edit-officials", row.officials || ""); 
-        setVal("edit-nodalCe", row.nodalCe || ""); 
-        setVal("edit-address", row.address || ""); 
-        setVal("edit-contactPerson", row.contactPerson || ""); 
-        setVal("edit-mobile", row.mobile || ""); 
-        setVal("edit-materialInspected", row.materialInspected || ""); 
-        setVal("edit-materialSpec", row.materialSpec || ""); 
-        setVal("edit-quantity", row.quantity || ""); 
+        setVal("edit-scheme", row.scheme || "");
+        setVal("edit-district", row.district || "");
+        setVal("edit-manufacturer", row.manufacturer || "");
+        setVal("edit-letterNo", row.letterNo || "");
+        setVal("edit-letterDate", window.parseDateToYYYYMMDD(row.letterDate));
+        setVal("edit-receivedDate", window.parseDateToYYYYMMDD(row.receivedDate));
+        setVal("edit-pqccName", row.pqccName || "");
+        setVal("edit-officials", row.officials || "");
+        setVal("edit-nodalCe", row.nodalCe || "");
+        setVal("edit-address", row.address || "");
+        setVal("edit-contactPerson", row.contactPerson || "");
+        setVal("edit-mobile", row.mobile || "");
+        setVal("edit-materialInspected", row.materialInspected || "");
+        setVal("edit-materialSpec", row.materialSpec || "");
+        setVal("edit-quantity", row.quantity || "");
         setVal("edit-tkc", row.tkc || "");
 
-        setVal("edit-tpiaInspector", row.tpiaInspector || ""); 
+        setVal("edit-tpiaInspector", row.tpiaInspector || "");
         window.autofillTpiaContact();
 
         let rawAuthNo = String(row.authLetterNo || "").trim();
         setVal("edit-existingAuthLetterNo", rawAuthNo);
         let splitNo = rawAuthNo, splitDt = "";
-        if (rawAuthNo.toLowerCase().includes(" dated ")) { 
-            const parts = rawAuthNo.split(/dated/i); 
-            splitNo = parts[0].trim(); 
-            splitDt = window.parseDateToYYYYMMDD(parts[1].trim()); 
-        } else if (rawAuthNo.toLowerCase().includes(" date ")) { 
-            const parts = rawAuthNo.split(/date/i); 
-            splitNo = parts[0].trim(); 
-            splitDt = window.parseDateToYYYYMMDD(parts[1].trim()); 
+        if (rawAuthNo.toLowerCase().includes(" dated ")) {
+            const parts = rawAuthNo.split(/dated/i);
+            splitNo = parts[0].trim();
+            splitDt = window.parseDateToYYYYMMDD(parts[1].trim());
+        } else if (rawAuthNo.toLowerCase().includes(" date ")) {
+            const parts = rawAuthNo.split(/date/i);
+            splitNo = parts[0].trim();
+            splitDt = window.parseDateToYYYYMMDD(parts[1].trim());
         }
 
-        setVal("edit-authLetterNo", splitNo); 
+        setVal("edit-authLetterNo", splitNo);
         setVal("edit-authLetterDate", splitDt);
 
         const revCheck = document.getElementById("edit-isAuthRevised");
-        if (revCheck) revCheck.checked = false; 
+        if (revCheck) revCheck.checked = false;
         window.toggleRevisedAuthInputs();
 
-        setVal("edit-scheduleDate", window.parseDateToYYYYMMDD(row.scheduleDate)); 
-        setVal("edit-status", row.status || "Pending"); 
+        setVal("edit-scheduleDate", window.parseDateToYYYYMMDD(row.scheduleDate));
+        setVal("edit-status", row.status || "Pending");
         setVal("edit-subStatus", row.subStatus || "Pending");
-        
+
         setVal("edit-inspectionCompletedOn", window.parseDateToYYYYMMDD(row.inspectionCompletedOn));
         setVal("edit-reportOm", row.reportOm || "");
         setVal("edit-conductedBy", row.conductedBy || "");
 
-        setVal("edit-sealType", row.sealType || ""); 
-        setVal("edit-sealSerial", row.sealSerial || ""); 
+        setVal("edit-sealType", row.sealType || "");
+        setVal("edit-sealSerial", row.sealSerial || "");
         setVal("edit-sealNoCount", row.sealNoCount || "");
 
         // Date(s) of Inspection (Col AC)
@@ -828,7 +1061,7 @@
         let nablStatusVal = "";
         let nablDateVal = "";
         let witnessVal = "";
-        
+
         if (nblRaw.includes("Sample send for NABL Test")) nablStatusVal = "Sample send for NABL Test";
         else if (nblRaw.includes("Not Sent")) nablStatusVal = "Not Sent";
 
@@ -844,20 +1077,31 @@
             let m = nblRaw.match(/Witnessed by\s*-\s*([^,|]+)/i);
             if (m) witnessVal = m[1].trim();
         }
+        const isPVVNLModal = window.masterDiscom === 'PVVNL';
+        const nablDateLabelElem = document.querySelector("label[for='edit-nablDatesSequence']") ||
+            document.getElementById("edit-nablDatesSequence")?.previousElementSibling;
+        if (nablDateLabelElem) {
+            nablDateLabelElem.innerText = isPVVNLModal ? "Calculated Man days (Col AD)" : "NABL Witness Dates Sequence (Col AD)";
+        }
+
+        const manDaysLabelElem = document.getElementById("edit-manDays")?.previousElementSibling;
+        if (manDaysLabelElem) {
+            manDaysLabelElem.innerText = isPVVNLModal ? "Corrected Man days (Claimed)" : "Man Days (Auto)";
+        }
 
         setVal("edit-nablStatusOpt", nablStatusVal);
         setVal("edit-nablDateInput", nablDateVal);
         setVal("edit-nablWitnessInspector", witnessVal);
 
         // Date(s) of NABL Witness (Col AD)
-        setVal("edit-nablDatesSequence", row.dateTo || ""); 
+        setVal("edit-nablDatesSequence", row.dateTo || "");
 
-        setVal("edit-reportReceived", row.reportReceived || "No"); 
-        setVal("edit-reportMail", row.reportMail || "No"); 
-        setVal("edit-billingStatus", row.billingStatus || "Pending"); 
-        setVal("edit-invoiceNo", row.invoiceNo || ""); 
-        setVal("edit-letterRevision", row.letterRevision || "None"); 
-        setVal("edit-remarks", row.remarks || ""); 
+        setVal("edit-reportReceived", row.reportReceived || "No");
+        setVal("edit-reportMail", row.reportMail || "No");
+        setVal("edit-billingStatus", row.billingStatus || "Pending");
+        setVal("edit-invoiceNo", row.invoiceNo || "");
+        setVal("edit-letterRevision", row.letterRevision || "None");
+        setVal("edit-remarks", row.remarks || "");
         setVal("edit-month", row.month || "");
 
         window.updateInspectorSealPreview();
@@ -867,10 +1111,10 @@
         if (window.lucide) lucide.createIcons();
     };
 
-    window.closeEditModal = function() { document.getElementById("edit-inspection-modal").classList.add("hidden"); };
+    window.closeEditModal = function () { document.getElementById("edit-inspection-modal").classList.add("hidden"); };
 
     // 🎯 MODAL DATE SEQUENCE BUILDER (+ Add Date, + Add 'To' Date, + Add 'And' Date)
-    window.openDatePrompt = function(category, type) {
+    window.openDatePrompt = function (category, type) {
         window.activeSequenceCategory = category;
         window.activeSequenceType = type;
         document.getElementById("date-dialog-title").innerText = `Select ${category} Date (${type})`;
@@ -878,16 +1122,16 @@
         document.getElementById("date-picker-dialog").classList.remove("hidden");
     };
 
-    window.closeDatePrompt = function() {
+    window.closeDatePrompt = function () {
         document.getElementById("date-picker-dialog").classList.add("hidden");
     };
 
-    window.confirmDatePrompt = function() {
+    window.confirmDatePrompt = function () {
         const val = document.getElementById("dialog-date-input").value;
         if (!val) { alert("Please select a valid date."); return; }
         const parts = val.split("-");
         const formattedDate = `${parts[2]}/${parts[1]}/${parts[0]}`;
-        
+
         if (window.activeSequenceCategory === 'Inspection') {
             const seqInput = document.getElementById("edit-inspectionDatesSequence");
             const currVal = seqInput.value.trim();
@@ -914,7 +1158,7 @@
         window.closeDatePrompt();
     };
 
-    window.clearDateSequence = function(category) {
+    window.clearDateSequence = function (category) {
         if (category === 'Inspection') {
             document.getElementById("edit-inspectionDatesSequence").value = "";
             window.recalculateManDays();
@@ -925,7 +1169,7 @@
     };
 
     // 🎯 MAN-DAYS COMBINED CALCULATION MECHANISM (Including NABL Dates & Inspector Overlap Tracking)
-    window.recalculateManDays = function() {
+    window.recalculateManDays = function () {
         const inspSeqText = document.getElementById("edit-inspectionDatesSequence").value.trim();
         const nablSeqText = document.getElementById("edit-nablDatesSequence").value.trim();
 
@@ -955,12 +1199,12 @@
                     if (keyword === 'to') {
                         let curr = new Date(lastDate.getTime());
                         curr.setDate(curr.getDate() + 1);
-                        while (curr <= targetDate) { 
-                            daysSet.add(curr.toDateString()); 
-                            curr.setDate(curr.getDate() + 1); 
+                        while (curr <= targetDate) {
+                            daysSet.add(curr.toDateString());
+                            curr.setDate(curr.getDate() + 1);
                         }
-                    } else if (keyword === 'and') { 
-                        daysSet.add(targetDate.toDateString()); 
+                    } else if (keyword === 'and') {
+                        daysSet.add(targetDate.toDateString());
                     }
                     lastDate = new Date(targetDate.getTime());
                 }
@@ -977,7 +1221,7 @@
         // Inspector Overlap Tracking against sibling records
         const currentId = document.getElementById("edit-inspectionId").value;
         const inspectorName = document.getElementById("edit-conductedBy").value;
-        
+
         if (totalDays > 0 && inspectorName && inspectorName !== "Not Appointed" && inspectorName !== "Not Updated") {
             const siblingRecords = (window.miMasterData || []).filter(row => {
                 const rowId = String(row.inspectionId || row.InspectionID || "").trim();
@@ -1006,7 +1250,7 @@
         window.updateDerivedMonth();
     };
 
-    window.submitEditedInspection = async function(e) {
+    window.submitEditedInspection = async function (e) {
         e.preventDefault();
         const btn = document.getElementById("edit-save-btn");
         btn.disabled = true; btn.innerText = "Saving Changes...";
@@ -1015,7 +1259,7 @@
         let finalAuthLetterOutput = existingAuthRaw;
         const authNoInput = document.getElementById("edit-authLetterNo").value.trim();
         const authDtInput = document.getElementById("edit-authLetterDate").value.trim();
-        
+
         if (authNoInput) {
             let cleanNo = authNoInput.replace(/dated.*|date.*/gi, "").trim();
             if (authDtInput) {
@@ -1044,7 +1288,7 @@
         const nablDt = document.getElementById("edit-nablDateInput").value;
         const nablWitness = document.getElementById("edit-nablWitnessInspector").value;
         let combinedNabl = "";
-        
+
         if (nablOpt) {
             combinedNabl = nablOpt;
             if (nablDt) {
@@ -1061,101 +1305,101 @@
         const nablDatesSeq = document.getElementById("edit-nablDatesSequence").value;
 
         const payload = {
-            action: "updateInspection", 
-            discom: window.masterDiscom, 
-            inspectionId: currentId, 
-            scheme: document.getElementById("edit-scheme").value, 
-            district: document.getElementById("edit-district").value, 
-            manufacturer: document.getElementById("edit-manufacturer").value, 
-            letterNo: document.getElementById("edit-letterNo").value, 
-            letterDate: document.getElementById("edit-letterDate").value, 
-            receivedDate: document.getElementById("edit-receivedDate").value, 
-            pqccName: document.getElementById("edit-pqccName").value, 
-            officials: document.getElementById("edit-officials").value, 
-            nodalCe: document.getElementById("edit-nodalCe").value, 
-            address: document.getElementById("edit-address").value, 
-            contactPerson: document.getElementById("edit-contactPerson").value, 
-            mobile: document.getElementById("edit-mobile").value, 
-            materialInspected: document.getElementById("edit-materialInspected").value, 
-            materialSpec: document.getElementById("edit-materialSpec").value, 
-            quantity: document.getElementById("edit-quantity").value, 
-            tkc: document.getElementById("edit-tkc").value, 
-            tpiaInspector: document.getElementById("edit-tpiaInspector").value, 
-            tpiaContact: document.getElementById("edit-tpiaContact").value, 
-            authLetterNo: finalAuthLetterOutput, 
-            isRevised: isRevChecked, 
-            scheduleDate: document.getElementById("edit-scheduleDate").value, 
-            status: document.getElementById("edit-status").value, 
-            subStatus: document.getElementById("edit-subStatus").value, 
+            action: "updateInspection",
+            discom: window.masterDiscom,
+            inspectionId: currentId,
+            scheme: document.getElementById("edit-scheme").value,
+            district: document.getElementById("edit-district").value,
+            manufacturer: document.getElementById("edit-manufacturer").value,
+            letterNo: document.getElementById("edit-letterNo").value,
+            letterDate: document.getElementById("edit-letterDate").value,
+            receivedDate: document.getElementById("edit-receivedDate").value,
+            pqccName: document.getElementById("edit-pqccName").value,
+            officials: document.getElementById("edit-officials").value,
+            nodalCe: document.getElementById("edit-nodalCe").value,
+            address: document.getElementById("edit-address").value,
+            contactPerson: document.getElementById("edit-contactPerson").value,
+            mobile: document.getElementById("edit-mobile").value,
+            materialInspected: document.getElementById("edit-materialInspected").value,
+            materialSpec: document.getElementById("edit-materialSpec").value,
+            quantity: document.getElementById("edit-quantity").value,
+            tkc: document.getElementById("edit-tkc").value,
+            tpiaInspector: document.getElementById("edit-tpiaInspector").value,
+            tpiaContact: document.getElementById("edit-tpiaContact").value,
+            authLetterNo: finalAuthLetterOutput,
+            isRevised: isRevChecked,
+            scheduleDate: document.getElementById("edit-scheduleDate").value,
+            status: document.getElementById("edit-status").value,
+            subStatus: document.getElementById("edit-subStatus").value,
             inspectionCompletedOn: document.getElementById("edit-inspectionCompletedOn").value,
-            reportOm: document.getElementById("edit-reportOm").value.trim(), 
-            conductedBy: document.getElementById("edit-conductedBy").value, 
+            reportOm: document.getElementById("edit-reportOm").value.trim(),
+            conductedBy: document.getElementById("edit-conductedBy").value,
             dateFrom: inspectionDatesSeq, // Col AC
             dateTo: nablDatesSeq,         // Col AD
-            manDays: document.getElementById("edit-manDays").value, 
-            month: document.getElementById("edit-month").value, 
-            nablStatusDate: combinedNabl, 
-            reportReceived: document.getElementById("edit-reportReceived").value, 
-            reportMail: document.getElementById("edit-reportMail").value, 
-            billingStatus: document.getElementById("edit-billingStatus").value, 
-            invoiceNo: document.getElementById("edit-invoiceNo").value, 
-            letterRevision: document.getElementById("edit-letterRevision").value, 
-            remarks: document.getElementById("edit-remarks").value.trim(), 
-            sealType: document.getElementById("edit-sealType").value, 
-            sealSerial: document.getElementById("edit-sealSerial").value, 
+            manDays: document.getElementById("edit-manDays").value,
+            month: document.getElementById("edit-month").value,
+            nablStatusDate: combinedNabl,
+            reportReceived: document.getElementById("edit-reportReceived").value,
+            reportMail: document.getElementById("edit-reportMail").value,
+            billingStatus: document.getElementById("edit-billingStatus").value,
+            invoiceNo: document.getElementById("edit-invoiceNo").value,
+            letterRevision: document.getElementById("edit-letterRevision").value,
+            remarks: document.getElementById("edit-remarks").value.trim(),
+            sealType: document.getElementById("edit-sealType").value,
+            sealSerial: document.getElementById("edit-sealSerial").value,
             sealNoCount: document.getElementById("edit-sealNoCount").value
         };
 
         try {
             const res = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'text/plain;charset=utf-8' }, body: JSON.stringify(payload) });
-            const textData = await res.text(); 
+            const textData = await res.text();
             let data = { status: true };
-            try { data = JSON.parse(textData); } catch(e) {}
-            if (data.status !== false) { 
-                alert(data.message || "Master record successfully updated."); 
-                window.closeEditModal(); 
-                window.fetchMasterRecords(); 
-            } else { 
-                alert("Error: " + data.message); 
-                btn.disabled = false; 
-                btn.innerText = "Save Changes"; 
+            try { data = JSON.parse(textData); } catch (e) { }
+            if (data.status !== false) {
+                alert(data.message || "Master record successfully updated.");
+                window.closeEditModal();
+                window.fetchMasterRecords();
+            } else {
+                alert("Error: " + data.message);
+                btn.disabled = false;
+                btn.innerText = "Save Changes";
             }
-        } catch (err) { 
-            alert("Master record successfully updated."); 
-            window.closeEditModal(); 
-            window.fetchMasterRecords(); 
+        } catch (err) {
+            alert("Master record successfully updated.");
+            window.closeEditModal();
+            window.fetchMasterRecords();
         }
     };
 
-    window.updateInspectorSealPreview = async function() {
+    window.updateInspectorSealPreview = async function () {
         const box = document.getElementById("inspector-seal-availability-box");
         const content = document.getElementById("inspector-seal-details-content");
         const inspectorElem = document.getElementById("edit-conductedBy");
-        
+
         if (!inspectorElem || !inspectorElem.value) { if (box) box.classList.add("hidden"); return; }
 
         if (!window.sealRecordsData || window.sealRecordsData.length === 0) {
             if (box) box.classList.remove("hidden");
             if (content) content.innerHTML = `<span class="text-slate-400 animate-pulse">Fetching live seal inventory...</span>`;
-            try { 
-                const res = await fetch(`${API_URL}?action=getSealDetails`); 
-                const data = await res.json(); 
-                if (data.status) window.sealRecordsData = data.data || []; 
-            } catch (err) { 
-                if (content) content.innerHTML = `<span class="text-rose-500 font-bold">Failed to synchronize seal inventory.</span>`; 
-                return; 
+            try {
+                const res = await fetch(`${API_URL}?action=getSealDetails`);
+                const data = await res.json();
+                if (data.status) window.sealRecordsData = data.data || [];
+            } catch (err) {
+                if (content) content.innerHTML = `<span class="text-rose-500 font-bold">Failed to synchronize seal inventory.</span>`;
+                return;
             }
         }
 
-        const selectedInspector = inspectorElem.value.trim(); 
+        const selectedInspector = inspectorElem.value.trim();
         const cleanTargetKey = cleanInspectorName(selectedInspector);
-        if (!window.sealRecordsData || window.sealRecordsData.length === 0) { 
-            if (box) box.classList.remove("hidden"); 
-            if (content) content.innerHTML = `<span class="text-amber-800 italic">No seal inventory records found in database.</span>`; 
-            return; 
+        if (!window.sealRecordsData || window.sealRecordsData.length === 0) {
+            if (box) box.classList.remove("hidden");
+            if (content) content.innerHTML = `<span class="text-amber-800 italic">No seal inventory records found in database.</span>`;
+            return;
         }
 
-        let inspectorAllocations = {}; 
+        let inspectorAllocations = {};
         window.sealRecordsData.forEach(row => {
             let type = String(row.sealType || "").trim(), tpia = String(row.tpiaInspector || "").trim();
             if (cleanInspectorName(tpia) === cleanTargetKey) {
