@@ -91,9 +91,10 @@
                             <label class="block text-[10px] font-black uppercase text-slate-700 mb-1">Inspection Sub Status <span class="text-rose-500">*</span></label>
                             <select id="input-sub-status" class="w-full px-3 py-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                                 <option value="" disabled selected>-- Select Sub Status --</option>
-                                <option value="Completed - Material Pass">Completed - Material Pass</option>
-                                <option value="Completed - MOM">Completed - MOM</option>
-                                <option value="Completed - Failed in NABL Lab">Completed - Failed in NABL Lab</option>
+                                <option value="Completed-Material Pass">Completed-Material Pass</option>
+                                <option value="Completed-Material Fail">Completed-Material Fail</option>
+                                <option value="Completed-MOM">Completed-MOM</option>
+                                <option value="Completed-Failed in NABL Lab">Completed-Failed in NABL Lab</option>
                                 <option value="Hold by Dept">Hold by Dept</option>
                                 <option value="Hold by Manufacturer">Hold by Manufacturer</option>
                                 <option value="Hold by TKC">Hold by TKC</option>
@@ -129,7 +130,7 @@
                     </div>
 
                     <!-- Seal Details -->
-                    <div class="bg-amber-50/50 p-3 sm:p-4 rounded-2xl border border-amber-100 space-y-3">
+                    <div id="modal-seal-section" class="bg-amber-50/50 p-3 sm:p-4 rounded-2xl border border-amber-100 space-y-3">
                         <label class="block text-[10px] font-black uppercase text-amber-800 mb-1">Type of Seal</label>
                         <select id="input-seal-type" class="w-full px-3 py-2 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                             <option value="">-- Select Seal Type --</option>
@@ -263,7 +264,7 @@
         }
     }
 
-    // 🎯 RENDER WORKFLOW LIST WITH SEPARATE BUTTONS FOR SCHEDULED TAB
+    // 🎯 RENDER WORKFLOW LIST WITH MOBILE COLLAPSE (ID & Manufacturer Only) & EXPANDED INFO
     window.renderWorkflowList = function() {
         const container = document.getElementById("insp-container");
 
@@ -323,40 +324,42 @@
                         <!-- 🎯 COMPACT RESPONSIVE SUMMARY -->
                         <div class="p-3.5 sm:p-4 cursor-pointer hover:bg-slate-50 transition text-xs flex flex-col sm:grid sm:grid-cols-7 gap-2 sm:gap-3 items-start sm:items-center" onclick="window.toggleAccordionRow('${safeIdStr}')">
                             
+                            <!-- Mobile: Only ID and Manufacturer shown in collapsed view -->
                             <div class="flex justify-between items-center w-full sm:w-auto sm:col-span-1">
                                 <div>
-                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Insp ID</span>
-                                    <span class="font-mono font-bold text-blue-700 text-xs sm:text-xs">${idStr}</span>
+                                    <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5 sm:hidden">Inspection ID</span>
+                                    <span class="font-mono font-bold text-blue-700 text-xs">${idStr}</span>
+                                    <span class="block text-[10px] font-bold text-slate-800 mt-0.5 sm:hidden">${rec.manufacturer || '-'}</span>
                                 </div>
                                 <i id="icon-${safeIdStr}" data-lucide="chevron-right" class="w-4 h-4 text-slate-400 transition-transform sm:hidden"></i>
                             </div>
 
-                            <div>
+                            <div class="hidden sm:block">
                                 <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Letter No & Date</span>
                                 <span class="font-bold text-slate-700">${letterDisplay}</span>
                             </div>
 
-                            <div>
+                            <div class="hidden sm:block">
                                 <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Manufacturer</span>
                                 <span class="font-bold text-slate-800">${rec.manufacturer || '-'}</span>
                             </div>
 
-                            <div>
+                            <div class="hidden sm:block">
                                 <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Address</span>
                                 <span class="text-slate-600 line-clamp-1">${rec.address || '-'}</span>
                             </div>
 
-                            <div>
+                            <div class="hidden sm:block">
                                 <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Mat. Category</span>
                                 <span class="text-slate-600">${rec.materialInspected || '-'}</span>
                             </div>
 
-                            <div>
+                            <div class="hidden sm:block">
                                 <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Specification</span>
                                 <span class="text-slate-600 line-clamp-1">${rec.materialSpec || '-'}</span>
                             </div>
 
-                            <div class="flex items-center justify-between w-full sm:w-auto">
+                            <div class="hidden sm:flex items-center justify-between w-full sm:w-auto">
                                 <div>
                                     <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">Quantity</span>
                                     <span class="font-mono font-bold text-slate-800">${rec.quantity || '-'}</span>
@@ -367,6 +370,15 @@
 
                         <!-- 🎯 EXPANDED DETAILS -->
                         <div id="detail-${safeIdStr}" class="hidden border-t border-slate-100 bg-slate-50 p-4">
+                            <!-- Mobile-only expanded view showing desktop collapsed columns data -->
+                            <div class="grid grid-cols-1 gap-2.5 mb-4 sm:hidden text-[11px]">
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Letter No & Date</span><span class="font-bold text-slate-700">${letterDisplay}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Address</span><span class="text-slate-700">${rec.address || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Material Category</span><span class="text-slate-700">${rec.materialInspected || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Specification</span><span class="text-slate-700">${rec.materialSpec || '-'}</span></div>
+                                <div><span class="block font-black text-slate-400 uppercase text-[9px]">Quantity</span><span class="font-mono font-bold text-slate-800">${rec.quantity || '-'}</span></div>
+                            </div>
+
                             <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-4 text-[11px]">
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">Scheme</span><span class="font-bold text-slate-700">${rec.scheme || '-'}</span></div>
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">District</span><span class="font-bold text-slate-700">${rec.district || '-'}</span></div>
@@ -374,7 +386,7 @@
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">TKC</span><span class="font-bold text-blue-700">${rec.tkc || '-'}</span></div>
                             </div>
                             
-                            <!-- 🎯 ACTION BUTTONS: Inspection Completed & Re-Schedule (For Scheduled Tab) OR Update Record (For Not Scheduled Tab) -->
+                            <!-- 🎯 ACTION BUTTONS -->
                             <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
                                 ${isScheduledTab ? `
                                     <button onclick="window.openRescheduleModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
@@ -416,6 +428,19 @@
         document.getElementById("input-sub-status").selectedIndex = 0;
         
         window.hideConfirmationState(); 
+
+        // 🎯 Hide Seal Section dynamically if DISCOM is PVVNL
+        const sealSection = document.getElementById("modal-seal-section");
+        if (sealSection) {
+            if (discom && discom.toUpperCase() === 'PVVNL') {
+                sealSection.classList.add("hidden");
+                document.getElementById("input-seal-type").value = "";
+                document.getElementById("input-seal-serial").value = "";
+                document.getElementById("input-seal-count").value = "0";
+            } else {
+                sealSection.classList.remove("hidden");
+            }
+        }
 
         if (window.activeWorkflowTab === 'not-scheduled') {
             document.getElementById("modal-title").innerText = "Schedule Assignment";
@@ -480,16 +505,18 @@
             if (!statusVal) { alert("Please select an Inspection Status."); return; }
             if (!subStatusVal) { alert("Please select an Inspection Sub Status."); return; }
 
+            const isPVVNL = document.getElementById("modal-discom").value.toUpperCase() === 'PVVNL';
+
             summary = `
                 <div class="flex justify-between items-center border-b border-slate-200 pb-2 mb-2"><span class="text-slate-500">Action:</span><span class="font-black text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Mark as Completed</span></div>
                 <div class="space-y-1.5">
                     <div class="flex justify-between"><span class="text-slate-500">Completed On:</span><strong class="text-slate-800">${compDate}</strong></div>
                     <div class="flex justify-between"><span class="text-slate-500">Status:</span><strong class="text-slate-800">${statusVal}</strong></div>
                     <div class="flex justify-between"><span class="text-slate-500">Sub Status:</span><strong class="text-slate-800">${subStatusVal}</strong></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Man Days:</span><strong class="text-slate-800">${document.getElementById("input-mandays").value}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">${isPVVNL ? 'Corrected Man days (Claimed)' : 'Man Days'}:</span><strong class="text-slate-800">${document.getElementById("input-mandays").value}</strong></div>
                     <div class="flex justify-between"><span class="text-slate-500">Report/OM:</span><strong class="text-slate-800">${omText}</strong></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Insp Dates:</span><strong class="text-slate-800">${document.getElementById("input-dates-insp").value || '-'}</strong></div>
-                    <div class="flex justify-between"><span class="text-slate-500">Seal Count:</span><strong class="text-slate-800">${document.getElementById("input-seal-count").value || '0'}</strong></div>
+                    <div class="flex justify-between"><span class="text-slate-500">${isPVVNL ? 'Calculated Mandays Dates' : 'Insp Dates'}:</span><strong class="text-slate-800">${document.getElementById("input-dates-insp").value || '-'}</strong></div>
+                    ${!isPVVNL ? `<div class="flex justify-between"><span class="text-slate-500">Seal Count:</span><strong class="text-slate-800">${document.getElementById("input-seal-count").value || '0'}</strong></div>` : ''}
                 </div>
             `;
         }
@@ -515,12 +542,15 @@
 
         try {
             const type = document.getElementById("modal-type").value;
+            const discomValue = document.getElementById("modal-discom").value;
+            const isPVVNL = discomValue.toUpperCase() === 'PVVNL';
+
             const payload = {
                 action: "updateInspection",
                 client: currentMiUser.client,
                 inspectorName: currentMiUser.name, 
                 inspectionId: document.getElementById("modal-insp-id").value,
-                discom: document.getElementById("modal-discom").value
+                discom: discomValue
             };
 
             if (type === 'not-scheduled' || type === 'scheduled-reschedule') {
@@ -532,10 +562,22 @@
                 payload.reportOm = document.getElementById("input-om").value;
                 payload.status = document.getElementById("input-status").value;
                 payload.subStatus = document.getElementById("input-sub-status").value;
-                payload.dateFrom = document.getElementById("input-dates-insp").value;
-                payload.sealType = document.getElementById("input-seal-type").value;
-                payload.sealSerial = document.getElementById("input-seal-serial").value;
-                payload.sealNoCount = document.getElementById("input-seal-count").value;
+                
+                const inspectionDates = document.getElementById("input-dates-insp").value;
+                
+                if (isPVVNL) {
+                    payload.dateFrom = ""; 
+                    payload.dateTo = inspectionDates; 
+                    payload.sealType = "";
+                    payload.sealSerial = "";
+                    payload.sealNoCount = "";
+                } else {
+                    payload.dateFrom = inspectionDates;
+                    payload.sealType = document.getElementById("input-seal-type").value;
+                    payload.sealSerial = document.getElementById("input-seal-serial").value;
+                    payload.sealNoCount = document.getElementById("input-seal-count").value;
+                }
+
                 payload.conductedBy = currentMiUser.name; 
             }
 
