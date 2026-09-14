@@ -5,7 +5,7 @@
                 <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
                     <i data-lucide="shield-check" class="text-blue-600 w-5 h-5"></i> Manufacturer Details Directory (Admin Only)
                 </h3>
-                <p class="text-xs text-slate-500 mt-0.5">Manage manufacturer names, associated material categories, criteria, and registered values.</p>
+                <p class="text-xs text-slate-500 mt-0.5">Manage manufacturer names, associated material categories, units, criteria, and criteria values.</p>
             </div>
             <div class="flex items-center gap-3 w-full sm:w-auto justify-end">
                 <span id="mfg-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
@@ -53,15 +53,23 @@
                 <input type="text" id="mfg-manufacturerName" class="hidden w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. M/s ABB India Ltd">
             </div>
 
+            <!-- Material Category (Toggle between select existing or type new) -->
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Material Category</label>
-                <select id="mfg-materialCategory" onchange="handleManufacturerCategoryChange()" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                <div class="flex items-center justify-between mb-1">
+                    <label class="block text-[10px] font-black uppercase text-slate-500">Material Category</label>
+                    <button type="button" onclick="toggleMfgCategoryInputMode()" id="mfg-cat-toggle-btn" class="text-[10px] font-bold text-blue-600 hover:underline cursor-pointer">+ Type New Category</button>
+                </div>
+                <!-- Existing Select Dropdown -->
+                <select id="mfg-materialCategorySelect" class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                     <option value="">-- Select Material Category --</option>
                 </select>
+                <!-- Text Input for New Category (Hidden by default) -->
+                <input type="text" id="mfg-materialCategory" class="hidden w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="Enter new category name...">
             </div>
-            <div id="mfg-new-cat-wrap" class="hidden">
-                <label class="block text-[10px] font-black uppercase text-purple-600 mb-1">New Material Category Name</label>
-                <input type="text" id="mfg-new-cat-input" class="w-full p-2.5 border border-purple-300 rounded-xl text-xs font-bold outline-none bg-white" placeholder="Enter new category name...">
+
+            <div>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Unit</label>
+                <input type="text" id="mfg-unit" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. Nos, Kg, Mtr">
             </div>
             <div>
                 <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Criteria</label>
@@ -71,7 +79,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Value</label>
+                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Criteria Value</label>
                 <input type="number" step="any" id="mfg-value" required class="w-full p-2.5 border rounded-xl text-xs font-bold outline-none bg-white" placeholder="e.g. 150000">
             </div>
             <div class="flex justify-between items-center pt-3 border-t">
@@ -128,33 +136,29 @@
             if (data.status) {
                 window.materialSpecsMasterList = data.data || [];
                 populateManufacturerCategoryDropdown();
-                // Re-render table if data is already loaded to update the virtual Unit column
-                if (window.windowManufacturers && window.windowManufacturers.length > 0) {
-                    renderManufacturerTable();
-                }
             }
         } catch (e) {
             console.warn("Could not fetch material specs for directory.");
         }
     }
 
-    function populateManufacturerCategoryDropdown() {
-        const selectElem = document.getElementById("mfg-materialCategory");
+    window.populateManufacturerCategoryDropdown = function(selectedCategory = "") {
+        const selectElem = document.getElementById("mfg-materialCategorySelect");
         if (!selectElem) return;
-        const uniqueCategories = [...new Set(window.materialSpecsMasterList.map(m => m.materialCategory))].filter(Boolean);
+        
+        const categoriesFromSpecs = window.materialSpecsMasterList.map(m => m.materialCategory);
+        const categoriesFromMfg = window.windowManufacturers.map(m => m.materialCategory);
+        const uniqueCategories = [...new Set([...categoriesFromSpecs, ...categoriesFromMfg])].filter(Boolean);
         uniqueCategories.sort();
         
         let optionsHtml = `<option value="">-- Select Material Category --</option>` + 
             uniqueCategories.map(cat => `<option value="${cat}">${cat}</option>`).join('');
         
-        optionsHtml += `<option value="ADD_NEW_CAT_MFG" class="font-bold text-purple-600">+ Add New Category...</option>`;
         selectElem.innerHTML = optionsHtml;
-        
-        const newCatWrap = document.getElementById("mfg-new-cat-wrap");
-        if (newCatWrap) newCatWrap.classList.add("hidden");
-    }
+        if (selectedCategory) selectElem.value = selectedCategory;
+    };
 
-    function populateExistingManufacturerDropdown(selectedName = "") {
+    window.populateExistingManufacturerDropdown = function(selectedName = "") {
         const selectElem = document.getElementById("mfg-manufacturerSelect");
         if (!selectElem) return;
         const uniqueNames = [...new Set(window.windowManufacturers.map(m => m.manufacturerName))].filter(Boolean);
@@ -164,9 +168,9 @@
             uniqueNames.map(name => `<option value="${name}">${name}</option>`).join('');
         selectElem.innerHTML = optionsHtml;
         if (selectedName) selectElem.value = selectedName;
-    }
+    };
 
-    function toggleMfgNameInputMode() {
+    window.toggleMfgNameInputMode = function() {
         const selectElem = document.getElementById("mfg-manufacturerSelect");
         const inputElem = document.getElementById("mfg-manufacturerName");
         const toggleBtn = document.getElementById("mfg-name-toggle-btn");
@@ -182,21 +186,25 @@
             inputElem.classList.remove("hidden");
             toggleBtn.innerText = "Select Existing Name";
         }
-    }
+    };
 
-    function handleManufacturerCategoryChange() {
-        const selectElem = document.getElementById("mfg-materialCategory");
-        const newCatWrap = document.getElementById("mfg-new-cat-wrap");
-        if (!selectElem) return;
+    window.toggleMfgCategoryInputMode = function() {
+        const selectElem = document.getElementById("mfg-materialCategorySelect");
+        const inputElem = document.getElementById("mfg-materialCategory");
+        const toggleBtn = document.getElementById("mfg-cat-toggle-btn");
 
-        if (selectElem.value === "ADD_NEW_CAT_MFG") {
-            if (newCatWrap) newCatWrap.classList.remove("hidden");
-            const newCatInput = document.getElementById("mfg-new-cat-input");
-            if (newCatInput) newCatInput.value = "";
+        if (selectElem.classList.contains("hidden")) {
+            selectElem.classList.remove("hidden");
+            inputElem.classList.add("hidden");
+            inputElem.value = "";
+            toggleBtn.innerText = "+ Type New Category";
         } else {
-            if (newCatWrap) newCatWrap.classList.add("hidden");
+            selectElem.classList.add("hidden");
+            selectElem.value = "";
+            inputElem.classList.remove("hidden");
+            toggleBtn.innerText = "Select Existing Category";
         }
-    }
+    };
 
     if (typeof fetchManufacturerData !== 'function') {
         window.fetchManufacturerData = async function() {
@@ -237,26 +245,15 @@
         html += `<th class="p-3 border-r border-slate-700 w-32">Unique ID</th>`;
         html += `<th class="p-3 border-r border-slate-700">Manufacturer Name</th>`;
         html += `<th class="p-3 border-r border-slate-700 w-48">Material Category</th>`;
-        html += `<th class="p-3 border-r border-slate-700 w-24 text-center">Unit</th>`; // 🎯 Virtual Column for Unit
+        html += `<th class="p-3 border-r border-slate-700 w-24 text-center">Unit</th>`;
         html += `<th class="p-3 border-r border-slate-700 w-32">Criteria</th>`;
-        html += `<th class="p-3 border-r border-slate-700 w-28 text-right">Value</th>`;
+        html += `<th class="p-3 border-r border-slate-700 w-28 text-right">Criteria Valua</th>`;
         html += `<th class="p-3 text-center w-20">Action</th>`;
         html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
 
         window.windowManufacturers.forEach((row, idx) => {
             const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
             const payloadStr = encodeURIComponent(JSON.stringify(row));
-            
-            // 🎯 Match unit from material specifications master list
-            let matchedUnit = "-";
-            if (row.materialCategory && window.materialSpecsMasterList.length > 0) {
-                const foundSpec = window.materialSpecsMasterList.find(m => 
-                    m.materialCategory && m.materialCategory.trim().toLowerCase() === row.materialCategory.trim().toLowerCase()
-                );
-                if (foundSpec && foundSpec.unit) {
-                    matchedUnit = foundSpec.unit.replace(/unit\s*:/gi, "").replace(/[()]/g, "").trim();
-                }
-            }
 
             html += `
                 <tr class="${bg} hover:bg-blue-50/40 transition">
@@ -264,7 +261,7 @@
                     <td class="p-3 border-r font-mono font-bold text-blue-700">${row.uniqueId}</td>
                     <td class="p-3 border-r font-bold text-slate-800">${row.manufacturerName}</td>
                     <td class="p-3 border-r font-semibold text-slate-600">${row.materialCategory || '-'}</td>
-                    <td class="p-3 border-r text-center font-bold text-purple-600">${matchedUnit}</td>
+                    <td class="p-3 border-r text-center font-bold text-purple-600">${row.unit || '-'}</td>
                     <td class="p-3 border-r font-bold text-purple-700">${row.criteria || 'Value Percent'}</td>
                     <td class="p-3 border-r text-right font-mono font-bold text-slate-900">${row.value}</td>
                     <td class="p-3 text-center"><button onclick="openEditManufacturerModal('${payloadStr}')" class="px-2.5 py-1 bg-blue-50 hover:bg-blue-100 text-blue-700 font-bold rounded-lg text-[10px] transition cursor-pointer border border-blue-200">Edit</button></td>
@@ -283,16 +280,26 @@
             document.getElementById("mfg-uniqueId").value = "MFG-" + Date.now().toString().slice(-6);
             document.getElementById("mfg-uniqueId").readOnly = true;
             
-            const selectElem = document.getElementById("mfg-manufacturerSelect");
-            const inputElem = document.getElementById("mfg-manufacturerName");
-            const toggleBtn = document.getElementById("mfg-name-toggle-btn");
-            selectElem.classList.remove("hidden");
-            inputElem.classList.add("hidden");
-            inputElem.value = "";
-            toggleBtn.innerText = "+ Type New Name";
+            const mfgSelect = document.getElementById("mfg-manufacturerSelect");
+            const mfgInput = document.getElementById("mfg-manufacturerName");
+            const mfgToggleBtn = document.getElementById("mfg-name-toggle-btn");
+            mfgSelect.classList.remove("hidden");
+            mfgInput.classList.add("hidden");
+            mfgInput.value = "";
+            mfgToggleBtn.innerText = "+ Type New Name";
+
+            const catSelect = document.getElementById("mfg-materialCategorySelect");
+            const catInput = document.getElementById("mfg-materialCategory");
+            const catToggleBtn = document.getElementById("mfg-cat-toggle-btn");
+            catSelect.classList.remove("hidden");
+            catInput.classList.add("hidden");
+            catInput.value = "";
+            catToggleBtn.innerText = "+ Type New Category";
             
-            populateExistingManufacturerDropdown();
-            populateManufacturerCategoryDropdown();
+            window.populateExistingManufacturerDropdown();
+            window.populateManufacturerCategoryDropdown();
+            
+            document.getElementById("mfg-unit").value = "";
             document.getElementById("mfg-criteria").value = "Value Percent";
             document.getElementById("mfg-value").value = "";
             document.getElementById("mfg-delete-btn").classList.add("hidden");
@@ -309,20 +316,26 @@
             document.getElementById("mfg-uniqueId").value = item.uniqueId;
             document.getElementById("mfg-uniqueId").readOnly = true;
             
-            const selectElem = document.getElementById("mfg-manufacturerSelect");
-            const inputElem = document.getElementById("mfg-manufacturerName");
-            const toggleBtn = document.getElementById("mfg-name-toggle-btn");
-            selectElem.classList.add("hidden");
-            inputElem.classList.remove("hidden");
-            inputElem.value = item.manufacturerName || "";
-            toggleBtn.innerText = "Select Existing Name";
+            const mfgSelect = document.getElementById("mfg-manufacturerSelect");
+            const mfgInput = document.getElementById("mfg-manufacturerName");
+            const mfgToggleBtn = document.getElementById("mfg-name-toggle-btn");
+            mfgSelect.classList.add("hidden");
+            mfgInput.classList.remove("hidden");
+            mfgInput.value = item.manufacturerName || "";
+            mfgToggleBtn.innerText = "Select Existing Name";
 
-            populateManufacturerCategoryDropdown();
-            const catSelect = document.getElementById("mfg-materialCategory");
-            if (catSelect) {
-                catSelect.value = item.materialCategory || "";
-            }
+            const catSelect = document.getElementById("mfg-materialCategorySelect");
+            const catInput = document.getElementById("mfg-materialCategory");
+            const catToggleBtn = document.getElementById("mfg-cat-toggle-btn");
+            catSelect.classList.add("hidden");
+            catInput.classList.remove("hidden");
+            catInput.value = item.materialCategory || "";
+            catToggleBtn.innerText = "Select Existing Category";
+
+            window.populateExistingManufacturerDropdown(item.manufacturerName || "");
+            window.populateManufacturerCategoryDropdown(item.materialCategory || "");
             
+            document.getElementById("mfg-unit").value = item.unit || "";
             document.getElementById("mfg-criteria").value = item.criteria || "Value Percent";
             document.getElementById("mfg-value").value = item.value;
             document.getElementById("mfg-delete-btn").classList.remove("hidden");
@@ -344,15 +357,9 @@
             btn.disabled = true;
             btn.innerText = "Saving...";
 
-            const selectElem = document.getElementById("mfg-manufacturerSelect");
-            const inputElem = document.getElementById("mfg-manufacturerName");
-            let manufacturerName = "";
-
-            if (!selectElem.classList.contains("hidden")) {
-                manufacturerName = selectElem.value.trim();
-            } else {
-                manufacturerName = inputElem.value.trim();
-            }
+            const mfgSelect = document.getElementById("mfg-manufacturerSelect");
+            const mfgInput = document.getElementById("mfg-manufacturerName");
+            let manufacturerName = !mfgSelect.classList.contains("hidden") ? mfgSelect.value.trim() : mfgInput.value.trim();
 
             if (!manufacturerName) {
                 alert("Please select or enter a manufacturer name.");
@@ -361,13 +368,9 @@
                 return;
             }
 
-            const catSelect = document.getElementById("mfg-materialCategory");
-            const newCatInput = document.getElementById("mfg-new-cat-input");
-            let materialCategory = catSelect ? catSelect.value.trim() : "";
-
-            if (materialCategory === "ADD_NEW_CAT_MFG") {
-                materialCategory = newCatInput ? newCatInput.value.trim() : "";
-            }
+            const catSelect = document.getElementById("mfg-materialCategorySelect");
+            const catInput = document.getElementById("mfg-materialCategory");
+            let materialCategory = !catSelect.classList.contains("hidden") ? catSelect.value.trim() : catInput.value.trim();
 
             if (!materialCategory) {
                 alert("Please select or enter a material category.");
@@ -377,6 +380,7 @@
             }
 
             const uniqueId = document.getElementById("mfg-uniqueId").value;
+            const unit = document.getElementById("mfg-unit").value.trim();
             const criteria = document.getElementById("mfg-criteria").value;
             const value = document.getElementById("mfg-value").value;
 
@@ -385,19 +389,20 @@
                 uniqueId: uniqueId,
                 manufacturerName: manufacturerName,
                 materialCategory: materialCategory,
+                unit: unit,
                 criteria: criteria,
                 value: value
             };
 
             let specPayload = null;
-            if (catSelect && catSelect.value === "ADD_NEW_CAT_MFG" && materialCategory) {
+            if (catInput.classList.contains("hidden") === false && materialCategory) {
                 if (!window.materialSpecsMasterList.some(m => m.materialCategory.toLowerCase() === materialCategory.toLowerCase())) {
                     specPayload = {
                         action: "saveMaterialSpec",
                         uniqueId: "MS-" + Date.now().toString().slice(-6),
                         materialCategory: materialCategory,
                         materialSpec: "Standard",
-                        unit: "No",
+                        unit: unit || "No",
                         unitRate: 0
                     };
                 }
