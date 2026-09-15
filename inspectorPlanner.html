@@ -1,0 +1,427 @@
+<div class="max-w-7xl mx-auto space-y-6 animate-fade-in pb-12">
+
+    <!-- Top Header & Filter Controls -->
+    <div class="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="map-pinned" class="text-blue-600 w-5 h-5"></i> Inspector Field Planner & Status Tracker
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Monitor inspector bandwidth (Column T), scheduled commitments, and plan urgent assignments.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="planner-record-count" class="text-[11px] font-mono px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border">
+                    Loading records...
+                </span>
+            </div>
+        </div>
+
+        <!-- Dynamic Summary Block (Updates based on current filters) -->
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
+                <span class="text-[9px] font-black uppercase text-amber-600 block tracking-wider">Scheduled Calls</span>
+                <p id="sum-block-scheduled" class="text-lg font-black text-amber-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
+                <span class="text-[9px] font-black uppercase text-slate-500 block tracking-wider">Not Scheduled Calls</span>
+                <p id="sum-block-notsched" class="text-lg font-black text-slate-800 mt-1">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
+                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider">Active Inspectors</span>
+                <p id="sum-block-inspectors" class="text-lg font-black text-blue-700 mt-1">0</p>
+            </div>
+            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
+                <span class="text-[9px] font-black uppercase text-purple-600 block tracking-wider">Total Active Load</span>
+                <p id="sum-block-total" class="text-lg font-black text-purple-700 mt-1">0</p>
+            </div>
+        </div>
+
+        <!-- Filter & Sort Control Bar -->
+        <div class="grid grid-cols-1 sm:grid-cols-4 gap-3 pt-1">
+            <!-- Filter by Assigned Inspector (Column T) -->
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter by Assigned Inspector (Col T)</label>
+                <select id="planner-filter-inspector" onchange="window.renderInspectorPlannerTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="ALL">-- All Inspectors --</option>
+                </select>
+            </div>
+
+            <!-- Filter by Discom -->
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter by Discom</label>
+                <select id="planner-filter-discom" onchange="window.renderInspectorPlannerTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="ALL">-- All Discoms --</option>
+                    <option value="NBPDCL">NBPDCL</option>
+                    <option value="SBPDCL">SBPDCL</option>
+                    <option value="PVVNL">PVVNL</option>
+                </select>
+            </div>
+
+            <!-- Filter by Schedule Status -->
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter by Status</label>
+                <select id="planner-filter-status" onchange="window.renderInspectorPlannerTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="ALL">-- All Statuses --</option>
+                    <option value="scheduled">Scheduled Only</option>
+                    <option value="not-scheduled">Not Scheduled / Pending Only</option>
+                </select>
+            </div>
+
+            <!-- Sort By Options -->
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Sort By</label>
+                <select id="planner-sort-by" onchange="window.renderInspectorPlannerTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
+                    <option value="date-asc">Schedule Date (Ascending)</option>
+                    <option value="mfg-asc">Manufacturer Name (A-Z)</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Planner Data Grid (Exact Column Sequence) -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="overflow-x-auto border border-slate-200 rounded-2xl custom-scrollbar max-h-[70vh]">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white uppercase text-[9px] font-mono sticky top-0 z-10">
+                    <tr>
+                        <th class="p-3 border-r border-slate-700 w-40">Assigned Inspector</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-32">Schedule Date</th>
+                        <th class="p-3 border-r border-slate-700">Manufacturer & Address</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-28">Status</th>
+                        <th class="p-3 border-r border-slate-700 w-36">Inspection ID</th>
+                        <th class="p-3 border-r border-slate-700 w-44">Discom (Letter No & Date)</th>
+                        <th class="p-3 text-center w-28">Material</th>
+                    </tr>
+                </thead>
+                <tbody id="planner-table-body" class="divide-y bg-white font-medium align-top text-slate-700">
+                    <tr>
+                        <td colspan="7" class="p-12 text-center text-slate-400 animate-pulse font-bold">Synchronizing inspection allocations...</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- COMPREHENSIVE POPUP MODAL FOR INSPECTION DETAILS -->
+<div id="planner-inspection-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10">
+            <h3 id="planner-modal-title-text" class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="file-search" class="text-blue-600 w-5 h-5"></i> Complete Inspection Profile
+            </h3>
+            <button onclick="window.closePlannerInspectionModal()" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="planner-inspection-modal-body" class="text-xs">
+            <!-- Dynamic Content Injected Here -->
+        </div>
+    </div>
+</div>
+
+<script>
+    window.plannerRawData = [];
+    window.plannerInspectorsList = [];
+
+    window.initInspectorPlannerModule = async function() {
+        if (!currentMiUser || currentMiUser.role !== 'admin') {
+            const viewport = document.getElementById("mi-viewport");
+            if (viewport) {
+                viewport.innerHTML = `
+                    <div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm">
+                        <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                        <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                        <p class="text-xs text-slate-500">This planning portal is restricted to System Administrators only.</p>
+                    </div>
+                `;
+            }
+            if (window.lucide) window.lucide.createIcons();
+            return;
+        }
+
+        try {
+            const res = await fetch(`${API_URL}?action=getCombinedInspections`);
+            const textData = await res.text();
+            const parsed = JSON.parse(textData);
+
+            if (parsed.status && parsed.data) {
+                window.plannerRawData = parsed.data;
+                window.plannerInspectorsList = parsed.inspectors || [];
+                window.populateInspectorDropdown();
+                window.renderInspectorPlannerTable();
+            } else {
+                document.getElementById("planner-record-count").innerText = "Data Unavailable";
+            }
+        } catch (e) {
+            console.error("Planner sync error:", e);
+            document.getElementById("planner-record-count").innerText = "Network Error";
+        }
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.populateInspectorDropdown = function() {
+        const select = document.getElementById("planner-filter-inspector");
+        if (!select) return;
+
+        let namesSet = new Set();
+        window.plannerRawData.forEach(r => {
+            const insp = String(r.tpiaInspector || "").trim();
+            if (insp && insp !== "-" && insp.toLowerCase() !== "not appointed") namesSet.add(insp);
+        });
+        window.plannerInspectorsList.forEach(i => {
+            const name = String(i.name || i.InspectorName || "").trim();
+            if (name) namesSet.add(name);
+        });
+
+        let html = `<option value="ALL">-- All Inspectors (${namesSet.size}) --</option>`;
+        Array.from(namesSet).sort().forEach(name => {
+            html += `<option value="${name}">${name}</option>`;
+        });
+        select.innerHTML = html;
+    };
+
+    window.parsePlannerDate = function(dateStr) {
+        if (!dateStr || String(dateStr).trim() === "" || dateStr === "-") return null;
+        let clean = String(dateStr).trim().split('T')[0];
+        if (clean.includes('/')) {
+            const p = clean.split('/');
+            if (p.length === 3) {
+                let d = parseInt(p[0], 10), m = parseInt(p[1], 10), y = parseInt(p[2], 10);
+                if (y < 100) y += 2000;
+                return new Date(y, m - 1, d);
+            }
+        } else if (clean.includes('-')) {
+            const p = clean.split('-');
+            if (p.length === 3) {
+                let y, m, d;
+                if (p[0].length === 4) { y = parseInt(p[0], 10); m = parseInt(p[1], 10); d = parseInt(p[2], 10); } 
+                else { d = parseInt(p[0], 10); m = parseInt(p[1], 10); y = parseInt(p[2], 10); }
+                if (y < 100) y += 2000;
+                return new Date(y, m - 1, d);
+            }
+        }
+        const parsed = new Date(clean);
+        return isNaN(parsed.getTime()) ? null : parsed;
+    };
+
+    window.openPlannerInspectionModal = function(encodedRawData) {
+        if (!encodedRawData) return;
+        const r = JSON.parse(decodeURIComponent(encodedRawData));
+        const modal = document.getElementById("planner-inspection-modal");
+        const body = document.getElementById("planner-inspection-modal-body");
+        const titleText = document.getElementById("planner-modal-title-text");
+
+        const insp = String(r.tpiaInspector || "").trim();
+        const isAppointed = insp && insp.toLowerCase() !== "pending" && insp.toLowerCase() !== "not appointed" && insp !== "-";
+
+        if (titleText) {
+            titleText.innerHTML = `
+                <i data-lucide="file-search" class="text-blue-600 w-5 h-5"></i> Complete Inspection Profile
+                ${isAppointed ? `<span class="bg-emerald-100 text-emerald-800 text-[10px] px-2.5 py-0.5 rounded-full ml-2 font-black tracking-normal align-middle uppercase border border-emerald-200 shadow-xs">Appointed</span>` : ''}
+            `;
+        }
+
+        body.innerHTML = `
+            <div class="flex flex-col gap-4 p-1">
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection ID</strong><span class="text-sm font-black text-blue-700 font-mono">${r.inspectionId || r.InspectionID || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Discom</strong><span class="text-xs font-bold text-slate-800">${r.discom || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Scheme</strong><span class="text-xs font-bold text-slate-800">${r.scheme || '-'}</span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Letter No & Date</strong><span class="text-xs font-bold text-slate-800">${r.letterNo || '-'} <span class="text-slate-500 font-normal">(${r.letterDate || '-'})</span></span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">TKC</strong><span class="text-xs font-bold text-slate-800">${r.tkc || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Material Category</strong><span class="text-xs font-bold text-purple-700">${r.materialInspected || '-'}</span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Manufacturer & Address</strong><span class="text-xs font-bold text-slate-800">${r.manufacturer || '-'}<br><span class="text-[10px] font-medium text-slate-500 mt-1 inline-block leading-relaxed">${r.address || '-'}</span></span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Contact Person</strong><span class="text-xs font-bold text-slate-800">${r.contactPerson || '-'} <span class="text-slate-500 font-normal block mt-1">${r.mobile || '-'}</span></span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Material Spec</strong><span class="text-[11px] font-medium text-slate-800 whitespace-pre-wrap break-words leading-relaxed">${r.materialSpec || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Quantity</strong><span class="text-[11px] font-medium text-slate-800 whitespace-pre-wrap break-words leading-relaxed">${r.quantity || '-'}</span></div>
+                </div>
+
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4 border-t border-slate-200 pt-4 mt-2">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Name of TPIA Inspector (Column T)</strong><span class="text-xs font-bold text-blue-700">${r.tpiaInspector || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Contact Number</strong><span class="text-xs font-mono font-bold text-slate-800">${r.tpiaContact || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Authorization Letter No</strong><span class="text-xs font-bold text-slate-800 whitespace-pre-wrap break-words">${r.authLetterNo || '-'}</span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Schedule Date</strong><span class="text-xs font-mono font-bold text-slate-800">${r.scheduleDate || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection Completed On</strong><span class="text-xs font-mono font-bold text-slate-800">${r.inspectionCompletedOn || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Inspection Conducted By</strong><span class="text-xs font-bold text-blue-700">${r.conductedBy || '-'}</span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Date(s) of Inspection</strong><span class="text-xs font-mono font-bold text-slate-800">${r.dateFrom || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Date(s) of NABL Witness</strong><span class="text-xs font-mono font-bold text-slate-800">${r.dateTo || '-'}</span></div>
+                </div>
+                
+                <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">NABL Status & Testing Date</strong><span class="text-xs font-bold text-indigo-700">${r.nablStatusDate || '-'}</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Status / Sub-Status</strong><span class="text-xs font-bold text-emerald-700">${r.status || '-'} (${r.subStatus || '-'})</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Remark</strong><span class="text-xs font-bold text-slate-700 whitespace-pre-wrap break-words">${r.remarks || '-'}</span></div>
+                </div>
+
+                <div class="bg-slate-50 p-3 rounded-xl border border-slate-200">
+                    <strong class="text-slate-400 block text-[9px] uppercase mb-1">Log Details (Audit Trail)</strong>
+                    <span class="text-xs font-mono font-bold text-indigo-700 whitespace-pre-wrap break-words leading-relaxed block">${r.logDetails || '-'}</span>
+                </div>
+            </div>
+        `;
+        modal.classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.closePlannerInspectionModal = function() {
+        document.getElementById("planner-inspection-modal").classList.add("hidden");
+    };
+
+    window.renderInspectorPlannerTable = function() {
+        const inspectorFilter = document.getElementById("planner-filter-inspector").value;
+        const discomFilter = document.getElementById("planner-filter-discom").value;
+        const statusFilter = document.getElementById("planner-filter-status").value;
+        const sortBy = document.getElementById("planner-sort-by").value;
+        const tbody = document.getElementById("planner-table-body");
+        const countBadge = document.getElementById("planner-record-count");
+
+        if (!tbody) return;
+
+        let filtered = window.plannerRawData.filter(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const hasScheduleDate = r.scheduleDate && String(r.scheduleDate).trim() !== "" && String(r.scheduleDate) !== "-";
+
+            if (statusFilter === "scheduled") {
+                if (!(stat === "schedule" || stat === "scheduled") || !hasScheduleDate) return false;
+            } else if (statusFilter === "not-scheduled") {
+                if (stat !== "pending" && stat !== "") return false;
+            } else {
+                const isSchedValid = (stat === "schedule" || stat === "scheduled") && hasScheduleDate;
+                const isNotSchedValid = (stat === "pending" || stat === "");
+                if (!isSchedValid && !isNotSchedValid) return false;
+            }
+
+            const assignedInsp = String(r.tpiaInspector || "").trim();
+            if (inspectorFilter !== "ALL") {
+                if (assignedInsp !== inspectorFilter) return false;
+            }
+
+            const recordDiscom = String(r.discom || "").trim().toUpperCase();
+            if (discomFilter !== "ALL") {
+                if (recordDiscom !== discomFilter) return false;
+            }
+
+            return true;
+        });
+
+        // Update Summary Block
+        let sumSched = 0;
+        let sumNotSched = 0;
+        let sumInspectors = new Set();
+
+        filtered.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const hasScheduleDate = r.scheduleDate && String(r.scheduleDate).trim() !== "" && String(r.scheduleDate) !== "-";
+            const isSched = (stat === "schedule" || stat === "scheduled") && hasScheduleDate;
+            
+            if (isSched) sumSched++;
+            else sumNotSched++;
+
+            const insp = String(r.tpiaInspector || "").trim();
+            if (insp && insp !== "-" && insp.toLowerCase() !== "not appointed") {
+                sumInspectors.add(insp);
+            }
+        });
+
+        document.getElementById("sum-block-scheduled").innerText = sumSched;
+        document.getElementById("sum-block-notsched").innerText = sumNotSched;
+        document.getElementById("sum-block-inspectors").innerText = sumInspectors.size;
+        document.getElementById("sum-block-total").innerText = filtered.length;
+
+        filtered.sort((a, b) => {
+            if (sortBy === "mfg-asc") {
+                const mfgA = String(a.manufacturer || "").toLowerCase();
+                const mfgB = String(b.manufacturer || "").toLowerCase();
+                return mfgA.localeCompare(mfgB);
+            } else {
+                const dateA = window.parsePlannerDate(a.scheduleDate);
+                const dateB = window.parsePlannerDate(b.scheduleDate);
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return dateA - dateB;
+            }
+        });
+
+        if (countBadge) countBadge.innerText = `${filtered.length} Allocations Displayed`;
+
+        if (filtered.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="7" class="p-12 text-center text-slate-400 font-bold">No inspection records match your filter criteria.</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        filtered.forEach(r => {
+            const stat = String(r.status || "Pending").trim();
+            const isSched = stat.toLowerCase() === "schedule" || stat.toLowerCase() === "scheduled";
+            const statusBadge = isSched 
+                ? `<span class="px-2.5 py-0.5 rounded-md bg-amber-50 text-amber-700 border border-amber-200 font-bold text-[10px]">Scheduled</span>`
+                : `<span class="px-2.5 py-0.5 rounded-md bg-slate-100 text-slate-600 border border-slate-200 font-bold text-[10px]">Not Scheduled</span>`;
+
+            const inspectorName = String(r.tpiaInspector || "").trim();
+            const hasInspector = inspectorName && inspectorName !== "-" && inspectorName.toLowerCase() !== "not appointed";
+            const inspectorDisplay = hasInspector 
+                ? `<span class="font-bold text-blue-700">${inspectorName}</span>`
+                : `<span class="text-rose-500 italic">Not Appointed</span>`;
+
+            const encodedPayload = encodeURIComponent(JSON.stringify(r));
+
+            let letterInfo = r.letterNo || "No Letter";
+            if (r.letterDate && r.letterDate !== "-") letterInfo += ` (${r.letterDate})`;
+
+            html += `
+                <tr class="hover:bg-slate-50 transition border-b border-slate-100">
+                    <!-- 1. Assigned Inspector -->
+                    <td class="p-3 border-r">${inspectorDisplay}</td>
+                    
+                    <!-- 2. Schedule Date -->
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-800">${r.scheduleDate || '<span class="text-slate-400 italic font-normal">Pending</span>'}</td>
+                    
+                    <!-- 3. Manufacturer & Address -->
+                    <td class="p-3 border-r">
+                        <span class="font-bold text-slate-900 block">${r.manufacturer || '-'}</span>
+                        <span class="text-[10px] text-slate-500 block mt-0.5">${r.address || ''}</span>
+                    </td>
+                    
+                    <!-- 4. Status -->
+                    <td class="p-3 border-r text-center">${statusBadge}</td>
+                    
+                    <!-- 5. Inspection ID (Clickable) -->
+                    <td class="p-3 border-r font-mono font-black text-blue-700 hover:underline cursor-pointer" onclick="window.openPlannerInspectionModal('${encodedPayload}')" title="View all columns">${r.inspectionId || '-'}</td>
+                    
+                    <!-- 6. Discom (with letter no and date) -->
+                    <td class="p-3 border-r">
+                        <span class="font-black text-purple-700 bg-purple-50 px-2 py-0.5 rounded border border-purple-200 inline-block mb-1">${r.discom || '-'}</span>
+                        <span class="text-[10px] font-bold text-slate-600 block">${letterInfo}</span>
+                    </td>
+                    
+                    <!-- 7. Material -->
+                    <td class="p-3 text-center text-purple-700 font-bold">${r.materialInspected || '-'}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html;
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    setTimeout(() => {
+        window.initInspectorPlannerModule();
+    }, 50);
+</script>
