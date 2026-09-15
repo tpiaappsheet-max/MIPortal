@@ -37,7 +37,7 @@
         <div id="pdf-schedule-wrapper" class="p-1 max-h-[65vh] overflow-y-auto custom-scrollbar w-full bg-white">
             <h2 id="pdf-report-title" class="hidden font-black text-lg mb-4 uppercase tracking-wider text-center text-slate-800"></h2>
             
-            <!-- 🎯 Daily Operations Summary Banner (MOBILE WRAP FIXED) -->
+            <!-- 🎯 Daily Operations Summary Banner -->
             <div id="pdf-summary-banner" class="mb-5 bg-slate-50 md:bg-transparent border border-slate-200 md:border-none rounded-2xl md:rounded-none p-4 md:p-0 shadow-sm md:shadow-none hidden">
                 <h4 class="font-black text-[10px] uppercase text-slate-400 mb-3 text-center tracking-widest border-b border-slate-200 pb-2 md:hidden">Daily Operations Summary</h4>
                 
@@ -71,8 +71,22 @@
                 </div>
             </div>
 
-            <div id="unified-inspectors-list" class="space-y-3">
-                <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing records...</p>
+            <!-- Compact Table View -->
+            <div class="overflow-x-auto border border-slate-200 rounded-xl bg-white">
+                <table class="w-full text-left text-xs border-collapse">
+                    <thead class="bg-slate-900 text-white uppercase text-[9px] font-mono tracking-wider">
+                        <tr>
+                            <th class="p-2.5 border-r border-slate-700 w-44">Inspector Name</th>
+                            <th class="p-2.5 border-r border-slate-700 w-36 text-center">Status</th>
+                            <th class="p-2.5 border-r border-slate-700">Assignments & Schedule Details</th>
+                            <th class="p-2.5 border-r border-slate-700 w-56 pdf-control-row">Remarks</th>
+                            <th class="p-2.5 hidden pdf-read-only-row w-56">Remarks</th>
+                        </tr>
+                    </thead>
+                    <tbody id="unified-inspectors-list" class="divide-y font-medium text-slate-800">
+                        <tr><td colspan="5" class="p-6 text-center text-slate-400 animate-pulse">Synchronizing records...</td></tr>
+                    </tbody>
+                </table>
             </div>
         </div>
     </div>
@@ -104,7 +118,6 @@
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
 
-    /* 🎯 FLAWLESS ANTI-CROP PDF RELOCATION & CONDITIONAL VISIBILITY SETTINGS */
     .pdf-rendering-active {
         background: white !important;
         padding: 20px !important;
@@ -112,9 +125,8 @@
     .pdf-rendering-active .hide-on-print { display: none !important; }
     .pdf-rendering-active * { box-sizing: border-box !important; }
 
-    /* 🎯 Hide controls, show clean badges during PDF export */
     body.pdf-export-mode .pdf-control-row { display: none !important; }
-    body.pdf-export-mode .pdf-read-only-row { display: flex !important; }
+    body.pdf-export-mode .pdf-read-only-row { display: table-cell !important; }
 </style>
 
 <script>
@@ -378,7 +390,7 @@
 
         const canExpand = (currentMiUser && currentMiUser.role === 'admin');
 
-        let unifiedHtml = "";
+        let tableRowsHtml = "";
         let schedCount = 0;
         let idleCount = 0;
 
@@ -417,7 +429,7 @@
                 if (isActiveDuty && assignedInspections.length === 0) countLabel = overrideShorthand;
                 else if (isActiveDuty) countLabel = `${assignedInspections.length} + ${overrideShorthand}`;
                 
-                statusBadge = `<span class="text-[10px] font-mono px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-800 border-emerald-300 flex items-center gap-1.5 whitespace-nowrap"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> On Duty (${countLabel})</span>`;
+                statusBadge = `<span class="text-[10px] font-mono px-2 py-0.5 rounded border font-bold bg-emerald-100 text-emerald-800 border-emerald-300 inline-flex items-center gap-1.5 whitespace-nowrap"><div class="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></div> On Duty (${countLabel})</span>`;
             } else {
                 idleCount++;
                 if (isLeave) {
@@ -429,94 +441,145 @@
                 }
             }
 
-            let activeDutyDisplay = isActiveDuty ? "flex" : "hidden";
+            let activeDutyDisplay = isActiveDuty ? "block" : "hidden";
 
-            let controlsHtml = `
-                <div class="flex items-center gap-3 flex-wrap w-full pt-2.5 mt-1 border-t border-slate-100 pdf-control-row">
-                    <select onchange="window.updateInspectorState('${matchKey}', 'overrideStatus', this.value, true)" class="p-1.5 text-[10px] font-bold border border-slate-300 rounded outline-none bg-slate-50 text-slate-700 cursor-pointer shadow-2xs w-36">
-                        <option value="" ${!savedState.overrideStatus ? 'selected' : ''}>- No Status Override -</option>
-                        <option value="NABL Witness" ${isNabl ? 'selected' : ''}>NABL Witness</option>
-                        <option value="Material Inspection" ${isMatInsp ? 'selected' : ''}>Material Inspection</option>
-                        <option value="Leave" ${isLeave ? 'selected' : ''}>Leave</option>
-                        <option value="No Work" ${isNoWork ? 'selected' : ''}>No Work</option>
-                    </select>
+            let effectiveDiscom = savedState.discom || '';
+            if (!effectiveDiscom && assignedInspections.length > 0) {
+                effectiveDiscom = assignedInspections[0].discom || '';
+            }
+            let discomBadgeColor = 'bg-blue-100 text-blue-800 border-blue-300';
+            if (effectiveDiscom === 'SBPDCL') discomBadgeColor = 'bg-purple-100 text-purple-800 border-purple-300';
+            else if (effectiveDiscom === 'PVVNL') discomBadgeColor = 'bg-amber-100 text-amber-800 border-amber-300';
 
-                    <select onchange="window.updateInspectorState('${matchKey}', 'discom', this.value, true)" class="${activeDutyDisplay} p-1.5 text-[10px] font-bold border border-blue-300 rounded outline-none bg-blue-50 text-blue-800 cursor-pointer shadow-2xs w-28">
-                        <option value="">Discom...</option>
-                        <option value="NBPDCL" ${savedState.discom === 'NBPDCL' ? 'selected' : ''}>NBPDCL</option>
-                        <option value="SBPDCL" ${savedState.discom === 'SBPDCL' ? 'selected' : ''}>SBPDCL</option>
-                        <option value="PVVNL" ${savedState.discom === 'PVVNL' ? 'selected' : ''}>PVVNL</option>
-                    </select>
+            let statusColumnHtml = `
+                <div class="flex flex-col gap-2 items-center sm:items-start w-full">
+                    ${statusBadge}
+                    ${effectiveDiscom ? `<span class="text-[11px] font-black font-mono px-2.5 py-1 rounded-md border ${discomBadgeColor} uppercase tracking-wider block text-center w-full shadow-2xs">${effectiveDiscom}</span>` : ''}
+                </div>
+            `;
 
-                    <input type="text" list="all-inspection-ids-list" oninput="window.updateInspectorState('${matchKey}', 'inspectionId', this.value, false)" value="${safeInspId}" placeholder="Search ID..." class="${activeDutyDisplay} flex-1 min-w-[140px] max-w-[200px] p-1.5 text-[10px] border border-blue-300 rounded outline-none focus:border-blue-600 bg-blue-50 text-blue-900 font-bold placeholder-blue-400 shadow-2xs transition">
-
-                    <input type="text" oninput="window.updateInspectorState('${matchKey}', 'comment', this.value, false)" value="${safeComment}" placeholder="Type any temporary remark here..." class="flex-1 min-w-[180px] p-1.5 text-[10px] border border-slate-300 rounded outline-none focus:border-blue-500 bg-slate-50 text-slate-900 font-bold placeholder-slate-400 shadow-2xs transition">
+            let controlsCellHtml = `
+                <div class="flex flex-col gap-2 w-full pdf-control-row">
+                    <div class="w-full">
+                        <select onchange="window.updateInspectorState('${matchKey}', 'overrideStatus', this.value, true)" class="w-full p-1.5 text-[10px] font-bold border border-slate-300 rounded outline-none bg-slate-50 text-slate-700 cursor-pointer">
+                            <option value="" ${!savedState.overrideStatus ? 'selected' : ''}>- Status Override -</option>
+                            <option value="NABL Witness" ${isNabl ? 'selected' : ''}>NABL Witness</option>
+                            <option value="Material Inspection" ${isMatInsp ? 'selected' : ''}>Material Inspection</option>
+                            <option value="Leave" ${isLeave ? 'selected' : ''}>Leave</option>
+                            <option value="No Work" ${isNoWork ? 'selected' : ''}>No Work</option>
+                        </select>
+                    </div>
+                    <div class="${activeDutyDisplay} w-full">
+                        <select onchange="window.updateInspectorState('${matchKey}', 'discom', this.value, true)" class="w-full p-1.5 text-[10px] font-bold border border-blue-300 rounded outline-none bg-blue-50 text-blue-800 cursor-pointer">
+                            <option value="">Select Discom...</option>
+                            <option value="NBPDCL" ${savedState.discom === 'NBPDCL' ? 'selected' : ''}>NBPDCL</option>
+                            <option value="SBPDCL" ${savedState.discom === 'SBPDCL' ? 'selected' : ''}>SBPDCL</option>
+                            <option value="PVVNL" ${savedState.discom === 'PVVNL' ? 'selected' : ''}>PVVNL</option>
+                        </select>
+                    </div>
+                    <div class="${activeDutyDisplay} w-full">
+                        <input type="text" list="all-inspection-ids-list" oninput="window.updateInspectorState('${matchKey}', 'inspectionId', this.value, false)" value="${safeInspId}" placeholder="Search Inspection ID..." class="w-full p-1.5 text-[10px] border border-blue-300 rounded outline-none bg-blue-50 text-blue-900 font-bold placeholder-blue-400">
+                    </div>
+                    <div class="w-full">
+                        <textarea oninput="window.updateInspectorState('${matchKey}', 'comment', this.value, false); this.style.height = 'auto'; this.style.height = (this.scrollHeight) + 'px';" placeholder="Type remark here..." class="w-full p-1.5 text-[10px] border border-slate-300 rounded outline-none bg-slate-50 text-slate-900 font-bold placeholder-slate-400 resize-none overflow-hidden leading-snug">${safeComment}</textarea>
+                    </div>
                 </div>
                 
-                <div class="hidden pdf-read-only-row w-full flex-col sm:flex-row flex-wrap items-start sm:items-center gap-2 pt-2.5 mt-1 border-t border-slate-100">
-                    ${isLeave ? `<span class="text-[10px] font-bold bg-rose-50 text-rose-800 px-2 py-1 rounded border border-rose-200">Status Override: On Leave</span>` : ''}
-                    ${isNoWork ? `<span class="text-[10px] font-bold bg-slate-100 text-slate-700 px-2 py-1 rounded border border-slate-300">Status Override: No Work</span>` : ''}
-                    ${isActiveDuty ? `<span class="text-[10px] font-bold bg-blue-50 text-blue-800 px-2.5 py-1 rounded border border-blue-200 shadow-xs uppercase tracking-wide">${savedState.overrideStatus} <span class="mx-1">|</span> Discom: ${savedState.discom || 'N/A'} <span class="mx-1">|</span> ID: ${savedState.inspectionId || 'N/A'}</span>` : ''}
-                    ${savedState.comment ? `<span class="text-[11px] font-medium text-slate-700 bg-amber-50 px-3 py-1 rounded border border-amber-200 flex-1 whitespace-pre-wrap leading-tight shadow-xs"><strong class="text-amber-800">Remark:</strong> ${savedState.comment}</span>` : ''}
+                <div class="hidden pdf-read-only-row flex-col gap-1 text-[10px]">
+                    ${isLeave ? `<span class="font-bold text-rose-800 block">Override: On Leave</span>` : ''}
+                    ${isNoWork ? `<span class="font-bold text-slate-700 block">Override: No Work</span>` : ''}
+                    ${isActiveDuty ? `<span class="font-bold text-blue-800 block">${savedState.overrideStatus} | Discom: ${savedState.discom || 'N/A'} | ID: ${savedState.inspectionId || 'N/A'}</span>` : ''}
+                    ${savedState.comment ? `<span class="text-slate-700 block whitespace-pre-wrap"><strong class="text-slate-900">Remark:</strong> ${savedState.comment}</span>` : ''}
                 </div>
             `;
 
-            unifiedHtml += `
-                <div class="p-3 bg-white border border-slate-200 rounded-xl shadow-sm flex flex-col gap-1 break-inside-avoid">
-                    <div class="flex items-center gap-3 flex-wrap">
-                        <span class="font-black text-sm text-slate-900">${fullName}</span>
-                        <span class="text-[11px] text-slate-500 font-mono flex items-center gap-1"><i data-lucide="phone" class="w-3 h-3"></i> ${phone}</span>
-                        ${statusBadge}
-                    </div>
-                    ${controlsHtml}
-            `;
+            let assignmentsHtml = `<span class="text-[11px] text-slate-400 italic">No assigned inspection records for this date.</span>`;
 
             if (assignedInspections.length > 0) {
-                unifiedHtml += `<div class="space-y-2 pt-3 mt-1 border-t border-slate-100">`;
-                
+                assignmentsHtml = `<div class="space-y-2 w-full">`;
                 assignedInspections.forEach(item => {
                     const safeId = String(item.inspectionId || item.id || Date.now());
                     window.scheduleInspectionsCache[safeId] = item;
 
-                    let discomBadgeColor = 'bg-blue-50 text-blue-700 border-blue-200';
-                    if (item.discom === 'SBPDCL') discomBadgeColor = 'bg-purple-50 text-purple-700 border-purple-200';
-                    else if (item.discom === 'PVVNL') discomBadgeColor = 'bg-amber-50 text-amber-700 border-amber-200';
-
                     const clickAttr = canExpand ? `onclick="window.showInspectionDetailById('${safeId}')"` : '';
                     const linkClass = canExpand ? 'text-blue-600 hover:text-blue-800 underline cursor-pointer' : 'text-slate-700';
                     const schedDateStr = item.scheduleDate ? String(item.scheduleDate).replace('T00:00:00.000Z', '').trim() : 'N/A';
+                    const logDetailsStr = item.logDetails || "System Logged";
 
-                    unifiedHtml += `
-                        <div class="grid grid-cols-1 sm:grid-cols-12 gap-3 p-3 bg-slate-50 border border-slate-200 rounded-lg items-start">
-                            <div class="sm:col-span-3 flex flex-col gap-1.5 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0 sm:pr-3">
-                                <div class="flex items-center gap-2 flex-wrap">
-                                    <span class="text-[10px] font-black font-mono px-2 py-0.5 rounded border ${discomBadgeColor} text-center">${item.discom || 'DISCOM'}</span>
-                                    <strong ${clickAttr} class="${linkClass} font-mono text-[13px] tracking-wide transition break-all" title="Click to view details">${item.inspectionId}</strong>
+                    const rawSpecs = String(item.materialSpec || "").split("\n").filter(Boolean);
+                    const rawQtys = String(item.quantity || "").split("\n").filter(Boolean);
+                    let itemSpecsHtml = "";
+                    
+                    if (rawSpecs.length > 0) {
+                        const isSingle = rawSpecs.length === 1;
+                        const gridClass = isSingle ? "grid-cols-1" : "grid-cols-1 sm:grid-cols-2";
+                        
+                        itemSpecsHtml = `<div class="text-[10px] font-mono text-slate-700 bg-slate-100/90 border border-slate-200 rounded p-1.5 mt-1.5 w-full space-y-1">
+                            <strong class="text-slate-900 uppercase text-[9px] block mb-1 border-b border-slate-200 pb-0.5 flex items-center gap-1">
+                                <i data-lucide="layers" class="w-3 h-3 text-blue-600 shrink-0"></i> Scheduled Material Specifications & Quantities Breakdown:
+                            </strong>
+                            <div class="grid ${gridClass} gap-1">
+                                ${rawSpecs.map((sLine, sIdx) => {
+                                    let cleanS = sLine.trim();
+                                    let sNo = (sIdx + 1) + ".";
+                                    const mPre = cleanS.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                                    if (mPre) { sNo = mPre[1]; cleanS = mPre[2]; }
+                                    let qVal = 0;
+                                    if (rawQtys[sIdx]) {
+                                        let qL = rawQtys[sIdx].trim();
+                                        const qM = qL.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                                        qVal = parseFloat(qM ? qM[2] : qL) || 0;
+                                    }
+                                    return `<div class="bg-white px-2 py-1 rounded border border-slate-200 flex justify-between items-start gap-1 break-words">
+                                        <span class="whitespace-normal break-words leading-tight flex-1 text-slate-800"><strong>${sNo}</strong> ${cleanS}</span>
+                                        <span class="font-bold text-blue-700 bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 shrink-0 self-center">${qVal}</span>
+                                    </div>`;
+                                }).join('')}
+                            </div>
+                        </div>`;
+                    }
+
+                    assignmentsHtml += `
+                        <div class="p-2 bg-slate-50 border border-slate-200 rounded-lg flex flex-col gap-1 w-full break-inside-avoid">
+                            <div class="flex items-center justify-between flex-wrap gap-2 border-b border-slate-200 pb-1.5 mb-0.5">
+                                <div class="flex items-center gap-2">
+                                    <strong ${clickAttr} class="${linkClass} font-mono text-xs tracking-wide" title="Click to view details">${item.inspectionId}</strong>
                                 </div>
-                                <br>
-                                <span class="text-[9px] font-bold text-blue-700 font-mono bg-blue-50/50 border border-blue-100 rounded px-1.5 py-0.5 w-max">
-                                    <i data-lucide="calendar-clock" class="w-3 h-3 inline relative -top-0.5"></i> Sched Start: ${schedDateStr} (Logged at -  ${item.logDetails || 'System Logged'})
-                                </span>
                             </div>
-                            <div class="sm:col-span-3 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0">
-                                <span class="text-[11px] font-bold text-slate-800 whitespace-normal break-words leading-relaxed block">${item.manufacturer || 'N/A'}</span>
+                            <div class="text-[11px] font-bold text-slate-800">${item.manufacturer || 'N/A'} <span class="font-normal text-slate-500 font-mono">(${item.materialInspected || 'N/A'})</span></div>
+                            <div class="text-[10px] text-slate-600 italic flex items-start gap-1">
+                                <i data-lucide="map-pin" class="w-3 h-3 shrink-0 mt-0.5"></i> <span>${item.address || 'Address not listed'}</span>
                             </div>
-                            <div class="sm:col-span-4 sm:pr-3 border-b sm:border-b-0 sm:border-r border-slate-200 pb-2 sm:pb-0">
-                                <span class="text-[11px] text-slate-600 italic whitespace-normal break-words leading-relaxed flex items-start gap-1">
-                                    <i data-lucide="map-pin" class="w-3 h-3 shrink-0 mt-0.5"></i> 
-                                    <span>${item.address || 'Address not listed'}</span>
-                                </span>
+                            <div class="text-[9px] font-bold text-blue-700 font-mono bg-blue-50/50 border border-blue-100 rounded p-1 w-full mt-0.5 break-words whitespace-pre-wrap leading-relaxed">
+                                Sched Start: ${schedDateStr} <br />(Logged at - ${logDetailsStr})
                             </div>
-                            <div class="sm:col-span-2">
-                                <span class="text-[10px] font-bold text-purple-700 bg-purple-50 border border-purple-200 px-2 py-1 rounded block whitespace-normal break-words text-center leading-tight shadow-sm">${item.materialInspected || 'N/A'}</span>
-                            </div>
+                            ${itemSpecsHtml}
                         </div>
                     `;
                 });
-                unifiedHtml += `</div>`;
+                assignmentsHtml += `</div>`;
             }
 
-            unifiedHtml += `</div>`;
+            tableRowsHtml += `
+                <tr class="hover:bg-slate-50/60 transition break-inside-avoid">
+                    <td class="p-3 border-r align-top">
+                        <div class="font-black text-slate-900 text-xs">${fullName}</div>
+                        <div class="text-[10px] text-slate-500 font-mono flex items-center gap-1 mt-0.5"><i data-lucide="phone" class="w-3 h-3"></i> ${phone}</div>
+                    </td>
+                    <td class="p-3 border-r align-top text-center">
+                        ${statusColumnHtml}
+                    </td>
+                    <td class="p-3 border-r align-top">
+                        ${assignmentsHtml}
+                    </td>
+                    <td class="p-3 align-top pdf-control-row">
+                        ${controlsCellHtml}
+                    </td>
+                    <td class="p-3 align-top hidden pdf-read-only-row">
+                        ${controlsCellHtml}
+                    </td>
+                </tr>
+            `;
         });
 
         document.getElementById("total-count").innerText = inspectors.length;
@@ -534,7 +597,16 @@
         
         if (summaryBanner) summaryBanner.classList.remove('hidden');
 
-        unifiedDiv.innerHTML = unifiedHtml || `<p class="text-xs text-slate-400 py-6 text-center">No inspector records available.</p>`;
+        unifiedDiv.innerHTML = tableRowsHtml || `<tr><td colspan="5" class="p-6 text-center text-slate-400">No inspector records available.</td></tr>`;
+        
+        // Auto-resize textareas to match content height on initial load
+        setTimeout(() => {
+            document.querySelectorAll('textarea').forEach(ta => {
+                ta.style.height = 'auto';
+                ta.style.height = (ta.scrollHeight) + 'px';
+            });
+        }, 10);
+
         if (window.lucide) lucide.createIcons();
     };
         
@@ -836,7 +908,7 @@
             });
         };
 
-        if (typeof window.html2pdf === 'undefined') {
+        (typeof window.html2pdf === 'undefined') ? (() => {
             btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading...`;
             const script = document.createElement('script');
             script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
@@ -847,9 +919,7 @@
                 btn.disabled = false;
             };
             document.head.appendChild(script);
-        } else {
-            executeExport();
-        }
+        })() : executeExport();
     };
 
     setTimeout(() => {
