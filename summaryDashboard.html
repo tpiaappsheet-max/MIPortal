@@ -2,14 +2,16 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 
 <div class="max-w-[98%] mx-auto space-y-4 animate-fade-in my-4">
-    
+
     <!-- 🎯 Main Dashboard Tabs -->
     <div class="flex justify-center mb-2 mt-2 hide-on-print">
         <div class="bg-slate-200/60 p-1.5 rounded-2xl inline-flex space-x-1 shadow-inner border border-slate-200">
-            <button onclick="window.switchAnalyticsTab('scheme')" id="tab-btn-scheme" class="px-6 py-2.5 text-xs font-black rounded-xl bg-white text-indigo-600 shadow-sm transition-all duration-200 flex items-center gap-2">
+            <button onclick="window.switchAnalyticsTab('scheme')" id="tab-btn-scheme"
+                class="px-6 py-2.5 text-xs font-black rounded-xl bg-white text-indigo-600 shadow-sm transition-all duration-200 flex items-center gap-2">
                 <i data-lucide="bar-chart-3" class="w-4 h-4"></i> Scheme-wise Analytics
             </button>
-            <button onclick="window.switchAnalyticsTab('inspector')" id="tab-btn-inspector" class="px-6 py-2.5 text-xs font-black rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200 flex items-center gap-2">
+            <button onclick="window.switchAnalyticsTab('inspector')" id="tab-btn-inspector"
+                class="px-6 py-2.5 text-xs font-black rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200 flex items-center gap-2">
                 <i data-lucide="users" class="w-4 h-4"></i> Inspector Performance
             </button>
         </div>
@@ -25,24 +27,30 @@
                     </h3>
                     <p class="text-xs font-bold text-slate-500 mt-1">Real-time DISCOM metrics and billing analytics.</p>
                 </div>
-                
+
                 <div class="flex items-center gap-3 flex-wrap">
-                    <button onclick="window.downloadSummaryPDF('scheme')" class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 pdf-btn">
+                    <button onclick="window.downloadSummaryPDF('scheme')"
+                        class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 pdf-btn">
                         <i data-lucide="download-cloud" class="w-4 h-4"></i> Export PDF
                     </button>
                     <div class="flex items-center gap-2 bg-slate-50 p-1.5 rounded-2xl border border-slate-200">
-                        <button onclick="window.loadAnalyticsForDiscom('NBPDCL')" id="btn-analytics-NBPDCL" class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-indigo-600 text-white shadow-md">NBPDCL</button>
-                        <button onclick="window.loadAnalyticsForDiscom('SBPDCL')" id="btn-analytics-SBPDCL" class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200">SBPDCL</button>
-                        <button onclick="window.loadAnalyticsForDiscom('PVVNL')" id="btn-analytics-PVVNL" class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200">PVVNL</button>
+                        <button onclick="window.loadAnalyticsForDiscom('NBPDCL')" id="btn-analytics-NBPDCL"
+                            class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-indigo-600 text-white shadow-md">NBPDCL</button>
+                        <button onclick="window.loadAnalyticsForDiscom('SBPDCL')" id="btn-analytics-SBPDCL"
+                            class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200">SBPDCL</button>
+                        <button onclick="window.loadAnalyticsForDiscom('PVVNL')" id="btn-analytics-PVVNL"
+                            class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900 hover:bg-slate-200">PVVNL</button>
                     </div>
                 </div>
             </div>
 
             <div id="pdf-export-wrapper-scheme" class="space-y-8 bg-white relative">
-                <h2 id="pdf-report-title-scheme" class="hidden font-black text-2xl uppercase tracking-wider text-center text-slate-800 mb-6 border-b pb-4"></h2>
-                
-                <!-- Expanded KPI Quick Cards -->
-                <div class="grid grid-cols-2 sm:grid-cols-4 lg:grid-cols-7 gap-3 pb-2">
+                <h2 id="pdf-report-title-scheme"
+                    class="hidden font-black text-2xl uppercase tracking-wider text-center text-slate-800 mb-6 border-b pb-4">
+                </h2>
+
+                <!-- Expanded KPI Quick Cards (Adjusted to 6 columns after removing Y-Day) -->
+                <div class="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 pb-2">
                     <div class="bg-blue-50 border border-blue-100 p-3 rounded-2xl relative overflow-hidden">
                         <p class="text-[9px] font-black uppercase text-blue-600 tracking-wider">Valid Calls</p>
                         <h4 id="kpi-valid" class="text-xl font-black text-slate-800 mt-1">0</h4>
@@ -50,10 +58,6 @@
                     <div class="bg-emerald-50 border border-emerald-100 p-3 rounded-2xl relative overflow-hidden">
                         <p class="text-[9px] font-black uppercase text-emerald-600 tracking-wider">Completed Calls</p>
                         <h4 id="kpi-completed" class="text-xl font-black text-slate-800 mt-1">0</h4>
-                    </div>
-                    <div class="bg-violet-50 border border-violet-100 p-3 rounded-2xl relative overflow-hidden shadow-sm">
-                        <p class="text-[9px] font-black uppercase text-violet-700 tracking-wider flex items-center gap-1"><i data-lucide="check-circle-2" class="w-3 h-3"></i> Y-Day Comp.</p>
-                        <h4 id="kpi-yesterday" class="text-xl font-black text-violet-900 mt-1">0</h4>
                     </div>
                     <div class="bg-amber-50 border border-amber-100 p-3 rounded-2xl relative overflow-hidden">
                         <p class="text-[9px] font-black uppercase text-amber-600 tracking-wider">Pending Calls</p>
@@ -74,56 +78,30 @@
                 </div>
 
                 <!-- 🎯 Cross-Tabulated Summary Data Grid (Mobile Responsive Expand/Collapse) -->
-                <div id="summary-table-container-scheme" class="md:border border-slate-300 rounded-2xl md:shadow-sm overflow-hidden flex flex-col bg-white relative">
-                    <div id="analytics-loader-scheme" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+                <div id="summary-table-container-scheme"
+                    class="md:border border-slate-300 rounded-2xl md:shadow-sm overflow-hidden flex flex-col bg-white relative">
+                    <div id="analytics-loader-scheme"
+                        class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
                         <p class="text-sm font-bold text-indigo-600 animate-pulse flex items-center gap-2">
                             <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Calculating Metrics...
                         </p>
                     </div>
-                    <div class="p-0 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar w-full md:max-h-[60vh] relative scroll-target">
-                        <table class="w-full text-left text-[11px] border-collapse border-0 md:border border-slate-800 block md:table table-fixed">
-                            <thead id="summary-thead" class="sticky top-0 bg-[#93c5fd] text-slate-900 z-20 font-bold hidden md:table-header-group"></thead>
-                            <tbody id="summary-tbody" class="font-medium block md:table-row-group divide-y md:divide-y-0 divide-slate-200"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <!-- 🎯 PDF PAGE BREAK MARKER -->
-                <div class="html2pdf__page-break"></div>
-
-                <!-- 🎯 Yesterday's Completed Inspections Detail Table (Strictly Yesterday, Desktop Expansion Enabled) -->
-                <div id="yesterday-table-container" class="border border-violet-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white relative mt-8">
-                    <div class="p-4 bg-violet-100/50 border-b border-violet-200 flex flex-col sm:flex-row items-center justify-between gap-3">
-                        <div class="flex items-center gap-3">
-                            <h4 class="font-black text-sm uppercase text-violet-900 flex items-center gap-2">
-                                <i data-lucide="calendar-check-2" class="w-5 h-5 text-violet-600"></i> Yesterday's Completed Inspections
-                            </h4>
-                            <span class="text-[10px] font-black text-violet-800 bg-violet-200/50 px-2 py-1 rounded border border-violet-300" id="yesterday-date-label">--/--/----</span>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="text-xs font-black bg-violet-600 text-white px-3 py-1.5 rounded-xl shadow-sm">Count: <span id="yesterday-table-count">0</span></span>
-                        </div>
-                    </div>
-                    <div class="p-0 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar w-full max-h-[65vh] relative scroll-target">
-                        <table class="w-full text-left text-[11px] border-collapse block md:table">
-                            <thead class="sticky top-0 bg-violet-200 text-violet-900 z-20 font-bold uppercase tracking-wider shadow-sm hidden md:table-header-group">
-                                <tr>
-                                    <th class="p-2 border-r border-violet-300 w-36">Inspection ID</th>
-                                    <th class="p-2 border-r border-violet-300 w-1/4">Manufacturer & Address</th>
-                                    <th class="p-2 border-r border-violet-300 w-1/4">Material Details (Cat/Spec/Qty)</th>
-                                    <th class="p-2 border-r border-violet-300 w-32">Conducted By</th>
-                                    <th class="p-2 border-r border-violet-300 w-28">Status / Sub-Status</th>
-                                    <th class="p-2 text-center w-28">Completed On</th>
-                                </tr>
+                    <div
+                        class="p-0 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar w-full md:max-h-[60vh] relative scroll-target">
+                        <table
+                            class="w-full text-left text-[11px] border-collapse border-0 md:border border-slate-800 block md:table table-fixed">
+                            <thead id="summary-thead"
+                                class="sticky top-0 bg-[#93c5fd] text-slate-900 z-20 font-bold hidden md:table-header-group">
                             </thead>
-                            <tbody id="yesterday-tbody" class="font-medium divide-y md:divide-y-0 divide-violet-100 block md:table-row-group">
-                                <!-- Populated dynamically by JS -->
+                            <tbody id="summary-tbody"
+                                class="font-medium block md:table-row-group divide-y md:divide-y-0 divide-slate-200">
                             </tbody>
                         </table>
                     </div>
                 </div>
-                
-                <p id="pdf-help-text-scheme" class="text-[10px] text-slate-400 mt-2 text-center italic hide-on-print">* Click on any numerical value in the summary to view detailed records.</p>
+
+                <p id="pdf-help-text-scheme" class="text-[10px] text-slate-400 mt-2 text-center italic hide-on-print">*
+                    Click on any numerical value in the summary to view detailed records.</p>
             </div>
         </div>
     </div>
@@ -136,52 +114,67 @@
                     <h3 class="font-black text-lg uppercase text-slate-800 flex items-center gap-2">
                         <i data-lucide="users" class="text-emerald-600 w-6 h-6"></i> Inspector Performance
                     </h3>
-                    <p class="text-xs font-bold text-slate-500 mt-1">Cross-DISCOM completed inspections grouped by Inspector & Category.</p>
+                    <p class="text-xs font-bold text-slate-500 mt-1">Cross-DISCOM completed inspections grouped by
+                        Inspector & Category.</p>
                 </div>
                 <div class="flex items-center gap-3">
-                    <button onclick="window.downloadSummaryPDF('inspector')" class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 pdf-btn">
+                    <button onclick="window.downloadSummaryPDF('inspector')"
+                        class="px-4 py-2 rounded-xl text-xs font-black transition cursor-pointer bg-slate-800 hover:bg-slate-900 text-white shadow-md flex items-center gap-2 pdf-btn">
                         <i data-lucide="download-cloud" class="w-4 h-4"></i> Export PDF
                     </button>
                 </div>
             </div>
 
-            <!-- Inspector Cross-Tab Grid -->
-            <div id="pdf-export-wrapper-inspector" class="border border-slate-300 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white relative">
-                <div id="analytics-loader-inspector" class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
+            <div id="pdf-export-wrapper-inspector"
+                class="border border-slate-300 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white relative">
+                <div id="analytics-loader-inspector"
+                    class="absolute inset-0 bg-white/80 backdrop-blur-sm z-50 flex items-center justify-center hidden">
                     <p class="text-sm font-bold text-emerald-600 animate-pulse flex items-center gap-2">
                         <i data-lucide="loader-2" class="w-5 h-5 animate-spin"></i> Fetching All Discoms...
                     </p>
                 </div>
-                
-                <h2 id="pdf-report-title-inspector" class="hidden font-black text-2xl uppercase tracking-wider text-center text-slate-800 mt-6 mb-4 border-b pb-4"></h2>
-                
+
+                <h2 id="pdf-report-title-inspector"
+                    class="hidden font-black text-2xl uppercase tracking-wider text-center text-slate-800 mt-6 mb-4 border-b pb-4">
+                </h2>
+
                 <div class="p-0 overflow-auto custom-scrollbar w-full max-h-[65vh] relative scroll-target">
                     <table class="w-full text-left text-[11px] border-collapse border border-slate-800 table-auto">
-                        <thead id="inspector-thead" class="sticky top-0 bg-emerald-200 text-slate-900 z-20 font-bold"></thead>
+                        <thead id="inspector-thead" class="sticky top-0 bg-emerald-200 text-slate-900 z-20 font-bold">
+                        </thead>
                         <tbody id="inspector-tbody" class="font-medium"></tbody>
                     </table>
                 </div>
-                <p id="pdf-help-text-inspector" class="text-[10px] text-slate-400 mt-2 mb-2 text-center italic hide-on-print">* Click on any numerical value or engineer name to view details.</p>
+                <p id="pdf-help-text-inspector"
+                    class="text-[10px] text-slate-400 mt-2 mb-2 text-center italic hide-on-print">* Click on any
+                    numerical value or engineer name to view details.</p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- 🎯 Shared Drill-down Pivot Modal (Desktop & Mobile Expansion Enabled) -->
-<div id="drilldown-modal" class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
-    <div class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] animate-fade-in">
+<!-- 🎯 Shared Drill-down Pivot Modal -->
+<div id="drilldown-modal"
+    class="hidden fixed inset-0 bg-slate-900/80 backdrop-blur-sm z-[999] flex items-center justify-center p-4">
+    <div
+        class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl border border-slate-200 flex flex-col max-h-[90vh] animate-fade-in">
         <div class="flex items-center justify-between p-5 border-b">
             <div>
-                <h4 id="drilldown-title" class="font-black text-sm uppercase text-indigo-900 tracking-wider flex items-center gap-2">
+                <h4 id="drilldown-title"
+                    class="font-black text-sm uppercase text-indigo-900 tracking-wider flex items-center gap-2">
                     <i data-lucide="list-filter" class="w-5 h-5 text-indigo-600"></i> Drill-down Records
                 </h4>
-                <p id="drilldown-subtitle" class="text-xs text-slate-500 font-bold mt-1">Showing details for selected metric</p>
+                <p id="drilldown-subtitle" class="text-xs text-slate-500 font-bold mt-1">Showing details for selected
+                    metric</p>
             </div>
-            <button type="button" onclick="window.closeDrilldown()" class="text-slate-400 hover:text-rose-600 p-2 rounded-xl bg-slate-100 hover:bg-rose-50 transition cursor-pointer"><i data-lucide="x" class="w-5 h-5"></i></button>
+            <button type="button" onclick="window.closeDrilldown()"
+                class="text-slate-400 hover:text-rose-600 p-2 rounded-xl bg-slate-100 hover:bg-rose-50 transition cursor-pointer"><i
+                    data-lucide="x" class="w-5 h-5"></i></button>
         </div>
         <div class="p-0 overflow-x-hidden md:overflow-x-auto overflow-y-auto custom-scrollbar flex-1 bg-slate-50">
             <table class="w-full text-left text-[11px] border-collapse block md:table">
-                <thead class="sticky top-0 bg-slate-800 text-white font-mono uppercase tracking-wider z-10 shadow hidden md:table-header-group">
+                <thead
+                    class="sticky top-0 bg-slate-800 text-white font-mono uppercase tracking-wider z-10 shadow hidden md:table-header-group">
                     <tr>
                         <th class="p-3 border-r border-slate-700 w-36">Inspection ID</th>
                         <th class="p-3 border-r border-slate-700">Scheme</th>
@@ -192,79 +185,175 @@
                         <th class="p-3">Invoice No</th>
                     </tr>
                 </thead>
-                <tbody id="drilldown-tbody" class="divide-y md:divide-y-0 divide-slate-200 font-medium bg-white block md:table-row-group">
+                <tbody id="drilldown-tbody"
+                    class="divide-y md:divide-y-0 divide-slate-200 font-medium bg-white block md:table-row-group">
                     <!-- Populated dynamically -->
                 </tbody>
             </table>
         </div>
         <div class="p-4 border-t bg-white flex justify-end rounded-b-3xl">
-            <button type="button" onclick="window.closeDrilldown()" class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-black rounded-xl shadow cursor-pointer">Close View</button>
+            <button type="button" onclick="window.closeDrilldown()"
+                class="px-5 py-2.5 bg-slate-800 hover:bg-slate-900 text-white text-xs font-black rounded-xl shadow cursor-pointer">Close
+                View</button>
         </div>
     </div>
 </div>
 
 <style>
-    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
-    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
-    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .custom-scrollbar::-webkit-scrollbar {
+        width: 8px;
+        height: 8px;
+    }
 
-    .sticky-col-left { position: sticky; left: 0; z-index: 10; font-weight: 900; border-right: 1px solid #1e293b; border-left: 1px solid #1e293b;}
-    .sticky-col-right { position: sticky; right: 0; z-index: 10; font-weight: 900; border-left: 1px solid #1e293b; border-right: 1px solid #1e293b;}
-    .sticky-header-left { position: sticky; left: 0; z-index: 30; background-color: inherit; border-right: 1px solid #1e293b; border-left: 1px solid #1e293b;}
-    .sticky-header-right { position: sticky; right: 0; z-index: 30; background-color: inherit; border-left: 1px solid #1e293b; border-right: 1px solid #1e293b;}
+    .custom-scrollbar::-webkit-scrollbar-track {
+        background: #f1f5f9;
+        border-radius: 8px;
+    }
 
-    /* 🎯 Adjust Executive Summary Matrix Widths (Fixed 30% first col, Equal Flex mid cols) */
-    #summary-thead th:first-child, 
-    #summary-tbody td:first-child { width: 30% !important; max-width: 300px !important; white-space: normal !important; word-wrap: break-word !important; }
-    
-    #summary-thead th:not(:first-child):not(:last-child), 
-    #summary-tbody td:not(:first-child):not(:last-child) { 
-        width: auto !important; 
-        min-width: 70px; 
-        text-align: center !important; 
+    .custom-scrollbar::-webkit-scrollbar-thumb {
+        background: #cbd5e1;
+        border-radius: 8px;
+        border: 2px solid #f1f5f9;
+    }
+
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+        background: #94a3b8;
+    }
+
+    /* Dual Sticky Left Columns */
+    .sticky-col-sno {
+        position: sticky;
+        left: 0;
+        z-index: 11;
+        font-weight: 900;
+        border-left: 1px solid #1e293b;
+        border-right: 1px solid #1e293b;
+        width: 45px;
+        text-align: center;
+    }
+
+    .sticky-col-desc {
+        position: sticky;
+        left: 45px;
+        z-index: 10;
+        font-weight: 900;
+        border-right: 1px solid #1e293b;
+    }
+
+    .sticky-header-sno {
+        position: sticky;
+        left: 0;
+        z-index: 31;
+        background-color: inherit;
+        border-left: 1px solid #1e293b;
+        border-right: 1px solid #1e293b;
+        width: 45px;
+        text-align: center;
+    }
+
+    .sticky-header-desc {
+        position: sticky;
+        left: 45px;
+        z-index: 30;
+        background-color: inherit;
+        border-right: 1px solid #1e293b;
+    }
+
+    .sticky-col-right {
+        position: sticky;
+        right: 0;
+        z-index: 10;
+        font-weight: 900;
+        border-left: 1px solid #1e293b;
+        border-right: 1px solid #1e293b;
+    }
+
+    .sticky-header-right {
+        position: sticky;
+        right: 0;
+        z-index: 30;
+        background-color: inherit;
+        border-left: 1px solid #1e293b;
+        border-right: 1px solid #1e293b;
+    }
+
+    /* 🎯 Adjust Executive Summary Matrix Widths (Sno fixed, 25% desc col, Equal Flex mid cols) */
+    #summary-thead th:nth-child(1),
+    #summary-tbody td:nth-child(1) {
+        width: 45px !important;
+        min-width: 45px !important;
+        max-width: 45px !important;
+        text-align: center !important;
+    }
+
+    #summary-thead th:nth-child(2),
+    #summary-tbody td:nth-child(2) {
+        width: 25% !important;
+        max-width: 250px !important;
+        white-space: normal !important;
+        word-wrap: break-word !important;
+    }
+
+    #summary-thead th:not(:nth-child(1)):not(:nth-child(2)):not(:last-child),
+    #summary-tbody td:not(:nth-child(1)):not(:nth-child(2)):not(:last-child) {
+        width: auto !important;
+        min-width: 70px;
+        text-align: center !important;
         white-space: normal !important;
         overflow-wrap: break-word !important;
         word-wrap: break-word !important;
         word-break: break-word !important;
     }
-    
-    #summary-thead th:last-child, 
-    #summary-tbody td:last-child { width: 12% !important; text-align: center !important; }
+
+    #summary-thead th:last-child,
+    #summary-tbody td:last-child {
+        width: 12% !important;
+        text-align: center !important;
+    }
 
     /* 🎯 FLAWLESS ANTI-CROP PDF RELOCATION SETTINGS */
-    .pdf-rendering-active { 
-        background: white !important; 
-        padding: 30px 40px !important; 
-        width: 1400px !important; 
+    .pdf-rendering-active {
+        background: white !important;
+        padding: 30px 40px !important;
+        width: 1400px !important;
     }
-    .pdf-rendering-active .hide-on-print { display: none !important; }
-    .pdf-rendering-active * { box-sizing: border-box !important; }
-    body.pdf-export-mode .html2pdf__page-break { display: block !important; page-break-before: always; }
+
+    .pdf-rendering-active .hide-on-print {
+        display: none !important;
+    }
+
+    .pdf-rendering-active * {
+        box-sizing: border-box !important;
+    }
+
+    body.pdf-export-mode .html2pdf__page-break {
+        display: block !important;
+        page-break-before: always;
+    }
 </style>
 
 <script>
-    let activeTab = 'scheme'; 
+    let activeTab = 'scheme';
     let activeAnalyticsDiscom = "NBPDCL";
     let currentMetricsObject = {};
     let allDiscomsDataCache = { NBPDCL: null, SBPDCL: null, PVVNL: null };
     let inspectorMetricsObject = {};
 
+    // Placeholders like {total} are dynamically replaced by serial letters (A, B, C...) based on conditional rendering
     const summaryRowConfig = [
         { key: "total", label: "Total Inspection Call", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
         { key: "revised", label: "Revised Calls", rowBg: "bg-[#93c5fd] text-slate-900", totalBg: "bg-[#93c5fd] text-slate-900" },
         { key: "cancelled", label: "Cancelled Calls", rowBg: "bg-[#f87171] text-white", totalBg: "bg-[#f87171] text-white" },
-        { key: "valid", label: "Valid Calls", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
+        { key: "valid", label: "Valid Calls ({total}-{revised}-{cancelled})", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
         { key: "completed", label: "Completed Calls", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
+        { key: "pending", label: "Pending Calls ({valid}-{completed})", rowBg: "bg-[#fde047] text-slate-900", totalBg: "bg-[#fde047] text-slate-900" },
+        { key: "pendingOverDeadline", label: "Pending Calls Over Deadline (15 Days or +)", rowBg: "bg-white text-slate-800", totalBg: "bg-white text-slate-800" },
         { key: "completedMom", label: "Completed-MOM", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
         { key: "totalManDays", label: "Total Mandays", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
         { key: "completedManDays", label: "Completed Mandays", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
         { key: "billed", label: "Billed Calls", rowBg: "bg-[#86efac] text-slate-900", totalBg: "bg-[#86efac] text-slate-900" },
         { key: "billedManDays", label: "Billed Mandays", rowBg: "bg-[#86efac] text-slate-900", totalBg: "bg-[#86efac] text-slate-900" },
-        { key: "unbilledManDays", label: "Un-Billed Mandays", rowBg: "bg-[#06b6d4] text-black", totalBg: "bg-[#06b6d4] text-black" },
-        { key: "invoicesPlaced", label: "Count of Invoices Placed", rowBg: "bg-white text-slate-800", totalBg: "bg-[#06b6d4] text-black" },
-        { key: "pending", label: "Pending Calls", rowBg: "bg-[#fde047] text-slate-900", totalBg: "bg-[#fde047] text-slate-900" },
-        { key: "pendingOverDeadline", label: "Pending Calls Over Deadline (15 Days or +)", rowBg: "bg-white text-slate-800", totalBg: "bg-white text-slate-800" }
+        { key: "unbilledManDays", label: "Un-Billed Mandays ({completedManDays}-{billedManDays})", rowBg: "bg-[#06b6d4] text-black", totalBg: "bg-[#06b6d4] text-black" }
     ];
 
     const fullHeaderCustomNames = {
@@ -274,9 +363,9 @@
         "contactPerson": "Contact Person", "mobile": "Mobile No", "materialInspected": "Material Category", "materialSpec": "Material Specification",
         "quantity": "Quantity", "tkc": "TKC", "tpiaInspector": "TPIA Inspector", "tpiaContact": "TPIA Contact No",
         "authLetterNo": "Auth Letter No", "scheduleDate": "Schedule Date", "status": "Status", "subStatus": "Sub-Status",
-        "inspectionCompletedOn": "Completed On", "reportOm": "Report / OM No", "conductedBy": "Conducted By", 
+        "inspectionCompletedOn": "Completed On", "reportOm": "Report / OM No", "conductedBy": "Conducted By",
         "dateFrom": "Date(s) of Inspection (From - To)",
-        "dateTo": "Date(s) of NABL Witness (From - To)", 
+        "dateTo": "Date(s) of NABL Witness (From - To)",
         "manDays": "Man-Days", "sealType": "Seal Type", "sealSerial": "Seal Serial No", "sealNoCount": "Seal Count",
         "nablStatusDate": "NABL Status & Date", "reportReceived": "Report Received", "reportMail": "Report Mail", "letterRevision": "Letter Revision Status",
         "remarks": "Remarks", "month": "Month", "billingStatus": "Billing Status", "invoiceNo": "Invoice No"
@@ -298,8 +387,7 @@
         return null;
     }
 
-    // 🎯 UNIVERSAL ROW EXPANSION FUNCTION (For Desktop & Mobile)
-    window.toggleMobileRow = function(element) {
+    window.toggleMobileRow = function (element) {
         const row = element.closest('tr');
         const drawer = row.nextElementSibling;
         const icons = row.querySelectorAll('.toggle-icon');
@@ -317,9 +405,8 @@
         }
     };
 
-    // 🎯 MOBILE-ONLY SUMMARY GRID EXPANSION
-    window.toggleSummaryMobileRow = function(element) {
-        if (window.innerWidth >= 768) return; 
+    window.toggleSummaryMobileRow = function (element) {
+        if (window.innerWidth >= 768) return;
         const drawer = element.querySelector('.summary-expand-drawer');
         const icon = element.querySelector('.toggle-icon');
 
@@ -334,7 +421,7 @@
         }
     };
 
-    window.switchAnalyticsTab = function(tabName) {
+    window.switchAnalyticsTab = function (tabName) {
         activeTab = tabName;
         const btnScheme = document.getElementById("tab-btn-scheme");
         const btnInspector = document.getElementById("tab-btn-inspector");
@@ -351,7 +438,7 @@
             btnScheme.className = "px-6 py-2.5 text-xs font-black rounded-xl text-slate-500 hover:text-slate-800 hover:bg-slate-100 transition-all duration-200 flex items-center gap-2";
             viewInspector.classList.remove('hidden');
             viewScheme.classList.add('hidden');
-            
+
             if (!allDiscomsDataCache.NBPDCL || !allDiscomsDataCache.SBPDCL || !allDiscomsDataCache.PVVNL) {
                 window.loadInspectorAnalytics();
             } else {
@@ -360,7 +447,7 @@
         }
     };
 
-    window.switchAnalyticsBtnStyling = function(discom) {
+    window.switchAnalyticsBtnStyling = function (discom) {
         const btns = ["NBPDCL", "SBPDCL", "PVVNL"];
         btns.forEach(b => {
             const el = document.getElementById(`btn-analytics-${b}`);
@@ -374,7 +461,7 @@
         });
     };
 
-    window.loadAnalyticsForDiscom = async function(discom) {
+    window.loadAnalyticsForDiscom = async function (discom) {
         activeAnalyticsDiscom = discom;
         window.switchAnalyticsBtnStyling(discom);
         document.getElementById('analytics-loader-scheme').classList.remove('hidden');
@@ -383,9 +470,14 @@
             if (allDiscomsDataCache[discom]) {
                 window.calculateAndRenderGrid(allDiscomsDataCache[discom], discom);
             } else {
-                const res = await fetch(`${API_URL}?action=getInspections&discom=${discom}`);
+                // Get the client stored during login (defaults to AYCL for coordinatorAYCL)
+                const loggedInUser = JSON.parse(localStorage.getItem('currentUser') || '{}');
+                const clientName = loggedInUser.client || 'AYCL';
+
+                const res = await fetch(`${API_URL}?action=getInspections&discom=${discom}&client=${clientName}`);
                 const textData = await res.text();
                 const data = JSON.parse(textData);
+                console.log("Data the browser is receiving:", data.data);
                 if (data.status && data.data) {
                     allDiscomsDataCache[discom] = data.data;
                     window.calculateAndRenderGrid(data.data, discom);
@@ -405,14 +497,14 @@
             completed: { val: 0, rows: [] }, completedMom: { val: 0, rows: [] },
             totalManDays: { val: 0, rows: [] }, completedManDays: { val: 0, rows: [] },
             billed: { val: 0, rows: [] }, billedManDays: { val: 0, rows: [] },
-            unbilledManDays: { val: 0, rows: [] }, invoicesPlaced: { val: 0, rows: [] },
+            unbilledManDays: { val: 0, rows: [] },
             pending: { val: 0, rows: [] }, pendingOverDeadline: { val: 0, rows: [] }
         };
     }
 
-    window.calculateAndRenderGrid = function(data, discom) {
+    window.calculateAndRenderGrid = function (data, discom) {
         const schemesRaw = [...new Set(data.map(d => String(d.scheme || 'Uncategorized').trim()))].filter(Boolean);
-        schemesRaw.sort(); 
+        schemesRaw.sort();
         const schemes = schemesRaw.filter(s => s.toLowerCase() !== 'uncategorized');
         if (schemesRaw.includes('Uncategorized')) schemes.push('Uncategorized');
 
@@ -421,24 +513,7 @@
         currentMetricsObject['TOTAL'] = createMetricObject();
 
         const today = new Date();
-        today.setHours(0,0,0,0);
-        
-        const y_str = today.getFullYear();
-        const m_str = String(today.getMonth() + 1).padStart(2, '0');
-        const d_str = String(today.getDate()).padStart(2, '0');
-        const todayKey = `${y_str}-${m_str}-${d_str}`;
-
-        const yesterdayObj = new Date(today);
-        yesterdayObj.setDate(yesterdayObj.getDate() - 1);
-        const y_dd = String(yesterdayObj.getDate()).padStart(2, '0');
-        const y_mm = String(yesterdayObj.getMonth() + 1).padStart(2, '0');
-        const y_yyyy = yesterdayObj.getFullYear();
-        const yesterdayStr = `${y_dd}/${y_mm}/${y_yyyy}`;
-
-        const dlLabel = document.getElementById("yesterday-date-label");
-        if (dlLabel) dlLabel.innerText = yesterdayStr;
-        
-        let completedYesterdayTotal = 0;
+        today.setHours(0, 0, 0, 0);
 
         data.forEach(row => {
             const sc = String(row.scheme || 'Uncategorized').trim();
@@ -447,9 +522,10 @@
             const t = currentMetricsObject['TOTAL'];
             const status = String(row.status || '').trim();
             const subStatus = String(row.subStatus || '').trim();
-            const billingStatus = String(row.billingStatus || '').trim();
-            const invoiceNo = String(row.invoiceNo || '').trim();
-            
+
+            // Apply lowercasing logic here to be perfectly case-insensitive!
+            const billingStatus = String(row.billingStatus || '').trim().toLowerCase();
+
             const isRevised = status === 'Revised';
             const isCancelled = status === 'Cancelled';
             const isCompleted = status === 'Completed';
@@ -464,23 +540,15 @@
             if (!isRevised && !isCancelled) {
                 s.valid.val++; s.valid.rows.push(row);
                 t.valid.val++; t.valid.rows.push(row);
+
                 if (manDays > 0) {
                     s.totalManDays.val += manDays; s.totalManDays.rows.push(row);
                     t.totalManDays.val += manDays; t.totalManDays.rows.push(row);
-                }
-                if (invoiceNo !== "") {
-                    s.invoicesPlaced.val++; s.invoicesPlaced.rows.push(row);
-                    t.invoicesPlaced.val++; t.invoicesPlaced.rows.push(row);
                 }
 
                 if (isCompleted) {
                     s.completed.val++; s.completed.rows.push(row);
                     t.completed.val++; t.completed.rows.push(row);
-                    
-                    const compOnStr = String(row.inspectionCompletedOn || "").trim();
-                    if (compOnStr === yesterdayStr) {
-                        completedYesterdayTotal++;
-                    }
 
                     if (subStatus.includes('MOM')) {
                         s.completedMom.val++; s.completedMom.rows.push(row);
@@ -489,27 +557,30 @@
                     if (manDays > 0) {
                         s.completedManDays.val += manDays; s.completedManDays.rows.push(row);
                         t.completedManDays.val += manDays; t.completedManDays.rows.push(row);
-                        if (billingStatus !== 'Billed') {
-                            s.unbilledManDays.rows.push(row);
-                            t.unbilledManDays.rows.push(row);
-                        }
                     }
                 } else {
                     s.pending.val++; s.pending.rows.push(row);
                     t.pending.val++; t.pending.rows.push(row);
-                    if (row.receivedDate && row.receivedDate !== "-") {
-                        const recDateJS = parseIndianDateToJS(row.receivedDate);
-                        if (recDateJS) {
-                            const deadlineSpan = (discom === 'PVVNL') ? 7 : 15;
-                            recDateJS.setDate(recDateJS.getDate() + deadlineSpan);
-                            if (today > recDateJS) {
+
+                    // PVVNL uses letterDate, others use receivedDate
+                    const dateToUse = (discom === 'PVVNL') ? row.letterDate : row.receivedDate;
+
+                    if (dateToUse && dateToUse !== "-") {
+                        const baseDateJS = parseIndianDateToJS(dateToUse);
+                        if (baseDateJS) {
+                            const deadlineSpan = 15; // Set to 15 days for all Discoms
+                            baseDateJS.setDate(baseDateJS.getDate() + deadlineSpan);
+
+                            if (today > baseDateJS) {
                                 s.pendingOverDeadline.val++; s.pendingOverDeadline.rows.push(row);
                                 t.pendingOverDeadline.val++; t.pendingOverDeadline.rows.push(row);
                             }
                         }
                     }
                 }
-                if (billingStatus === 'Billed') {
+
+                // Compare explicitly against lowercase 'billed'
+                if (billingStatus === 'billed') {
                     s.billed.val++; s.billed.rows.push(row);
                     t.billed.val++; t.billed.rows.push(row);
                     if (manDays > 0) {
@@ -527,52 +598,75 @@
 
         document.getElementById("kpi-valid").innerText = currentMetricsObject['TOTAL'].valid.val;
         document.getElementById("kpi-completed").innerText = currentMetricsObject['TOTAL'].completed.val;
-        document.getElementById("kpi-yesterday").innerText = completedYesterdayTotal;
         document.getElementById("kpi-pending").innerText = currentMetricsObject['TOTAL'].pending.val;
         document.getElementById("kpi-total-md").innerText = currentMetricsObject['TOTAL'].totalManDays.val;
         document.getElementById("kpi-billed-md").innerText = currentMetricsObject['TOTAL'].billedManDays.val;
         document.getElementById("kpi-unbilled-md").innerText = currentMetricsObject['TOTAL'].unbilledManDays.val;
 
         const thead = document.getElementById("summary-thead"), tbody = document.getElementById("summary-tbody");
-        let headerHtml = `<tr><th class="p-2 sticky-header-left border-y border-slate-800 bg-[#93c5fd]">Description / Schemes <i data-lucide="arrow-right" class="inline w-3 h-3 text-slate-700"></i></th>`;
-        
-        schemes.forEach(sc => { 
-            headerHtml += `<th class="p-2 border border-slate-800 font-bold text-center whitespace-normal break-words">${sc}</th>`; 
+
+        let headerHtml = `<tr>
+            <th class="p-2 sticky-header-sno border-y border-slate-800 bg-[#93c5fd]">S No</th>
+            <th class="p-2 sticky-header-desc border-y border-slate-800 bg-[#93c5fd]">Description / Schemes <i data-lucide="arrow-right" class="inline w-3 h-3 text-slate-700"></i></th>`;
+
+        schemes.forEach(sc => {
+            headerHtml += `<th class="p-2 border border-slate-800 font-bold text-center whitespace-normal break-words">${sc}</th>`;
         });
-        
+
         headerHtml += `<th class="p-2 sticky-header-right text-center border-y border-slate-800 bg-[#06b6d4] whitespace-normal break-words">TOTAL</th></tr>`;
         thead.innerHTML = headerHtml;
 
-        const deadlineLabel = (discom === 'PVVNL') ? "Pending Calls Over Deadline (7 Days or +)" : "Pending Calls Over Deadline (15 Days or +)";
+        const deadlineLabel = "Pending Calls Over Deadline (15 Days or +)";
         let bodyHtml = "";
 
-        summaryRowConfig.forEach(rowDef => {
+        // Filter and dynamically assign Serial Numbers (A, B, C...)
+        let activeRowConfig = summaryRowConfig.filter(rowDef => {
+            if (rowDef.key === 'totalManDays') {
+                return currentMetricsObject['TOTAL'].totalManDays.val !== currentMetricsObject['TOTAL'].completedManDays.val;
+            }
+            return true;
+        });
+
+        let letterMap = {};
+        activeRowConfig.forEach((rowDef, index) => {
+            const sno = String.fromCharCode(65 + index); // 65 is 'A' in ASCII
+            letterMap[rowDef.key] = sno;
+            rowDef.sno = sno;
+        });
+
+        activeRowConfig.forEach(rowDef => {
             let rowClass = `${rowDef.rowBg}`;
-            let displayLabel = rowDef.key === 'pendingOverDeadline' ? deadlineLabel : rowDef.label;
+
+            // Replace relational placeholders (e.g., {total}) with mapped letters (e.g., A)
+            let baseLabel = rowDef.label.replace(/{(\w+)}/g, (match, key) => letterMap[key] || match);
+            let displayLabel = rowDef.key === 'pendingOverDeadline' ? deadlineLabel : baseLabel;
+
             const totalVal = currentMetricsObject['TOTAL'][rowDef.key].val;
             const totalHover = totalVal > 0 ? "cursor-pointer hover:opacity-80 transition" : "";
 
             bodyHtml += `<tr class="${rowClass} border-b border-slate-200 md:border-none block md:table-row cursor-pointer md:cursor-auto" onclick="window.toggleSummaryMobileRow(this)">`;
-            
+
+            // Mobile View Configuration (Combined text row)
             bodyHtml += `
                 <td class="p-3 block md:hidden w-full bg-inherit">
                     <div class="flex items-center justify-between w-full">
                         <div class="flex items-center gap-2 flex-1">
                             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
+                            <span class="font-bold text-slate-500 w-4">${rowDef.sno}</span>
                             <span class="font-bold text-xs whitespace-normal leading-tight text-slate-800">${displayLabel}</span>
                         </div>
-                        <div onclick="event.stopPropagation(); ${totalVal > 0 ? `window.openDrilldown('TOTAL', '${rowDef.key}', '${rowDef.label}', 'scheme')` : ''}" 
+                        <div onclick="event.stopPropagation(); ${totalVal > 0 ? `window.openDrilldown('TOTAL', '${rowDef.key}', '${displayLabel}', 'scheme')` : ''}" 
                              class="font-black text-sm px-3 py-1 bg-black/5 rounded-lg shadow-inner ml-2 shrink-0 ${totalVal > 0 ? 'text-indigo-700 hover:bg-black/10 transition cursor-pointer' : 'text-slate-600'}">
                             ${totalVal}
                         </div>
                     </div>
                     <div class="summary-expand-drawer hidden mt-3 pt-3 border-t border-black/10 w-full">
                         <div class="flex flex-wrap gap-2 pl-2">`;
-            
+
             schemes.forEach(sc => {
                 const val = currentMetricsObject[sc][rowDef.key].val;
                 bodyHtml += `
-                            <div onclick="event.stopPropagation(); ${val > 0 ? `window.openDrilldown('${sc}', '${rowDef.key}', '${rowDef.label}', 'scheme')` : ''}" 
+                            <div onclick="event.stopPropagation(); ${val > 0 ? `window.openDrilldown('${sc}', '${rowDef.key}', '${displayLabel}', 'scheme')` : ''}" 
                                  class="flex items-center gap-2 bg-white px-2.5 py-1.5 rounded-lg border border-slate-200 shadow-sm ${val > 0 ? 'cursor-pointer hover:bg-indigo-50 hover:border-indigo-300 transition' : ''}">
                                 <span class="font-bold text-slate-600 uppercase text-[10px] whitespace-nowrap">${sc}</span>
                                 <span class="font-black text-[11px] px-1.5 py-0.5 rounded ${val > 0 ? 'bg-indigo-100 text-indigo-700' : 'bg-slate-100 text-slate-400'}">${val}</span>
@@ -581,115 +675,36 @@
 
             bodyHtml += `</div></div></td>`;
 
-            bodyHtml += `<td class="p-2 sticky-col-left border-y border-slate-800 bg-inherit whitespace-normal min-w-[130px] leading-tight hidden md:table-cell">${displayLabel}</td>`;
-            
+            // Desktop View Columns 
+            bodyHtml += `<td class="p-2 sticky-col-sno border-y border-slate-800 bg-inherit hidden md:table-cell">${rowDef.sno}</td>`;
+            bodyHtml += `<td class="p-2 sticky-col-desc border-y border-slate-800 bg-inherit whitespace-normal min-w-[130px] leading-tight hidden md:table-cell">${displayLabel}</td>`;
+
             schemes.forEach(sc => {
                 const val = currentMetricsObject[sc][rowDef.key].val;
                 const cellHover = val > 0 ? "cursor-pointer hover:bg-slate-900/10 hover:shadow-inner transition" : "";
-                bodyHtml += `<td onclick="event.stopPropagation(); ${val > 0 ? `window.openDrilldown('${sc}', '${rowDef.key}', '${rowDef.label}', 'scheme')` : ''}" class="p-2 border border-slate-800 text-center font-bold ${cellHover} hidden md:table-cell">${val}</td>`;
+                bodyHtml += `<td onclick="event.stopPropagation(); ${val > 0 ? `window.openDrilldown('${sc}', '${rowDef.key}', '${displayLabel}', 'scheme')` : ''}" class="p-2 border border-slate-800 text-center font-bold ${cellHover} hidden md:table-cell">${val}</td>`;
             });
 
-            bodyHtml += `<td onclick="event.stopPropagation(); ${totalVal > 0 ? `window.openDrilldown('TOTAL', '${rowDef.key}', '${rowDef.label}', 'scheme')` : ''}" class="p-2 sticky-col-right text-center border-y border-slate-800 ${rowDef.totalBg} ${totalHover} hidden md:table-cell">${totalVal}</td>`;
-            
+            bodyHtml += `<td onclick="event.stopPropagation(); ${totalVal > 0 ? `window.openDrilldown('TOTAL', '${rowDef.key}', '${displayLabel}', 'scheme')` : ''}" class="p-2 sticky-col-right text-center border-y border-slate-800 ${rowDef.totalBg} ${totalHover} hidden md:table-cell">${totalVal}</td>`;
+
             bodyHtml += `</tr>`;
         });
         tbody.innerHTML = bodyHtml;
-
-        window.renderCompletedDateLog(yesterdayStr);
     };
 
-    window.renderCompletedDateLog = function(yesterdayStr) {
-        const tbody = document.getElementById("yesterday-tbody");
-        const countSpan = document.getElementById("yesterday-table-count");
-        
-        if (!tbody || !yesterdayStr) return;
-
-        const matchedRows = [];
-        const data = allDiscomsDataCache[activeAnalyticsDiscom] || [];
-
-        data.forEach(row => {
-            if (String(row.status || '').trim() === 'Completed' && String(row.inspectionCompletedOn || '').trim() === yesterdayStr) {
-                matchedRows.push(row);
-            }
-        });
-
-        if (countSpan) countSpan.innerText = matchedRows.length;
-
-        let html = "";
-        if (matchedRows.length === 0) {
-            html = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold italic block md:table-cell w-full">No completed inspections found for ${yesterdayStr}.</td></tr>`;
-        } else {
-            matchedRows.forEach(r => {
-                const matDetails = `<div class="font-bold text-slate-800 whitespace-normal break-words">${r.materialInspected || '-'}</div><div class="text-[9px] text-slate-500 whitespace-normal break-words mt-0.5">${r.materialSpec || '-'}</div><div class="text-xs font-black text-indigo-600 mt-1">Qty: ${r.quantity || '-'}</div>`;
-                const mfgDetails = `<div class="font-bold text-slate-800 whitespace-normal break-words">${r.manufacturer || '-'}</div><div class="text-[10px] text-slate-500 whitespace-normal break-words mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline relative -top-0.5"></i> ${r.address || '-'}</div>`;
-                
-                let detailsHtml = `<div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-3 mt-2">`;
-                Object.keys(fullHeaderCustomNames).forEach(k => {
-                    const label = fullHeaderCustomNames[k], rawVal = r[k], val = (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== "") ? String(rawVal) : "-";
-                    detailsHtml += `<div><span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">${label}</span><span class="text-xs font-semibold text-slate-800 whitespace-pre-wrap break-words">${val}</span></div>`;
-                });
-                detailsHtml += `</div>`;
-
-                html += `
-                <tr class="flex flex-col md:table-row bg-white hover:bg-slate-50 transition border-b border-violet-100 cursor-pointer" onclick="window.toggleMobileRow(this)">
-                    <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
-                        <div class="flex items-start gap-2 overflow-hidden flex-1">
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0 mt-0.5"></i>
-                            <div class="min-w-0 pr-2">
-                                <div class="font-mono font-black text-indigo-700 truncate">${r.inspectionId || '-'}</div>
-                                <div class="text-[10px] font-bold text-slate-800 line-clamp-2 mt-0.5">${r.manufacturer || '-'}</div>
-                            </div>
-                        </div>
-                        <div class="flex flex-col items-end shrink-0 max-w-[40%] text-right">
-                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 truncate max-w-full">${r.status || 'Completed'}</span>
-                            <span class="text-[8px] text-slate-500 mt-1 truncate max-w-full block">${r.subStatus || '-'}</span>
-                        </div>
-                    </td>
-
-                    <td class="p-3 font-mono font-bold text-indigo-700 align-top hidden md:table-cell border-r border-violet-100">
-                        <div class="flex items-center gap-2">
-                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
-                            ${r.inspectionId || '-'}
-                        </div>
-                    </td>
-                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${mfgDetails}</td>
-                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${matDetails}</td>
-                    <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-violet-100">${r.conductedBy || '-'}</td>
-                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100"><div class="font-bold text-emerald-700">${r.status || '-'}</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">${r.subStatus || '-'}</div></td>
-                    
-                    <!-- 🎯 ADDED SCHEDULE DATE DISPLAY UNDER COMPLETED ON -->
-                    <td class="p-3 text-center align-top bg-violet-50/50 hidden md:table-cell border-r border-violet-100">
-                        <div class="font-mono font-black text-violet-900 whitespace-nowrap">${r.inspectionCompletedOn || '-'}</div>
-                        <div class="text-[9px] font-medium text-slate-500 whitespace-nowrap mt-1">Schedule start On <span class="font-mono font-bold text-slate-700">${r.scheduleDate || '-'}</span></div>
-                    </td>
-                </tr>
-                <tr class="mobile-expand-drawer hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
-                    <td colspan="6" class="p-4 border-t border-slate-100 text-xs w-full block md:table-cell">
-                        <div class="pl-6 md:pl-2">
-                            <h5 class="text-[10px] font-black uppercase text-indigo-400 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><i data-lucide="file-search" class="w-4 h-4"></i> Complete Inspection Profile</h5>
-                            ${detailsHtml}
-                        </div>
-                    </td>
-                </tr>`;
-            });
-        }
-        tbody.innerHTML = html;
-        if (window.lucide) lucide.createIcons();
-    };
-
-    window.loadInspectorAnalytics = async function() {
+    window.loadInspectorAnalytics = async function () {
         document.getElementById('analytics-loader-inspector').classList.remove('hidden');
 
         try {
             const fetchPromises = [];
             const discomNames = ['NBPDCL', 'SBPDCL', 'PVVNL'];
-            
+
             discomNames.forEach(d => {
                 if (!allDiscomsDataCache[d]) {
                     fetchPromises.push(
                         fetch(`${API_URL}?action=getInspections&discom=${d}`)
-                        .then(r => r.json())
-                        .then(res => { if(res.status && res.data) allDiscomsDataCache[d] = res.data; })
+                            .then(r => r.json())
+                            .then(res => { if (res.status && res.data) allDiscomsDataCache[d] = res.data; })
                     );
                 }
             });
@@ -704,17 +719,17 @@
         }
     };
 
-    window.calculateAndRenderInspectorGrid = function() {
+    window.calculateAndRenderInspectorGrid = function () {
         const allData = [
             ...(allDiscomsDataCache.NBPDCL || []),
             ...(allDiscomsDataCache.SBPDCL || []),
             ...(allDiscomsDataCache.PVVNL || [])
         ];
-        
+
         const inspectorsRaw = [...new Set(allData.map(d => String(d.conductedBy || 'Not Assigned').trim()))].filter(Boolean);
         inspectorsRaw.sort();
         const inspectors = inspectorsRaw.filter(i => i.toLowerCase() !== 'not assigned');
-        if(inspectorsRaw.includes('Not Assigned')) inspectors.push('Not Assigned');
+        if (inspectorsRaw.includes('Not Assigned')) inspectors.push('Not Assigned');
 
         const discoms = ['NBPDCL', 'SBPDCL', 'PVVNL'];
 
@@ -722,15 +737,15 @@
         inspectors.forEach(insp => {
             inspectorMetricsObject[insp] = { NBPDCL: [], SBPDCL: [], PVVNL: [] };
         });
-        
+
         let totals = { NBPDCL: 0, SBPDCL: 0, PVVNL: 0 };
 
         allData.forEach(row => {
-            if (String(row.status || '').trim() !== 'Completed') return; 
-            
+            if (String(row.status || '').trim() !== 'Completed') return;
+
             const insp = String(row.conductedBy || 'Not Assigned').trim();
             const d = String(row.discom || '').trim().toUpperCase();
-            
+
             if (inspectorMetricsObject[insp] && discoms.includes(d)) {
                 inspectorMetricsObject[insp][d].push(row);
                 totals[d]++;
@@ -757,8 +772,8 @@
             discoms.forEach(d => {
                 const rows = inspectorMetricsObject[insp][d];
                 rows.forEach(r => {
-                    const cats = String(r.materialInspected || 'Uncategorized').split(',').map(c=>c.trim()).filter(Boolean);
-                    if(cats.length===0) cats.push('Uncategorized');
+                    const cats = String(r.materialInspected || 'Uncategorized').split(',').map(c => c.trim()).filter(Boolean);
+                    if (cats.length === 0) cats.push('Uncategorized');
                     cats.forEach(c => {
                         inspCategories.add(c);
                         catCounts[d][c] = (catCounts[d][c] || 0) + 1;
@@ -773,7 +788,7 @@
                     </div>
                     <span class="group-hover:underline">${insp}</span>
                 </td>`;
-            
+
             discoms.forEach(d => {
                 const rows = inspectorMetricsObject[insp][d];
                 const val = rows.length;
@@ -788,7 +803,7 @@
             } else {
                 let sortedCats = Array.from(inspCategories).sort();
                 sortedCats.forEach(cat => {
-                    const safeCat = cat.replace(/'/g, "\\'"); 
+                    const safeCat = cat.replace(/'/g, "\\'");
                     subTableRows += `<tr class="border-b border-slate-200 hover:bg-white transition">
                         <td class="p-2 border-r border-slate-200 font-semibold text-slate-700">${cat}</td>`;
                     discoms.forEach(d => {
@@ -836,7 +851,7 @@
         if (window.lucide) lucide.createIcons();
     };
 
-    window.openDrilldown = function(primaryKey, secondaryKey, metricLabel, contextType, categoryFilter = null) {
+    window.openDrilldown = function (primaryKey, secondaryKey, metricLabel, contextType, categoryFilter = null) {
         let dataRows = [];
         let locationContext = "";
 
@@ -845,17 +860,17 @@
             locationContext = activeAnalyticsDiscom;
             document.getElementById("drilldown-title").innerHTML = `<i data-lucide="list-filter" class="w-5 h-5 text-indigo-600"></i> ${metricLabel} (${primaryKey})`;
             document.getElementById("drilldown-subtitle").innerText = `Showing ${dataRows.length} associated records from ${locationContext}`;
-        
+
         } else if (contextType === 'inspector') {
             dataRows = inspectorMetricsObject[primaryKey][secondaryKey] || [];
             locationContext = secondaryKey;
             document.getElementById("drilldown-title").innerHTML = `<i data-lucide="list-filter" class="w-5 h-5 text-emerald-600"></i> ${metricLabel} (${locationContext})`;
             document.getElementById("drilldown-subtitle").innerText = `Showing ${dataRows.length} completed inspections conducted by ${primaryKey}`;
-        
+
         } else if (contextType === 'inspector-cat') {
             const allRows = inspectorMetricsObject[primaryKey][secondaryKey] || [];
             dataRows = allRows.filter(r => {
-                const cats = String(r.materialInspected || 'Uncategorized').split(',').map(c=>c.trim()).filter(Boolean);
+                const cats = String(r.materialInspected || 'Uncategorized').split(',').map(c => c.trim()).filter(Boolean);
                 if (cats.length === 0) cats.push('Uncategorized');
                 return cats.includes(categoryFilter);
             });
@@ -863,16 +878,16 @@
             document.getElementById("drilldown-title").innerHTML = `<i data-lucide="list-filter" class="w-5 h-5 text-emerald-600"></i> ${metricLabel} (${locationContext})`;
             document.getElementById("drilldown-subtitle").innerText = `Showing ${dataRows.length} records for ${categoryFilter} inspected by ${primaryKey}`;
         }
-        
+
         const tbody = document.getElementById("drilldown-tbody");
         let html = "";
 
-        if(dataRows.length === 0) {
+        if (dataRows.length === 0) {
             html = `<tr><td colspan="7" class="p-6 text-center text-slate-400 font-bold italic block md:table-cell w-full">No records found for this metric.</td></tr>`;
         } else {
             dataRows.forEach((row, idx) => {
                 const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
-                
+
                 html += `
                 <tr class="flex flex-col md:table-row ${bg} hover:bg-slate-100 transition border-b md:border-b-0 border-slate-200 cursor-pointer" onclick="window.toggleMobileRow(this)">
                     <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
@@ -928,18 +943,18 @@
         if (window.lucide) lucide.createIcons();
     };
 
-    window.closeDrilldown = function() {
+    window.closeDrilldown = function () {
         document.getElementById("drilldown-modal").classList.add("hidden");
     };
 
-    window.downloadSummaryPDF = function(contextType) {
-        const titleContext = contextType === 'scheme' ? activeAnalyticsDiscom + ' Executive Summary & Yesterday Log' : 'Overall Inspector Performance Summary';
+    window.downloadSummaryPDF = function (contextType) {
+        const titleContext = contextType === 'scheme' ? activeAnalyticsDiscom + ' Executive Summary' : 'Overall Inspector Performance Summary';
 
         if (!confirm(`Are you sure you want to download the ${titleContext} as a PDF?`)) return;
 
         const btnContainer = contextType === 'scheme' ? document.getElementById("view-scheme") : document.getElementById("view-inspector");
         const btn = btnContainer.querySelector('.pdf-btn');
-        
+
         const originalText = btn.innerHTML;
         btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Exporting...`;
         btn.disabled = true;
@@ -958,7 +973,7 @@
 
             const scrollWraps = element.querySelectorAll('.scroll-target');
             const originalScrollStyles = [];
-            
+
             scrollWraps.forEach(wrap => {
                 wrap.scrollLeft = 0;
                 originalScrollStyles.push({ el: wrap, maxH: wrap.style.maxHeight });
@@ -967,7 +982,7 @@
                 wrap.style.overflow = 'visible';
                 wrap.style.width = '100%';
             });
-            
+
             helpText.classList.add('hidden');
             titleEl.innerText = `${titleContext} - ${new Date().toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' })}`;
             titleEl.classList.remove('hidden');
@@ -976,29 +991,29 @@
 
             element.style.width = '100%';
             element.style.margin = '0';
-            
+
             const originalParent = element.parentNode;
             const originalNextSibling = element.nextSibling;
-            
+
             const printAnchor = document.createElement('div');
             printAnchor.style.position = 'absolute';
             printAnchor.style.top = '0';
             printAnchor.style.left = '0';
-            printAnchor.style.width = `${screenWidth}px`; 
+            printAnchor.style.width = `${screenWidth}px`;
             printAnchor.style.minHeight = '100vh';
             printAnchor.style.background = 'white';
             printAnchor.style.zIndex = '99999';
             printAnchor.classList.add('pdf-rendering-active');
-            
+
             printAnchor.appendChild(element);
             document.body.appendChild(printAnchor);
 
             const opt = {
-                margin:       [0.3, 0.3, 0.3, 0.3], 
-                filename:     `${titleContext.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
-                image:        { type: 'jpeg', quality: 1.0 },
-                html2canvas:  { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: screenWidth }, 
-                jsPDF:        { unit: 'in', format: 'legal', orientation: 'landscape' }
+                margin: [0.3, 0.3, 0.3, 0.3],
+                filename: `${titleContext.replace(/\s+/g, '_')}_${new Date().toISOString().split('T')[0]}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, useCORS: true, scrollX: 0, scrollY: 0, windowWidth: screenWidth },
+                jsPDF: { unit: 'in', format: 'legal', orientation: 'landscape' }
             };
 
             window.html2pdf().set(opt).from(element).save().then(() => {
@@ -1014,7 +1029,7 @@
                 helpText.classList.remove('hidden');
                 element.style.width = '';
                 element.style.margin = '';
-                
+
                 originalScrollStyles.forEach(item => {
                     item.el.classList.add('overflow-auto', 'custom-scrollbar');
                     item.el.style.maxHeight = item.maxH;
