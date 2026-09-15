@@ -10,28 +10,35 @@
                 <p class="text-xs text-slate-500 mt-0.5">Monitor inspector bandwidth (Column T), scheduled commitments, and plan urgent assignments.</p>
             </div>
             <div class="flex items-center gap-2">
-                <span id="planner-record-count" class="text-[11px] font-mono px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border">
+                <button onclick="window.resetPlannerFilters()" class="px-3 py-1.5 rounded-xl bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold border flex items-center gap-1.5 cursor-pointer transition">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Filters
+                </button>
+                <span id="planner-record-count" class="text-[11px] font-mono px-3 py-1.5 rounded-xl bg-slate-100 text-slate-700 font-bold border">
                     Loading records...
                 </span>
             </div>
         </div>
 
-        <!-- Dynamic Summary Block (Updates based on current filters) -->
-        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
-            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
-                <span class="text-[9px] font-black uppercase text-amber-600 block tracking-wider">Scheduled Calls</span>
+        <!-- Dynamic Summary Block (Interactive Clickable Filters) -->
+        <div class="grid grid-cols-2 sm:grid-cols-5 gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200">
+            <div onclick="window.filterBySummaryCard('scheduled')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center cursor-pointer hover:border-amber-400 hover:shadow-md transition group">
+                <span class="text-[9px] font-black uppercase text-amber-600 block tracking-wider group-hover:scale-105 transition-transform">Scheduled Calls</span>
                 <p id="sum-block-scheduled" class="text-lg font-black text-amber-700 mt-1">0</p>
             </div>
-            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
-                <span class="text-[9px] font-black uppercase text-slate-500 block tracking-wider">Not Scheduled Calls</span>
+            <div onclick="window.filterBySummaryCard('notsched')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center cursor-pointer hover:border-slate-400 hover:shadow-md transition group">
+                <span class="text-[9px] font-black uppercase text-slate-500 block tracking-wider group-hover:scale-105 transition-transform">Not Scheduled</span>
                 <p id="sum-block-notsched" class="text-lg font-black text-slate-800 mt-1">0</p>
             </div>
-            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
-                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider">Active Inspectors</span>
+            <div onclick="window.filterBySummaryCard('unassigned')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center cursor-pointer hover:border-rose-400 hover:shadow-md transition group">
+                <span class="text-[9px] font-black uppercase text-rose-600 block tracking-wider group-hover:scale-105 transition-transform">Unassigned Calls</span>
+                <p id="sum-block-unassigned" class="text-lg font-black text-rose-700 mt-1">0</p>
+            </div>
+            <div onclick="window.filterBySummaryCard('inspectors')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center cursor-pointer hover:border-blue-400 hover:shadow-md transition group">
+                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider group-hover:scale-105 transition-transform">Active Inspectors</span>
                 <p id="sum-block-inspectors" class="text-lg font-black text-blue-700 mt-1">0</p>
             </div>
-            <div class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center">
-                <span class="text-[9px] font-black uppercase text-purple-600 block tracking-wider">Total Active Load</span>
+            <div onclick="window.filterBySummaryCard('total')" class="bg-white p-3 rounded-xl border border-slate-200 shadow-2xs text-center cursor-pointer hover:border-purple-400 hover:shadow-md transition col-span-2 sm:col-span-1 group">
+                <span class="text-[9px] font-black uppercase text-purple-600 block tracking-wider group-hover:scale-105 transition-transform">Total Filtered Load</span>
                 <p id="sum-block-total" class="text-lg font-black text-purple-700 mt-1">0</p>
             </div>
         </div>
@@ -64,6 +71,7 @@
                     <option value="ALL">-- All Statuses --</option>
                     <option value="scheduled">Scheduled Only</option>
                     <option value="not-scheduled">Not Scheduled / Pending Only</option>
+                    <option value="unassigned-pending">🔴 Unassigned & Pending Only</option>
                 </select>
             </div>
 
@@ -146,7 +154,11 @@
             const parsed = JSON.parse(textData);
 
             if (parsed.status && parsed.data) {
-                window.plannerRawData = parsed.data;
+                window.plannerRawData = parsed.data.filter(r => {
+                    const id = String(r.inspectionId || r.InspectionID || "").trim();
+                    const mfg = String(r.manufacturer || "").trim();
+                    return (id && id !== "-") || (mfg && mfg !== "-");
+                });
                 window.plannerInspectorsList = parsed.inspectors || [];
                 window.populateInspectorDropdown();
                 window.renderInspectorPlannerTable();
@@ -179,6 +191,44 @@
             html += `<option value="${name}">${name}</option>`;
         });
         select.innerHTML = html;
+    };
+
+    window.resetPlannerFilters = function() {
+        const inspSelect = document.getElementById("planner-filter-inspector");
+        const discomSelect = document.getElementById("planner-filter-discom");
+        const statusSelect = document.getElementById("planner-filter-status");
+        const sortSelect = document.getElementById("planner-sort-by");
+
+        if (inspSelect) inspSelect.value = "ALL";
+        if (discomSelect) discomSelect.value = "ALL";
+        if (statusSelect) statusSelect.value = "ALL";
+        if (sortSelect) sortSelect.value = "date-asc";
+
+        window.renderInspectorPlannerTable();
+    };
+
+    window.filterBySummaryCard = function(type) {
+        const statusSelect = document.getElementById("planner-filter-status");
+        const inspSelect = document.getElementById("planner-filter-inspector");
+        const discomSelect = document.getElementById("planner-filter-discom");
+
+        if (discomSelect) discomSelect.value = "ALL";
+        if (inspSelect && type !== 'inspectors') inspSelect.value = "ALL";
+
+        if (type === 'scheduled') {
+            if (statusSelect) statusSelect.value = "scheduled";
+        } else if (type === 'notsched') {
+            if (statusSelect) statusSelect.value = "not-scheduled";
+        } else if (type === 'unassigned') {
+            if (statusSelect) statusSelect.value = "unassigned-pending";
+        } else if (type === 'inspectors') {
+            if (statusSelect) statusSelect.value = "ALL";
+        } else if (type === 'total') {
+            if (statusSelect) statusSelect.value = "ALL";
+            if (inspSelect) inspSelect.value = "ALL";
+        }
+
+        window.renderInspectorPlannerTable();
     };
 
     window.parsePlannerDate = function(dateStr) {
@@ -265,7 +315,7 @@
                 
                 <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">NABL Status & Testing Date</strong><span class="text-xs font-bold text-indigo-700">${r.nablStatusDate || '-'}</span></div>
-                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Status / Sub-Status</strong><span class="text-xs font-bold text-emerald-700">${r.status || '-'} (${r.subStatus || '-'})</span></div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Status / Sub-Status</strong><span class="text-xs font-bold text-emerald-700">${r.status || '-'} (${r.subStatus || '-'}):</span></div>
                     <div class="bg-slate-50 p-3 rounded-xl border border-slate-200"><strong class="text-slate-400 block text-[9px] uppercase mb-1">Remark</strong><span class="text-xs font-bold text-slate-700 whitespace-pre-wrap break-words">${r.remarks || '-'}</span></div>
                 </div>
 
@@ -293,13 +343,21 @@
 
         if (!tbody) return;
 
+        // Step 1: Filter raw data according to current dropdown selections
         let filtered = window.plannerRawData.filter(r => {
             const stat = String(r.status || "").trim().toLowerCase();
             const hasScheduleDate = r.scheduleDate && String(r.scheduleDate).trim() !== "" && String(r.scheduleDate) !== "-";
+            const assignedInsp = String(r.tpiaInspector || "").trim();
+            const isInspectorUnassigned = !assignedInsp || assignedInsp === "-" || assignedInsp.toLowerCase() === "not appointed" || assignedInsp.toLowerCase() === "pending";
 
             if (statusFilter === "scheduled") {
                 if (!(stat === "schedule" || stat === "scheduled") || !hasScheduleDate) return false;
             } else if (statusFilter === "not-scheduled") {
+                // Must have inspector in Column T AND status must be pending or blank
+                if (isInspectorUnassigned) return false;
+                if (stat !== "pending" && stat !== "") return false;
+            } else if (statusFilter === "unassigned-pending") {
+                if (!isInspectorUnassigned) return false;
                 if (stat !== "pending" && stat !== "") return false;
             } else {
                 const isSchedValid = (stat === "schedule" || stat === "scheduled") && hasScheduleDate;
@@ -307,8 +365,7 @@
                 if (!isSchedValid && !isNotSchedValid) return false;
             }
 
-            const assignedInsp = String(r.tpiaInspector || "").trim();
-            if (inspectorFilter !== "ALL") {
+            if (inspectorFilter !== "ALL" && statusFilter !== "unassigned-pending") {
                 if (assignedInsp !== inspectorFilter) return false;
             }
 
@@ -320,30 +377,41 @@
             return true;
         });
 
-        // Update Summary Block
+        // Step 2: Calculate summary metrics dynamically based on the filtered records
         let sumSched = 0;
         let sumNotSched = 0;
-        let sumInspectors = new Set();
+        let sumUnassigned = 0;
+        let sumInspectorsSet = new Set();
 
         filtered.forEach(r => {
             const stat = String(r.status || "").trim().toLowerCase();
             const hasScheduleDate = r.scheduleDate && String(r.scheduleDate).trim() !== "" && String(r.scheduleDate) !== "-";
             const isSched = (stat === "schedule" || stat === "scheduled") && hasScheduleDate;
-            
-            if (isSched) sumSched++;
-            else sumNotSched++;
+            const assignedInsp = String(r.tpiaInspector || "").trim();
+            const isInspectorUnassigned = !assignedInsp || assignedInsp === "-" || assignedInsp.toLowerCase() === "not appointed" || assignedInsp.toLowerCase() === "pending";
 
-            const insp = String(r.tpiaInspector || "").trim();
-            if (insp && insp !== "-" && insp.toLowerCase() !== "not appointed") {
-                sumInspectors.add(insp);
+            if (isSched) {
+                sumSched++;
+            } else if (!isInspectorUnassigned && (stat === "pending" || stat === "")) {
+                sumNotSched++;
+            }
+
+            if (isInspectorUnassigned && (stat === "pending" || stat === "")) {
+                sumUnassigned++;
+            }
+
+            if (assignedInsp && assignedInsp !== "-" && assignedInsp.toLowerCase() !== "not appointed") {
+                sumInspectorsSet.add(assignedInsp);
             }
         });
 
         document.getElementById("sum-block-scheduled").innerText = sumSched;
         document.getElementById("sum-block-notsched").innerText = sumNotSched;
-        document.getElementById("sum-block-inspectors").innerText = sumInspectors.size;
+        document.getElementById("sum-block-unassigned").innerText = sumUnassigned;
+        document.getElementById("sum-block-inspectors").innerText = sumInspectorsSet.size;
         document.getElementById("sum-block-total").innerText = filtered.length;
 
+        // Step 3: Sort filtered records
         filtered.sort((a, b) => {
             if (sortBy === "mfg-asc") {
                 const mfgA = String(a.manufacturer || "").toLowerCase();
