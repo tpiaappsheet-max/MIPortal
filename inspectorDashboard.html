@@ -264,7 +264,6 @@
         }
     }
 
-    // 🎯 RENDER WORKFLOW LIST WITH MOBILE COLLAPSE (ID & Manufacturer Only) & EXPANDED INFO
     window.renderWorkflowList = function() {
         const container = document.getElementById("insp-container");
 
@@ -321,10 +320,8 @@
                 html += `
                     <div class="bg-white border border-slate-200 rounded-2xl shadow-sm transition overflow-hidden">
                         
-                        <!-- 🎯 COMPACT RESPONSIVE SUMMARY -->
                         <div class="p-3.5 sm:p-4 cursor-pointer hover:bg-slate-50 transition text-xs flex flex-col sm:grid sm:grid-cols-7 gap-2 sm:gap-3 items-start sm:items-center" onclick="window.toggleAccordionRow('${safeIdStr}')">
                             
-                            <!-- Mobile: Only ID and Manufacturer shown in collapsed view -->
                             <div class="flex justify-between items-center w-full sm:w-auto sm:col-span-1">
                                 <div>
                                     <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5 sm:hidden">Inspection ID</span>
@@ -368,9 +365,7 @@
                             </div>
                         </div>
 
-                        <!-- 🎯 EXPANDED DETAILS -->
                         <div id="detail-${safeIdStr}" class="hidden border-t border-slate-100 bg-slate-50 p-4">
-                            <!-- Mobile-only expanded view showing desktop collapsed columns data -->
                             <div class="grid grid-cols-1 gap-2.5 mb-4 sm:hidden text-[11px]">
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">Letter No & Date</span><span class="font-bold text-slate-700">${letterDisplay}</span></div>
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">Address</span><span class="text-slate-700">${rec.address || '-'}</span></div>
@@ -386,7 +381,6 @@
                                 <div><span class="block font-black text-slate-400 uppercase text-[9px]">TKC</span><span class="font-bold text-blue-700">${rec.tkc || '-'}</span></div>
                             </div>
                             
-                            <!-- 🎯 ACTION BUTTONS -->
                             <div class="flex flex-wrap items-center justify-end gap-2 pt-2 border-t border-slate-200/60">
                                 ${isScheduledTab ? `
                                     <button onclick="window.openRescheduleModal('${safeIdStr}', '${rec.discom}')" class="w-full sm:w-auto px-5 py-2.5 bg-amber-600 hover:bg-amber-700 text-white text-xs font-black uppercase tracking-wider rounded-lg shadow-sm transition flex items-center justify-center gap-2 cursor-pointer">
@@ -412,9 +406,6 @@
         if (window.lucide) window.lucide.createIcons();
     }
 
-    // ==========================================
-    // MODAL CONTROL & REVIEW
-    // ==========================================
     window.openInspModal = function(inspId, discom) {
         document.getElementById("modal-insp-id").value = inspId;
         document.getElementById("modal-discom").value = discom;
@@ -429,7 +420,6 @@
         
         window.hideConfirmationState(); 
 
-        // 🎯 Hide Seal Section dynamically if DISCOM is PVVNL
         const sealSection = document.getElementById("modal-seal-section");
         if (sealSection) {
             if (discom && discom.toUpperCase() === 'PVVNL') {
@@ -456,7 +446,6 @@
         document.getElementById("insp-action-modal").classList.remove("hidden");
     }
 
-    // 🎯 Dedicated Re-Schedule Modal Launcher
     window.openRescheduleModal = function(inspId, discom) {
         document.getElementById("modal-insp-id").value = inspId;
         document.getElementById("modal-discom").value = discom;
@@ -532,19 +521,36 @@
     }
 
     // ==========================================
+    // GPS LOCATION HELPER 
+    // ==========================================
+    window.getLocation = function() {
+        return new Promise((resolve, reject) => {
+            if (!navigator.geolocation) {
+                reject(new Error("Geolocation is not supported by your browser."));
+            } else {
+                navigator.geolocation.getCurrentPosition(
+                    (position) => resolve(position.coords),
+                    (error) => reject(error),
+                    { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+                );
+            }
+        });
+    }
+
+    // ==========================================
     // SAVE LOGIC TO BACKEND
     // ==========================================
     window.handleInspSave = async function() {
         const btn = document.getElementById("btn-final-save");
         const originalBtnText = btn.innerHTML;
+        const type = document.getElementById("modal-type").value;
+        const discomValue = document.getElementById("modal-discom").value;
+        const isPVVNL = discomValue.toUpperCase() === 'PVVNL';
+
         btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Submitting...`;
         btn.disabled = true;
 
         try {
-            const type = document.getElementById("modal-type").value;
-            const discomValue = document.getElementById("modal-discom").value;
-            const isPVVNL = discomValue.toUpperCase() === 'PVVNL';
-
             const payload = {
                 action: "updateInspection",
                 client: currentMiUser.client,
@@ -553,10 +559,42 @@
                 discom: discomValue
             };
 
+            // Create universal Date/Time strings for frontend log creation
+            const now = new Date();
+            const pad = (n) => n.toString().padStart(2, '0');
+            const dateStr = `${pad(now.getDate())}/${pad(now.getMonth() + 1)}/${now.getFullYear()}`;
+            const timeStr = `${pad(now.getHours())}:${pad(now.getMinutes())}:${pad(now.getSeconds())}`;
+
             if (type === 'not-scheduled' || type === 'scheduled-reschedule') {
                 payload.scheduleDate = document.getElementById("input-schedule-date").value;
                 payload.status = "Schedule";
+                
+                // Set Schedule log in frontend
+                payload.logDetails = `**SCHEDULE UPDATED** - Insp- ${currentMiUser.name}, ${dateStr} , ${timeStr}`;
+                payload.logdetails = payload.logDetails; // Send lowercase too just in case
+
             } else {
+                // FETCH GPS FOR INSPECTION COMPLETION
+                let coords;
+                try {
+                    btn.innerHTML = `<i data-lucide="map-pin" class="w-4 h-4 animate-pulse"></i> Fetching Location...`;
+                    coords = await window.getLocation();
+                } catch (locErr) {
+                    alert("⚠️ Location access is required to complete the inspection. Please enable GPS/Location services in your browser/device settings and try again.");
+                    btn.innerHTML = originalBtnText;
+                    btn.disabled = false;
+                    if(window.lucide) window.lucide.createIcons();
+                    return; 
+                }
+                
+                const locationString = `${coords.latitude.toFixed(5)}, ${coords.longitude.toFixed(5)}`;
+                
+                // Set Completion log with GPS in frontend
+                const exactLogString = `**INSPECTION COMPLETION UPDATED** - Insp- ${currentMiUser.name}, ${dateStr} , ${timeStr}, Location - ${locationString}`;
+                payload.logDetails = exactLogString;
+                payload.logdetails = exactLogString; // Send lowercase too just in case
+                payload.gpsLocation = locationString;
+
                 payload.inspectionCompletedOn = document.getElementById("input-comp-date").value;
                 payload.manDays = document.getElementById("input-mandays").value;
                 payload.reportOm = document.getElementById("input-om").value;
@@ -566,12 +604,16 @@
                 const inspectionDates = document.getElementById("input-dates-insp").value;
                 
                 if (isPVVNL) {
-                    payload.dateFrom = ""; 
-                    payload.dateTo = inspectionDates; 
+                    // FIX: Save Dates in AC (dateFrom) and Mandays in AD (dateTo)
+                    payload.dateFrom = inspectionDates; 
+                    payload.dateTo = payload.manDays; 
+                    payload.manDays = ""; // Clear manDays so it doesn't populate column AE
+                    
                     payload.sealType = "";
                     payload.sealSerial = "";
                     payload.sealNoCount = "";
                 } else {
+                    // Unchanged for other Discoms
                     payload.dateFrom = inspectionDates;
                     payload.sealType = document.getElementById("input-seal-type").value;
                     payload.sealSerial = document.getElementById("input-seal-serial").value;
@@ -580,6 +622,8 @@
 
                 payload.conductedBy = currentMiUser.name; 
             }
+
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Saving...`;
 
             const res = await fetch(API_URL, { method: "POST", body: JSON.stringify(payload) });
             const data = await res.json();
@@ -599,7 +643,6 @@
             if(window.lucide) window.lucide.createIcons();
         }
     }
-
     // ==========================================
     // HELPER LOGIC (Date sequences & Seals)
     // ==========================================
