@@ -1,0 +1,2185 @@
+<!-- Chart.js Library for Visual Analytics -->
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-6 animate-fade-in pb-16" id="main-container">
+    
+    <!-- Top Header & Filter Controls -->
+    <div class="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bar-chart-3" class="text-blue-600 w-5 h-5"></i> Inspection Operations & Performance Analytics
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Comprehensive intelligence, compliance tracking, and interactive drill-downs.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="analytics-record-count-badge" class="text-[11px] font-mono px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border">
+                    Loading Data...
+                </span>
+                <button onclick="window.resetAnalyticsFilters()" class="px-3 py-1.5 bg-slate-100 hover:bg-slate-200 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset All
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Row -->
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Search ID</label>
+                <input type="text" id="an-filter-id" list="an-filter-id-list" oninput="window.runAnalyticsPipeline()" placeholder="Type or Select ID..." class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white transition shadow-xs cursor-pointer">
+                <datalist id="an-filter-id-list"></datalist>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Global DISCOM</label>
+                <select id="an-filter-discom" onchange="window.runAnalyticsPipeline()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white cursor-pointer transition shadow-xs">
+                    <option value="ALL">All DISCOMs</option>
+                    <option value="NBPDCL">NBPDCL</option>
+                    <option value="SBPDCL">SBPDCL</option>
+                    <option value="PVVNL">PVVNL</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Completion Month</label>
+                <select id="an-filter-month" onchange="window.runAnalyticsPipeline()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white cursor-pointer transition shadow-xs">
+                    <option value="ALL">All Months</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Status</label>
+                <select id="an-filter-status" onchange="window.runAnalyticsPipeline()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white cursor-pointer transition shadow-xs">
+                    <option value="ALL">All Statuses</option>
+                    <option value="Completed">Completed</option>
+                    <option value="Schedule">Schedule / Scheduled</option>
+                    <option value="Pending">Pending</option>
+                    <option value="Revised">Revised</option>
+                    <option value="Cancelled">Cancelled</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Sub-Status (Outcome)</label>
+                <select id="an-filter-substatus" onchange="window.runAnalyticsPipeline()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-slate-50 focus:bg-white cursor-pointer transition shadow-xs">
+                    <option value="ALL">All Sub-Statuses</option>
+                    <option value="Completed - Material Pass">Material Pass</option>
+                    <option value="Completed - MOM">MOM</option>
+                    <option value="Pending">Pending</option>
+                </select>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toggleable KPI Scorecards -->
+    <div class="space-y-3">
+        <div class="flex flex-col sm:flex-row justify-between items-center gap-3">
+            <h4 class="font-black text-xs uppercase text-slate-800 flex items-center gap-2"><i data-lucide="activity" class="w-4 h-4 text-emerald-600"></i> Executive Scorecards</h4>
+            <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1 text-xs w-full sm:w-auto">
+                <button onclick="window.switchKpiView('execution')" id="btn-kpi-execution" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg font-black transition cursor-pointer bg-blue-600 text-white shadow-xs">Execution</button>
+                <button onclick="window.switchKpiView('billing')" id="btn-kpi-billing" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900">Billing</button>
+                <button onclick="window.switchKpiView('efficiency')" id="btn-kpi-efficiency" class="flex-1 sm:flex-none px-4 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900">Compliance & Reports</button>
+            </div>
+        </div>
+
+        <!-- View 1: Execution KPIs -->
+        <div id="kpi-grid-execution" class="grid grid-cols-2 lg:grid-cols-6 gap-3 sm:gap-4 animate-fade-in">
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-slate-400 block tracking-wider">Total Calls</span>
+                <div class="flex items-end gap-1.5 mt-1">
+                    <p id="kpi-total-calls" class="text-2xl font-black text-slate-900 leading-none">0</p>
+                    <span id="kpi-valid-calls" class="text-[10px] font-bold text-blue-600 mb-0.5">(0 Valid)</span>
+                </div>
+                <span id="kpi-cancelled-revised" class="text-[10px] text-rose-500 font-bold block mt-1">0 Canc / Rev / Wav</span>
+            </div>
+            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-100 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-emerald-600 block tracking-wider">Material Pass</span>
+                <p id="kpi-pass-count" class="text-2xl font-black text-emerald-700 mt-1">0</p>
+                <span id="kpi-pass-rate" class="text-[10px] text-emerald-600 font-bold block mt-0.5">0% pass rate</span>
+            </div>
+            <div class="bg-purple-50/50 p-4 rounded-2xl border border-purple-100 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-purple-600 block tracking-wider">MOM Issues</span>
+                <p id="kpi-mom-count" class="text-2xl font-black text-purple-700 mt-1">0</p>
+                <span id="kpi-mom-rate" class="text-[10px] text-purple-600 font-bold block mt-0.5">0% MOM rate</span>
+            </div>
+            <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-amber-600 block tracking-wider">Pending / Sched</span>
+                <p id="kpi-pending-count" class="text-2xl font-black text-amber-700 mt-1">0</p>
+                <span id="kpi-pending-rate" class="text-[10px] text-amber-600 font-bold block mt-0.5">Awaiting completion</span>
+            </div>
+            <div class="bg-white p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider">Avg Man-Days/Insp</span>
+                <p id="kpi-avg-per-inspector" class="text-2xl font-black text-blue-700 mt-1">0.0</p>
+                <span id="kpi-inspector-pool" class="text-[10px] text-blue-600 font-bold block mt-0.5">Across 0 active inspector(s)</span>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-slate-500 block tracking-wider">Total Man-Days</span>
+                <p id="kpi-total-mandays" class="text-2xl font-black text-slate-800 mt-1">0</p>
+                <span class="text-[10px] text-slate-500 font-bold block mt-0.5">Utilized in execution</span>
+            </div>
+        </div>
+
+        <!-- View 2: Billing KPIs -->
+        <div id="kpi-grid-billing" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
+            <div class="bg-emerald-50/50 p-4 rounded-2xl border border-emerald-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-emerald-600 block tracking-wider">Billed Inspections</span>
+                <div class="flex items-end gap-2 mt-1">
+                    <p id="kpi-billed-count" class="text-3xl font-black text-emerald-700 leading-none">0</p>
+                    <span id="kpi-billed-rate" class="text-xs font-bold text-emerald-600 mb-1">0% of total</span>
+                </div>
+            </div>
+            <div class="bg-rose-50/50 p-4 rounded-2xl border border-rose-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-rose-600 block tracking-wider">Pending Billing</span>
+                <div class="flex items-end gap-2 mt-1">
+                    <p id="kpi-unbilled-count" class="text-3xl font-black text-rose-700 leading-none">0</p>
+                    <span id="kpi-unbilled-rate" class="text-xs font-bold text-rose-600 mb-1">0% of total</span>
+                </div>
+            </div>
+            <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider">Invoices Submitted</span>
+                <p id="kpi-invoice-count" class="text-3xl font-black text-blue-700 mt-1 leading-none">0</p>
+                <span class="text-[10px] text-blue-600 font-bold block mt-1.5">Inspections with ref no.</span>
+            </div>
+            <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-slate-600 block tracking-wider">Billed Man-Days</span>
+                <p id="kpi-billed-mandays" class="text-3xl font-black text-slate-800 mt-1 leading-none">0</p>
+                <span id="kpi-billed-manday-rate" class="text-[10px] text-slate-500 font-bold block mt-1.5">0% of utilized man-days</span>
+            </div>
+        </div>
+
+        <!-- View 3: Compliance & Reports KPIs -->
+        <div id="kpi-grid-efficiency" class="hidden grid grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4 animate-fade-in">
+            <div class="bg-indigo-50/50 p-4 rounded-2xl border border-indigo-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-indigo-600 block tracking-wider">Report Received</span>
+                <p id="kpi-report-received-cnt" class="text-3xl font-black text-indigo-700 mt-1 leading-none">0</p>
+                <span class="text-[10px] text-indigo-600 font-bold block mt-1.5">Confirmed received records</span>
+            </div>
+            <div class="bg-blue-50/50 p-4 rounded-2xl border border-blue-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-blue-600 block tracking-wider">Report Mailed</span>
+                <p id="kpi-report-mailed-cnt" class="text-3xl font-black text-blue-700 mt-1 leading-none">0</p>
+                <span class="text-[10px] text-blue-600 font-bold block mt-1.5">Dispatched via mail</span>
+            </div>
+            <div class="bg-cyan-50/50 p-4 rounded-2xl border border-cyan-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-cyan-600 block tracking-wider">NABL Samples Sent</span>
+                <p id="kpi-nabl-sent-cnt" class="text-3xl font-black text-cyan-700 mt-1 leading-none">0</p>
+                <span class="text-[10px] text-cyan-600 font-bold block mt-1.5">"Sample send for NABL Test"</span>
+            </div>
+            <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-200 shadow-xs">
+                <span class="text-[9px] font-black uppercase text-amber-600 block tracking-wider">Avg Schedule Lag</span>
+                <p id="kpi-lag-schedule" class="text-3xl font-black text-amber-700 mt-1 leading-none">0<span class="text-lg">d</span></p>
+                <span class="text-[10px] text-amber-600 font-bold block mt-1.5">Received to Sched Date</span>
+            </div>
+        </div>
+    </div>
+
+    <!-- Comparative Analytics Section -->
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <!-- Chart: Schedule Adherence -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                        <i data-lucide="clock" class="w-4 h-4 text-amber-500"></i> Execution Schedule Adherence
+                    </h4>
+                    <span class="text-[10px] font-bold text-slate-400" title="Difference between Schedule Date and Actual Start Date">Sched vs Actual Start</span>
+                </div>
+                <div class="h-64 sm:h-72 w-full relative flex items-center justify-center pt-2">
+                    <canvas id="chart-adherence"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Chart: Quality & Compliance Docs -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                        <i data-lucide="file-check" class="w-4 h-4 text-indigo-500"></i> Quality & Compliance Tracking (NABL / Reports)
+                    </h4>
+                    <span class="text-[10px] font-bold text-slate-400">Click a bar to view IDs</span>
+                </div>
+                <div class="h-64 sm:h-72 w-full relative flex items-center justify-center pt-2">
+                    <canvas id="chart-quality"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Full-Width Containers for Adherence & Quality Details -->
+    <div id="adherence-details-container"></div>
+    <div id="quality-details-container"></div>
+
+    <!-- 🎯 INTEGRATED COMBO CHART (SIDE-BY-SIDE BARS) -->
+    <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3">
+        <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+            <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                <i data-lucide="trending-up" class="w-4 h-4 text-blue-600"></i> Integrated Monthly Execution Volume & Man-Days Trend
+            </h4>
+            <span class="text-[10px] font-bold text-slate-400">Grouped Bars = Calls vs Completed vs Billed</span>
+        </div>
+        <div class="h-72 sm:h-96 w-full relative">
+            <canvas id="chart-monthly-trend"></canvas>
+        </div>
+        <!-- Monthly Trend Inline Details Container -->
+        <div id="monthly-trend-details-container"></div>
+    </div>
+
+    <!-- Secondary Charts: Stacked Rows (Outcome in one row, Categories in another) -->
+    <div class="space-y-6">
+        <!-- Outcome & DISCOM Distribution (Bigger Size in its own row) -->
+        <div class="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+            <div class="border-b border-slate-100 pb-3 flex items-center justify-between">
+                <h4 class="font-black text-sm uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                    <i data-lucide="pie-chart" class="w-5 h-5 text-purple-600"></i> <span id="outcome-chart-title">Overall Outcome Ratio</span>
+                </h4>
+                <button id="outcome-back-btn" onclick="window.resetOutcomeChartView()" class="hidden text-xs font-bold text-blue-600 bg-blue-50 px-3 py-1.5 rounded-lg border border-blue-200 cursor-pointer flex items-center gap-1.5">
+                    <i data-lucide="arrow-left" class="w-3.5 h-3.5"></i> Back to Main
+                </button>
+            </div>
+            <div class="h-80 sm:h-96 w-full relative my-auto flex items-center justify-center">
+                <canvas id="chart-outcome-doughnut"></canvas>
+            </div>
+            <div class="border-t border-slate-100 pt-3 flex justify-around text-center text-sm font-bold">
+                <div><span class="text-[10px] uppercase text-slate-400 block">NBPDCL</span><span id="sub-nb-cnt" class="text-blue-700 font-black text-base">0</span></div>
+                <div><span class="text-[10px] uppercase text-slate-400 block">SBPDCL</span><span id="sub-sb-cnt" class="text-purple-700 font-black text-base">0</span></div>
+                <div><span class="text-[10px] uppercase text-slate-400 block">PVVNL</span><span id="sub-pv-cnt" class="text-amber-700 font-black text-base">0</span></div>
+            </div>
+        </div>
+            <!-- 🎯 Interactive Outcome Details Collapsible Container -->
+    <div id="outcome-details-table-container"></div>
+
+        <!-- Chart: Material Category Distribution (In its own row) -->
+        <div class="bg-white p-5 rounded-3xl border border-slate-200 shadow-sm space-y-3 flex flex-col justify-between">
+            <div>
+                <div class="flex items-center justify-between border-b border-slate-100 pb-3">
+                    <h4 class="font-black text-xs uppercase text-slate-800 tracking-wider flex items-center gap-2">
+                        <i data-lucide="layers" class="w-4 h-4 text-emerald-600"></i> Top Material Categories Inspected
+                    </h4>
+                    <span class="text-[10px] font-bold text-slate-400">Click bar for Inspection Codes</span>
+                </div>
+                <div class="h-64 sm:h-72 w-full relative pt-2">
+                    <canvas id="chart-material-category"></canvas>
+                </div>
+            </div>
+            <!-- Material Category Inline Details Container -->
+            <div id="material-category-details-container"></div>
+        </div>
+    </div>
+
+
+
+    <!-- Deep-Dive Breakdown Section with Tab Navigation -->
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <h4 class="font-black text-sm uppercase text-slate-900 tracking-wider flex items-center gap-2">
+                <i data-lucide="table-2" class="w-5 h-5 text-indigo-600"></i> Detailed Entity Performance Matrices
+            </h4>
+            <div class="inline-flex bg-slate-100 p-1 rounded-xl border border-slate-200 gap-1 text-xs">
+                <button onclick="window.switchAnalysisTab('inspector')" id="tab-btn-inspector" class="px-3 py-1.5 rounded-lg font-black transition cursor-pointer bg-blue-600 text-white shadow-xs">Inspectors</button>
+                <button onclick="window.switchAnalysisTab('manufacturer')" id="tab-btn-manufacturer" class="px-3 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900">Manufacturers</button>
+                <button onclick="window.switchAnalysisTab('materials')" id="tab-btn-materials" class="px-3 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900">Material Categories</button>
+            </div>
+        </div>
+
+        <!-- Matrix 1: Inspector-Wise Performance -->
+        <div id="matrix-inspector-panel" class="overflow-x-auto custom-scrollbar">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white uppercase text-[10px] font-mono">
+                    <tr>
+                        <th class="p-3 border-r border-slate-700 w-12 text-center">Sr</th>
+                        <th class="p-3 border-r border-slate-700">Inspector Name</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-24">Total Calls</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-emerald-300 w-24">Pass</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-purple-300 w-24">MOM</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-amber-300 w-24">Pending</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-28">Pass Rate</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-24">Man-Days</th>
+                        <th class="p-3 text-center w-28">% of Valid Calls</th>
+                    </tr>
+                </thead>
+                <tbody id="matrix-inspector-body" class="divide-y font-medium text-slate-700">
+                    <tr><td colspan="9" class="p-8 text-center text-slate-400">Loading inspector performance...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Matrix 2: Manufacturer Breakdown -->
+        <div id="matrix-manufacturer-panel" class="overflow-x-auto custom-scrollbar hidden">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white uppercase text-[10px] font-mono">
+                    <tr>
+                        <th class="p-3 border-r border-slate-700 w-12 text-center">Sr</th>
+                        <th class="p-3 border-r border-slate-700">Manufacturer Name</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-24">Total Calls</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-emerald-300 w-24">Pass</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-purple-300 w-24">MOM</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-amber-300 w-24">Pending</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-28">Compliance Rate</th>
+                        <th class="p-3">Primary Materials Inspected</th>
+                    </tr>
+                </thead>
+                <tbody id="matrix-manufacturer-body" class="divide-y font-medium text-slate-700">
+                    <tr><td colspan="8" class="p-8 text-center text-slate-400">Loading manufacturer analysis...</td></tr>
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Matrix 3: Material Categories -->
+        <div id="matrix-materials-panel" class="overflow-x-auto custom-scrollbar hidden">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-slate-900 text-white uppercase text-[10px] font-mono">
+                    <tr>
+                        <th class="p-3 border-r border-slate-700 w-12 text-center">Sr</th>
+                        <th class="p-3 border-r border-slate-700">Material Category</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-28">Total Calls</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-emerald-300 w-24">Pass</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-purple-300 w-24">MOM</th>
+                        <th class="p-3 border-r border-slate-700 text-center text-amber-300 w-24">Pending</th>
+                        <th class="p-3 border-r border-slate-700 text-center w-28">Quality Pass %</th>
+                        <th class="p-3">Frequent Manufacturers</th>
+                    </tr>
+                </thead>
+                <tbody id="matrix-materials-body" class="divide-y font-medium text-slate-700">
+                    <tr><td colspan="8" class="p-8 text-center text-slate-400">Loading material category analytics...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- 🎯 INTEGRATED FINANCIAL & EXECUTION MASTER PIVOT MATRIX -->
+    <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 mt-8">
+        <div class="flex flex-col lg:flex-row lg:items-center justify-between gap-3 border-b border-slate-100 pb-3">
+            <div>
+                <h4 class="font-black text-sm uppercase text-slate-900 tracking-wider flex items-center gap-2">
+                    <i data-lucide="database" class="w-5 h-5 text-emerald-600"></i> Integrated Financial & Execution Master Matrix
+                </h4>
+                <p class="text-[11px] text-slate-500 mt-1">Cross-reference Portal M billing parameters with live execution data, specs, and exact calculated fees.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span class="text-[10px] font-mono bg-amber-50 border border-amber-200 text-amber-800 px-3 py-1.5 rounded-full font-bold shadow-xs">
+                    Auto-Synchronized via Inspection ID
+                </span>
+            </div>
+        </div>
+
+        <!-- DYNAMIC COMPARISON / PIVOT TOOLBAR -->
+        <div class="bg-slate-50 p-4 rounded-2xl border border-slate-200 flex flex-wrap items-end gap-4 shadow-inner">
+            <div class="flex items-center gap-2 shrink-0 pb-2 w-full sm:w-auto justify-between">
+                <div class="flex items-center gap-2">
+                    <i data-lucide="git-merge" class="w-5 h-5 text-blue-600"></i>
+                    <span class="text-xs font-black uppercase text-slate-600 tracking-wider">Matrix Settings:</span>
+                </div>
+                <button onclick="window.resetMatrixFilters()" class="sm:hidden px-3 py-1.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-[10px] font-bold rounded-lg transition cursor-pointer flex items-center gap-1.5 shadow-sm">
+                    <i data-lucide="rotate-ccw" class="w-3 h-3"></i> Reset
+                </button>
+            </div>
+
+            <!-- 🎯 MATRIX-SPECIFIC DISCOM FILTER -->
+            <div class="flex-1 min-w-[150px]">
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Matrix DISCOM Filter</label>
+                <select id="matrix-filter-discom" onchange="window.renderFinancialMatrix()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-amber-500 transition cursor-pointer shadow-xs text-amber-900 bg-amber-50/30">
+                    <option value="ALL">All Data (Combined)</option>
+                    <option value="NBPDCL">NBPDCL Only</option>
+                    <option value="SBPDCL">SBPDCL Only</option>
+                    <option value="PVVNL">PVVNL Only</option>
+                </select>
+            </div>
+
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Primary Grouping</label>
+                <select id="matrix-grp-1" onchange="document.getElementById('matrix-filter-primary').value='ALL'; window.renderFinancialMatrix()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-blue-500 transition cursor-pointer shadow-xs">
+                    <option value="none">Detailed Flat View (All Records)</option>
+                    <option value="mfg">Group by Manufacturer</option>
+                    <option value="cat">Group by Material Category</option>
+                    <option value="insp">Group by Conducted By (Inspector)</option>
+                    <option value="discom">Group by DISCOM</option>
+                </select>
+            </div>
+
+            <div class="flex-1 min-w-[180px]">
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Secondary Grouping</label>
+                <select id="matrix-grp-2" onchange="window.renderFinancialMatrix()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white focus:border-indigo-500 transition cursor-pointer shadow-xs">
+                    <option value="none">-- No Secondary Grouping --</option>
+                    <option value="mfg">Then by Manufacturer</option>
+                    <option value="cat">Then by Material Category</option>
+                    <option value="insp">Then by Conducted By (Inspector)</option>
+                    <option value="discom">Then by DISCOM</option>
+                </select>
+            </div>
+            
+            <!-- 🎯 Filter Group Data -->
+            <div class="flex-1 min-w-[150px] hidden" id="matrix-filter-wrap">
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1 text-emerald-700">Filter Group Data</label>
+                <input type="text" id="matrix-filter-primary" list="matrix-filter-primary-list" oninput="window.applyMatrixFilter()" onfocus="if(this.value==='ALL')this.value='';" onblur="if(this.value==='')this.value='ALL';" placeholder="Select or type..." value="ALL" class="w-full p-2.5 border border-emerald-300 rounded-xl text-xs font-bold outline-none bg-emerald-50 focus:bg-white focus:border-emerald-500 transition cursor-pointer shadow-xs">
+                <datalist id="matrix-filter-primary-list">
+                    <option value="ALL">-- All --</option>
+                </datalist>
+            </div>
+
+            <button onclick="window.resetMatrixFilters()" class="hidden sm:flex ml-auto px-4 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-bold rounded-xl transition cursor-pointer items-center gap-1.5 shadow-sm">
+                <i data-lucide="rotate-ccw" class="w-3.5 h-3.5"></i> Reset Matrix
+            </button>
+        </div>
+
+        <div class="overflow-x-auto custom-scrollbar border border-slate-200 rounded-2xl shadow-inner max-h-[70vh]">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead id="matrix-financial-head" class="bg-slate-900 text-white uppercase text-[10px] font-mono sticky top-0 z-10 shadow-sm">
+                    <!-- Populated dynamically based on grouping -->
+                </thead>
+                <tbody id="matrix-financial-body" class="divide-y font-medium text-slate-700 bg-white">
+                    <tr><td colspan="10" class="p-8 text-center text-slate-400 animate-pulse">Syncing Portal M Financial Data...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- ======================= COMPLETED INSPECTIONS LOG ======================= -->
+    <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 mt-8">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
+            <div>
+                <h3 class="font-black text-lg uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="calendar-check" class="text-violet-600 w-6 h-6"></i> Completed Inspections Log
+                </h3>
+                <p class="text-xs font-bold text-slate-500 mt-1">Filtered by Global DISCOM selection and custom completion date.</p>
+            </div>
+            
+            <div class="flex items-center gap-3 flex-wrap">
+                <div class="flex items-center gap-2 bg-slate-50 p-2 rounded-xl border border-slate-200">
+                    <label class="text-[10px] font-black uppercase text-violet-800">Select Date:</label>
+                    <input type="date" id="completed-log-filter-date" onchange="window.renderCompletedDateLog()" class="p-1 border border-violet-300 rounded-lg text-xs font-bold outline-none bg-white cursor-pointer shadow-2xs">
+                </div>
+            </div>
+        </div>
+
+        <div id="yesterday-table-container" class="border border-violet-200 rounded-2xl shadow-sm overflow-hidden flex flex-col bg-white relative">
+            <div class="p-4 bg-violet-100/50 border-b border-violet-200 flex items-center justify-between">
+                <h4 class="font-black text-sm uppercase text-violet-900 flex items-center gap-2">
+                    <i data-lucide="calendar-check-2" class="w-5 h-5 text-violet-600"></i> Records Log
+                </h4>
+                <span class="text-xs font-black bg-violet-600 text-white px-3 py-1 rounded-full shadow-sm">Count: <span id="yesterday-table-count">0</span></span>
+            </div>
+            <div class="p-0 overflow-auto custom-scrollbar w-full max-h-[65vh] relative scroll-target">
+                <table class="w-full text-left text-[11px] border-collapse table-auto">
+                    <thead class="sticky top-0 bg-violet-200 text-violet-900 z-20 font-bold uppercase tracking-wider shadow-sm">
+                        <tr>
+                            <th class="p-3 border-r border-violet-300">Inspection ID / DISCOM</th>
+                            <th class="p-3 border-r border-violet-300">Manufacturer & Address</th>
+                            <th class="p-3 border-r border-violet-300">Material Details</th>
+                            <th class="p-3 border-r border-violet-300">Conducted By</th>
+                            <th class="p-3 border-r border-violet-300">Status / Sub-Status</th>
+                            <th class="p-3 text-center">Completed On</th>
+                        </tr>
+                    </thead>
+                    <tbody id="yesterday-tbody" class="font-medium divide-y divide-violet-100">
+                        <!-- Populated dynamically -->
+                    </tbody>
+                </table>
+            </div>
+        </div>
+        
+        <p class="text-[10px] text-slate-400 mt-2 text-center italic">* Automatically synchronizes with the Global DISCOM filter at the top of the dashboard.</p>
+    </div>
+</div>
+
+<!-- 🎯 DRILL-DOWN MODAL FOR CHARTS -->
+<div id="analytics-drilldown-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-50 flex items-center justify-center p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-6 sm:p-8 relative border space-y-4 max-h-[90vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10">
+            <div>
+                <h3 id="drilldown-modal-title" class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="list-filter" class="text-blue-600 w-4 h-4"></i> Filtered Inspection Codes
+                </h3>
+                <p id="drilldown-modal-subtitle" class="text-[11px] text-slate-500 mt-0.5">Matching inspection records for selected category.</p>
+            </div>
+            <button onclick="window.closeDrilldownModal()" class="text-slate-400 hover:text-slate-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="drilldown-modal-body" class="space-y-3">
+            <!-- Populated dynamically with complete profile expansion -->
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<script>
+    // 🎯 MASTER GLOBAL STATE & HOISTED DEFINITIONS
+    window.analyticsRawData = [];
+    window.analyticsInspectorsMaster = [];
+    window.analyticsFilteredCache = [];
+    window.portalMData = []; 
+    window.currentPivotRecords = {}; 
+    window.outcomeDrilldownMainKey = null;
+    
+    window.analyticsChartInstances = {
+        monthlyTrend: null,
+        outcomeDoughnut: null,
+        materialCategory: null,
+        adherenceChart: null,
+        qualityChart: null
+    };
+
+    window.fullHeaderCustomNames = {
+        "srNo": "Sr. No", "inspectionId": "Inspection ID", "discom": "DISCOM", "scheme": "Scheme",
+        "district": "District", "letterNo": "Inspection Letter No", "letterDate": "Letter Date (dd/mm/yyyy)",
+        "receivedDate": "Date of received Inspection Call / Scheduled Date (dd/mm/yyyy)", "pqccName": "PQCC Name",
+        "officials": "Name of Officials", "nodalCe": "Nodal Chief Engineer", "manufacturer": "Manufacturer Name",
+        "address": "Address", "contactPerson": "Contact Person", "mobile": "Mobile No",
+        "materialInspected": "Material Inspected", "materialSpec": "Material Specification", "quantity": "Quantity",
+        "tkc": "Name of TKC", "tpiaInspector": "Name of TPIA Inspector (Appointed)", "tpiaContact": "Contact Number (Formula)",
+        "authLetterNo": "Authorization Letter No", "scheduleDate": "Schedule Date (dd/mm/yyyy)",
+        "status": "Inspection Status", "subStatus": "Inspection Sub Status",
+        "inspectionCompletedOn": "Inspection Completed On (dd/mm/yyyy)", "reportOm": "Report/ OM No and Date",
+        "conductedBy": "Inspection conducted by TPIA Inspector", "dateFrom": "Date(s) of Inspection (From - To)",
+        "dateTo": "Date(s) of NABL Witness (From - To)", "manDays": "Man Days", "sealType": "Type of Seal",
+        "sealSerial": "Seal Serial No Used in Inspection", "sealNoCount": "No of Seal",
+        "nablStatusDate": "NABL Status and Testing Date", "reportReceived": "Report Received",
+        "reportMail": "Report Mail", "letterRevision": "Letter Revision Status", "remarks": "Remark",
+        "month": "Month of Inspection (conducted)", "billingStatus": "Billing Status", "invoiceNo": "Invoice No"
+    };
+
+    // 🎯 UTILITY FUNCTIONS ATTACHED TO WINDOW
+    window.cleanInspectorName = function(name) {
+        if (!name) return "";
+        return String(name).toLowerCase().replace(/^(er\.|er\s+|mr\.|mr\s+|engr\.|dr\.)\s*/i, "").replace(/[^a-z0-9]/g, '');
+    };
+
+    window.getInspectorName = function(insp) {
+        if (typeof insp === 'string') return insp;
+        const keys = Object.keys(insp);
+        const nameKey = keys.find(k => {
+            const lk = k.toLowerCase().replace(/[^a-z]/g, '');
+            return lk.includes('name') || lk.includes('inspector') || lk.includes('engineer');
+        });
+        return (nameKey && insp[nameKey]) ? String(insp[nameKey]).trim() : (Object.values(insp)[1] || Object.values(insp)[0] || "Unknown");
+    };
+
+    window.parseAnyDateToObject = function(dateStr) {
+        if (!dateStr || dateStr === "-" || dateStr === "undefined" || dateStr === "null") return null;
+        if (dateStr instanceof Date) return isNaN(dateStr.getTime()) ? null : dateStr;
+        
+        let s = String(dateStr).trim();
+
+        if (!isNaN(s) && Number(s) > 30000 && Number(s) < 60000) {
+            let excelDate = new Date(Math.round((Number(s) - (25567 + 2)) * 86400 * 1000));
+            return isNaN(excelDate.getTime()) ? null : excelDate;
+        }
+
+        if (s.includes('T') || (s.includes('-') && s.length >= 10)) {
+            let d = new Date(s);
+            if (!isNaN(d.getTime())) {
+                d.setHours(0,0,0,0);
+                return d;
+            }
+        }
+
+        let mDMY = s.match(/(\d{2})[-/](\d{2})[-/](\d{4})/);
+        if (mDMY) {
+            return new Date(parseInt(mDMY[3], 10), parseInt(mDMY[2], 10) - 1, parseInt(mDMY[1], 10));
+        }
+
+        let mYMD = s.match(/(\d{4})[-/](\d{2})[-/](\d{2})/);
+        if (mYMD) {
+            return new Date(parseInt(mYMD[1], 10), parseInt(mYMD[2], 10) - 1, parseInt(mYMD[3], 10));
+        }
+
+        let fallback = new Date(s);
+        fallback.setHours(0,0,0,0);
+        return isNaN(fallback.getTime()) ? null : fallback;
+    };
+
+    window.extractFirstDate = function(str) {
+        if (!str) return null;
+        let s = String(str).trim();
+        let matches = s.match(/(\d{2}[-/]\d{2}[-/]\d{4}|\d{4}[-/]\d{2}[-/]\d{2})/g);
+        if (matches && matches.length > 0) {
+            return window.parseAnyDateToObject(matches[0]);
+        }
+        return window.parseAnyDateToObject(str);
+    };
+
+    window.getCompletionMonth = function(row) {
+        const stat = String(row.status || "").trim().toLowerCase();
+        const sub = String(row.subStatus || "").trim().toLowerCase();
+
+        if (stat.includes("pend") || stat.includes("sched") || sub.includes("pend")) {
+            const d = new Date(); 
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${monthNames[d.getMonth()]} ${d.getFullYear()}`;
+        }
+
+        let latestDate = null;
+        
+        if (row.dateTo) {
+            const regex = /(?:To|And)[\s\n\r]+(\d{2}\/\d{2}\/\d{4})/gi;
+            let match;
+            while ((match = regex.exec(row.dateTo)) !== null) {
+                let d = window.parseAnyDateToObject(match[1]);
+                if (d && !isNaN(d.getTime())) {
+                    if (!latestDate || d > latestDate) latestDate = d;
+                }
+            }
+        }
+        
+        if (!latestDate && row.dateFrom) latestDate = window.extractFirstDate(row.dateFrom);
+
+        if (latestDate && !isNaN(latestDate.getTime())) {
+            const monthNames = ["Jan", "Feb", "Mar", "Apr", "May", "Jun", "Jul", "Aug", "Sep", "Oct", "Nov", "Dec"];
+            return `${monthNames[latestDate.getMonth()]} ${latestDate.getFullYear()}`;
+        }
+        
+        return "Unspecified";
+    };
+
+    // 🎯 HIERARCHICAL OUTCOME CATEGORIZATION
+    window.categorizeOutcomeRecords = function(records) {
+        let groups = {
+            "Completed": {
+                label: "Completed",
+                color: "#10b981",
+                subcategories: {
+                    "Completed - Material Pass": [],
+                    "Completed - MOM": [],
+                    "Completed - Failed in NABL Lab": [],
+                    "NABL Awaited": []
+                },
+                all: []
+            },
+            "Withdrawn": {
+                label: "Withdrawn",
+                color: "#f43f5e",
+                subcategories: {
+                    "Cancelled": [],
+                    "Revised": [],
+                    "Waiver": []
+                },
+                all: []
+            },
+            "On Hold": {
+                label: "On Hold",
+                color: "#f59e0b",
+                subcategories: {
+                    "Hold by Dept": [],
+                    "Hold by Manufacturer": [],
+                    "Hold by TKC": [],
+                    "On Hold (General)": []
+                },
+                all: []
+            },
+            "Pending": {
+                label: "Pending",
+                color: "#3b82f6",
+                subcategories: {
+                    "Pending": [],
+                    "Schedule": []
+                },
+                all: []
+            }
+        };
+
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+
+            if (stat.includes("cancel")) {
+                groups["Withdrawn"].subcategories["Cancelled"].push(r);
+                groups["Withdrawn"].all.push(r);
+            } else if (stat.includes("revis")) {
+                groups["Withdrawn"].subcategories["Revised"].push(r);
+                groups["Withdrawn"].all.push(r);
+            } else if (stat.includes("waiver") || sub.includes("waiver")) {
+                groups["Withdrawn"].subcategories["Waiver"].push(r);
+                groups["Withdrawn"].all.push(r);
+            } else if (stat.includes("on hold") || sub.includes("on hold") || sub.includes("hold by")) {
+                groups["On Hold"].all.push(r);
+                if (sub.includes("dept")) groups["On Hold"].subcategories["Hold by Dept"].push(r);
+                else if (sub.includes("manufacturer")) groups["On Hold"].subcategories["Hold by Manufacturer"].push(r);
+                else if (sub.includes("tkc")) groups["On Hold"].subcategories["Hold by TKC"].push(r);
+                else groups["On Hold"].subcategories["On Hold (General)"].push(r);
+            } else if (stat === "completed" || sub.includes("pass") || sub.includes("mom") || sub.includes("failed in nabl") || sub.includes("nabl awaited")) {
+                groups["Completed"].all.push(r);
+                if (sub.includes("failed in nabl")) {
+                    groups["Completed"].subcategories["Completed - Failed in NABL Lab"].push(r);
+                } else if (sub.includes("nabl awaited")) {
+                    groups["Completed"].subcategories["NABL Awaited"].push(r);
+                } else if (sub.includes("pass")) {
+                    groups["Completed"].subcategories["Completed - Material Pass"].push(r);
+                } else if (sub.includes("mom")) {
+                    groups["Completed"].subcategories["Completed - MOM"].push(r);
+                } else {
+                    groups["Completed"].subcategories["Completed - Material Pass"].push(r);
+                }
+            } else {
+                groups["Pending"].all.push(r);
+                if (stat.includes("sched") || sub.includes("sched")) {
+                    groups["Pending"].subcategories["Schedule"].push(r);
+                } else {
+                    groups["Pending"].subcategories["Pending"].push(r);
+                }
+            }
+        });
+
+        return groups;
+    };
+
+    window.renderOutcomeDoughnutChart = function(records) {
+        const ctx = document.getElementById("chart-outcome-doughnut");
+        if (!ctx) return;
+
+        const groups = window.categorizeOutcomeRecords(records);
+        const titleEl = document.getElementById("outcome-chart-title");
+        const backBtn = document.getElementById("outcome-back-btn");
+        const detailsContainer = document.getElementById("outcome-details-table-container");
+
+        let labels = [];
+        let data = [];
+        let backgroundColors = [];
+
+        if (!window.outcomeDrilldownMainKey) {
+            if (titleEl) titleEl.innerText = "Overall Outcome Ratio";
+            if (backBtn) backBtn.classList.add("hidden");
+            
+            labels = Object.keys(groups); 
+            data = labels.map(k => groups[k].all.length);
+            backgroundColors = labels.map(k => groups[k].color);
+
+            if (detailsContainer) detailsContainer.innerHTML = "";
+        } else {
+            const mainGroup = groups[window.outcomeDrilldownMainKey];
+            if (titleEl) titleEl.innerText = `${window.outcomeDrilldownMainKey} (Sub-Categories)`;
+            if (backBtn) backBtn.classList.remove("hidden");
+
+            const subKeys = Object.keys(mainGroup.subcategories);
+            labels = subKeys;
+            data = subKeys.map(sk => mainGroup.subcategories[sk].length);
+            
+            // 🎨 Distinct color scheme for Completed Sub-Categories (rest untouched)
+            if (window.outcomeDrilldownMainKey === "Completed") {
+                backgroundColors = subKeys.map(sk => {
+                    if (sk.includes("Material Pass")) return "#10b981"; // Emerald Green
+                    if (sk.includes("MOM")) return "#8b5cf6"; // Vivid Purple
+                    if (sk.includes("Failed in NABL")) return "#f43f5e"; // Rose Red
+                    if (sk.includes("Awaited")) return "#06b6d4"; // Bright Cyan
+                    return "#3b82f6";
+                });
+            } else {
+                backgroundColors = ['#10b981', '#34d399', '#059669', '#6ee7b7', '#f43f5e', '#fb7185', '#f59e0b', '#fbbf24', '#3b82f6'];
+            }
+
+            window.renderOutcomeDetailsTable(mainGroup.all, window.outcomeDrilldownMainKey);
+        }
+
+        if (window.analyticsChartInstances.outcomeDoughnut) window.analyticsChartInstances.outcomeDoughnut.destroy();
+
+        window.analyticsChartInstances.outcomeDoughnut = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: labels,
+                datasets: [{ data: data, backgroundColor: backgroundColors, borderWidth: 2, borderColor: '#ffffff' }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        if (!window.outcomeDrilldownMainKey) {
+                            const clickedKey = labels[idx];
+                            window.outcomeDrilldownMainKey = clickedKey;
+                            window.renderOutcomeDoughnutChart(records);
+                        } else {
+                            const clickedSubKey = labels[idx];
+                            const subRecords = groups[window.outcomeDrilldownMainKey].subcategories[clickedSubKey];
+                            window.renderOutcomeDetailsTable(subRecords, `${window.outcomeDrilldownMainKey} > ${clickedSubKey}`);
+                        }
+                    }
+                },
+                plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } } }
+            }
+        });
+    };
+
+    window.resetOutcomeChartView = function() {
+        window.outcomeDrilldownMainKey = null;
+        window.renderOutcomeDoughnutChart(window.analyticsFilteredCache || window.analyticsRawData);
+        const detailsContainer = document.getElementById("outcome-details-table-container");
+        if (detailsContainer) detailsContainer.innerHTML = "";
+    };
+
+    window.renderOutcomeDetailsTable = function(recordsList, subtitle = "Records") {
+        const container = document.getElementById("outcome-details-table-container");
+        if (!container) return;
+
+        if (!recordsList || recordsList.length === 0) {
+            container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 italic">No inspection records found for this category.</p>`;
+            return;
+        }
+
+        let rowsHtml = "";
+        recordsList.forEach((r, idx) => {
+            const matDetails = `
+                <div class="font-bold text-slate-800 whitespace-normal break-words">${r.materialInspected || '-'}</div>
+                <div class="text-[9px] text-slate-500 whitespace-normal break-words mt-0.5">${r.materialSpec || '-'}</div>
+                <div class="text-xs font-black text-indigo-600 mt-1">Qty: ${r.quantity || '-'}</div>
+            `;
+            const mfgDetails = `
+                <div class="font-bold text-slate-800 whitespace-normal break-words">${r.manufacturer || '-'}</div>
+                <div class="text-[10px] text-slate-500 whitespace-normal break-words mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline relative -top-0.5"></i> ${r.address || '-'}</div>
+            `;
+
+            let detailsHtml = `<div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-3 mt-2">`;
+            const namesMap = window.fullHeaderCustomNames || {};
+            Object.keys(namesMap).forEach(k => {
+                const label = namesMap[k], rawVal = r[k], val = (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== "") ? String(rawVal) : "-";
+                detailsHtml += `<div><span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">${label}</span><span class="text-xs font-semibold text-slate-800 whitespace-pre-wrap break-words">${val}</span></div>`;
+            });
+            detailsHtml += `</div>`;
+
+            rowsHtml += `
+                <tr class="flex flex-col md:table-row bg-white hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="window.toggleMobileRow(this)">
+                    <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
+                        <div class="flex items-start gap-2 overflow-hidden flex-1">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0 mt-0.5"></i>
+                            <div class="min-w-0 pr-2">
+                                <div class="font-mono font-black text-indigo-700 truncate">${r.inspectionId || '-'}</div>
+                                <div class="text-[10px] font-bold text-slate-800 line-clamp-2 mt-0.5">${r.manufacturer || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end shrink-0 max-w-[40%] text-right">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 truncate max-w-full">${r.status || 'Pending'}</span>
+                            <span class="text-[8px] text-slate-500 mt-1 truncate max-w-full block">${r.subStatus || '-'}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 font-mono font-bold text-indigo-700 align-top hidden md:table-cell border-r border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
+                            ${r.inspectionId || '-'}
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 inline-block mt-1">${r.discom || '-'}</span>
+                    </td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100">${mfgDetails}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100">${matDetails}</td>
+                    <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-slate-100">${r.conductedBy || '-'}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100"><div class="font-bold text-emerald-700">${r.status || '-'}</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">${r.subStatus || '-'}</div></td>
+                    <td class="p-3 text-center font-mono font-black bg-slate-50 align-top text-slate-800 whitespace-nowrap hidden md:table-cell">${r.inspectionCompletedOn || '-'}</td>
+                </tr>
+                <tr class="mobile-expand-drawer hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
+                    <td colspan="6" class="p-4 border-t border-slate-100 text-xs w-full block md:table-cell">
+                        <div class="pl-6 md:pl-2">
+                            <h5 class="text-[10px] font-black uppercase text-indigo-400 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><i data-lucide="file-search" class="w-4 h-4"></i> Complete Inspection Profile</h5>
+                            ${detailsHtml}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col bg-white relative mt-6 animate-fade-in">
+                <div class="p-4 sm:p-5 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                    <h5 class="font-black text-xs uppercase text-slate-800 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-blue-600"></i> Detailed Records: ${subtitle}
+                    </h5>
+                    <span class="text-xs font-black bg-blue-600 text-white px-3 py-1 rounded-full shadow-sm">Count: ${recordsList.length}</span>
+                </div>
+                <div class="p-0 overflow-auto custom-scrollbar w-full max-h-[60vh] relative">
+                    <table class="w-full text-left text-[11px] border-collapse table-auto">
+                        <thead class="sticky top-0 bg-slate-200 text-slate-900 z-20 font-bold uppercase tracking-wider shadow-sm hidden md:table-header-group">
+                            <tr>
+                                <th class="p-3 border-r border-slate-300">Inspection ID / DISCOM</th>
+                                <th class="p-3 border-r border-slate-300">Manufacturer & Address</th>
+                                <th class="p-3 border-r border-slate-300">Material Details</th>
+                                <th class="p-3 border-r border-slate-300">Conducted By</th>
+                                <th class="p-3 border-r border-slate-300">Status / Sub-Status</th>
+                                <th class="p-3 text-center">Completed On</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-medium divide-y divide-slate-100">
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    // Helper for rendering other chart inline collapse/expand details
+    window.renderInlineDetailsTable = function(containerId, recordsList, title) {
+        const container = document.getElementById(containerId);
+        if (!container) return;
+
+        if (!recordsList || recordsList.length === 0) {
+            container.innerHTML = `<p class="text-xs text-slate-400 text-center py-4 italic">No inspection records found for this category.</p>`;
+            return;
+        }
+
+        let rowsHtml = "";
+        recordsList.forEach((r, idx) => {
+            const matDetails = `
+                <div class="font-bold text-slate-800 whitespace-normal break-words">${r.materialInspected || '-'}</div>
+                <div class="text-[9px] text-slate-500 whitespace-normal break-words mt-0.5">${r.materialSpec || '-'}</div>
+                <div class="text-xs font-black text-indigo-600 mt-1">Qty: ${r.quantity || '-'}</div>
+            `;
+            const mfgDetails = `
+                <div class="font-bold text-slate-800 whitespace-normal break-words">${r.manufacturer || '-'}</div>
+                <div class="text-[10px] text-slate-500 whitespace-normal break-words mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline relative -top-0.5"></i> ${r.address || '-'}</div>
+            `;
+
+            let detailsHtml = `<div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-3 mt-2">`;
+            const namesMap = window.fullHeaderCustomNames || {};
+            Object.keys(namesMap).forEach(k => {
+                const label = namesMap[k], rawVal = r[k], val = (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== "") ? String(rawVal) : "-";
+                detailsHtml += `<div><span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">${label}</span><span class="text-xs font-semibold text-slate-800 whitespace-pre-wrap break-words">${val}</span></div>`;
+            });
+            detailsHtml += `</div>`;
+
+            rowsHtml += `
+                <tr class="flex flex-col md:table-row bg-white hover:bg-slate-50 transition border-b border-slate-100 cursor-pointer" onclick="window.toggleMobileRow(this)">
+                    <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
+                        <div class="flex items-start gap-2 overflow-hidden flex-1">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0 mt-0.5"></i>
+                            <div class="min-w-0 pr-2">
+                                <div class="font-mono font-black text-indigo-700 truncate">${r.inspectionId || '-'}</div>
+                                <div class="text-[10px] font-bold text-slate-800 line-clamp-2 mt-0.5">${r.manufacturer || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end shrink-0 max-w-[40%] text-right">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 truncate max-w-full">${r.status || 'Pending'}</span>
+                            <span class="text-[8px] text-slate-500 mt-1 truncate max-w-full block">${r.subStatus || '-'}</span>
+                        </div>
+                    </td>
+                    <td class="p-3 font-mono font-bold text-indigo-700 align-top hidden md:table-cell border-r border-slate-100">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
+                            ${r.inspectionId || '-'}
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 inline-block mt-1">${r.discom || '-'}</span>
+                    </td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100">${mfgDetails}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100">${matDetails}</td>
+                    <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-slate-100">${r.conductedBy || '-'}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-slate-100"><div class="font-bold text-emerald-700">${r.status || '-'}</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">${r.subStatus || '-'}</div></td>
+                    <td class="p-3 text-center font-mono font-black bg-slate-50 align-top text-slate-800 whitespace-nowrap hidden md:table-cell">${r.inspectionCompletedOn || '-'}</td>
+                </tr>
+                <tr class="mobile-expand-drawer hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
+                    <td colspan="6" class="p-4 border-t border-slate-100 text-xs w-full block md:table-cell">
+                        <div class="pl-6 md:pl-2">
+                            <h5 class="text-[10px] font-black uppercase text-indigo-400 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><i data-lucide="file-search" class="w-4 h-4"></i> Complete Inspection Profile</h5>
+                            ${detailsHtml}
+                        </div>
+                    </td>
+                </tr>
+            `;
+        });
+
+        container.innerHTML = `
+            <div class="border border-slate-200 rounded-3xl shadow-sm overflow-hidden flex flex-col bg-white relative mt-4 animate-fade-in w-full">
+                <div class="p-4 sm:p-5 bg-slate-100 border-b border-slate-200 flex items-center justify-between">
+                    <h5 class="font-black text-xs uppercase text-slate-800 flex items-center gap-2">
+                        <i data-lucide="list" class="w-4 h-4 text-blue-600"></i> ${title}
+                    </h5>
+                    <div class="flex items-center gap-2">
+                        <span class="text-xs font-black bg-blue-600 text-white px-3 py-1 rounded-full shadow-sm">Count: ${recordsList.length}</span>
+                        <button onclick="document.getElementById('${containerId}').innerHTML=''" class="text-slate-400 hover:text-slate-600 p-1 rounded-lg hover:bg-slate-200 cursor-pointer" title="Close">
+                            <i data-lucide="x" class="w-4 h-4"></i>
+                        </button>
+                    </div>
+                </div>
+                <div class="p-0 overflow-auto custom-scrollbar w-full max-h-[60vh] relative">
+                    <table class="w-full text-left text-[11px] border-collapse table-auto">
+                        <thead class="sticky top-0 bg-slate-200 text-slate-900 z-20 font-bold uppercase tracking-wider shadow-sm hidden md:table-header-group">
+                            <tr>
+                                <th class="p-3 border-r border-slate-300">Inspection ID / DISCOM</th>
+                                <th class="p-3 border-r border-slate-300">Manufacturer & Address</th>
+                                <th class="p-3 border-r border-slate-300">Material Details</th>
+                                <th class="p-3 border-r border-slate-300">Conducted By</th>
+                                <th class="p-3 border-r border-slate-300">Status / Sub-Status</th>
+                                <th class="p-3 text-center">Completed On</th>
+                            </tr>
+                        </thead>
+                        <tbody class="font-medium divide-y divide-slate-100">
+                            ${rowsHtml}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.toggleMobileRow = function(element) {
+        const row = element.closest('tr');
+        const drawer = row.nextElementSibling;
+        const icons = row.querySelectorAll('.toggle-icon');
+
+        if (drawer && drawer.classList.contains('mobile-expand-drawer')) {
+            if (drawer.classList.contains('hidden')) {
+                drawer.classList.remove('hidden');
+                icons.forEach(i => i.style.transform = 'rotate(90deg)');
+                row.classList.add('bg-slate-50');
+            } else {
+                drawer.classList.add('hidden');
+                icons.forEach(i => i.style.transform = 'rotate(0deg)');
+                row.classList.remove('bg-slate-50');
+            }
+        }
+    };
+
+    window.switchAnalysisTab = function(tab) {
+        document.getElementById('matrix-inspector-panel').classList.add('hidden');
+        document.getElementById('matrix-manufacturer-panel').classList.add('hidden');
+        document.getElementById('matrix-materials-panel').classList.add('hidden');
+        
+        document.getElementById('tab-btn-inspector').className = "px-3 py-1.5 rounded-lg font-black transition cursor-pointer bg-blue-600 text-white shadow-xs";
+        document.getElementById('tab-btn-manufacturer').className = "px-3 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900";
+        document.getElementById('tab-btn-materials').className = "px-3 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900";
+
+        document.getElementById(`matrix-${tab}-panel`).classList.remove('hidden');
+        document.getElementById(`tab-btn-${tab}`).className = "px-3 py-1.5 rounded-lg font-black transition cursor-pointer bg-blue-600 text-white shadow-xs";
+    };
+
+    window.populateMonthFilter = function() {
+        const monthDropdown = document.getElementById("an-filter-month");
+        if (!monthDropdown) return;
+
+        const monthsSet = new Set();
+        window.analyticsRawData.forEach(r => {
+            let m = window.getCompletionMonth(r);
+            if (m && m !== "Unspecified") monthsSet.add(m);
+        });
+
+        const sortedMonths = Array.from(monthsSet).sort((a, b) => {
+            const dA = new Date("01 " + a);
+            const dB = new Date("01 " + b);
+            return (isNaN(dA) || isNaN(dB)) ? a.localeCompare(b) : dA - dB;
+        });
+
+        let html = `<option value="ALL">All Months</option>`;
+        sortedMonths.forEach(m => {
+            html += `<option value="${m}">${m}</option>`;
+        });
+        monthDropdown.innerHTML = html;
+    };
+
+    window.populateIdFilter = function() {
+        const list = document.getElementById("an-filter-id-list");
+        if (!list) return;
+        const ids = new Set();
+        window.analyticsRawData.forEach(r => {
+            const id = String(r.inspectionId || r.InspectionID || "").trim();
+            if (id) ids.add(id);
+        });
+        let html = "";
+        Array.from(ids).sort().forEach(id => {
+            html += `<option value="${id}"></option>`;
+        });
+        list.innerHTML = html;
+    };
+
+    window.switchKpiView = function(view) {
+        const execGrid = document.getElementById('kpi-grid-execution');
+        const billGrid = document.getElementById('kpi-grid-billing');
+        const effGrid = document.getElementById('kpi-grid-efficiency');
+
+        const btnExec = document.getElementById('btn-kpi-execution');
+        const btnBill = document.getElementById('btn-kpi-billing');
+        const btnEff = document.getElementById('btn-kpi-efficiency');
+
+        const activeClass = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg font-black transition cursor-pointer bg-blue-600 text-white shadow-xs";
+        const inactiveClass = "flex-1 sm:flex-none px-4 py-1.5 rounded-lg font-black transition cursor-pointer text-slate-600 hover:text-slate-900";
+
+        execGrid.classList.add('hidden');
+        billGrid.classList.add('hidden');
+        effGrid.classList.add('hidden');
+
+        btnExec.className = inactiveClass;
+        btnBill.className = inactiveClass;
+        btnEff.className = inactiveClass;
+
+        if (view === 'execution') {
+            execGrid.classList.remove('hidden');
+            btnExec.className = activeClass;
+        } else if (view === 'billing') {
+            billGrid.classList.remove('hidden');
+            btnBill.className = activeClass;
+        } else if (view === 'efficiency') {
+            effGrid.classList.remove('hidden');
+            btnEff.className = activeClass;
+        }
+    };
+
+    window.computeExecutiveKpis = function(records) {
+        const total = records.length;
+        let pass = 0, mom = 0, pending = 0, totalManDays = 0, cancelledRevWav = 0;
+        let billedCount = 0, unbilledCount = 0, invoiceCount = 0, billedManDays = 0;
+        let lagSchedSum = 0, lagSchedCount = 0; 
+        let reportReceivedCnt = 0, reportMailedCnt = 0, nablSentCnt = 0;
+        let activeInspectors = new Set(); 
+
+        records.forEach(r => {
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            const stat = String(r.status || "").trim().toLowerCase();
+            const bill = String(r.billingStatus || "").trim().toLowerCase();
+            const md = Number(r.manDays || 0);
+
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) {
+                cancelledRevWav++;
+            } else {
+                if (sub.includes("pass")) { pass++; }
+                else if (sub.includes("mom")) { mom++; }
+                else if (stat.includes("pend") || stat.includes("sched") || sub.includes("pend")) pending++;
+
+                const inspName = String(r.conductedBy || r.tpiaInspector || "").trim();
+                const key = window.cleanInspectorName(inspName);
+                if (key && !["notappointed", "notupdated", "pending", "-"].includes(key)) {
+                    activeInspectors.add(key);
+                }
+            }
+
+            totalManDays += md;
+            if (bill === "billed") { billedCount++; billedManDays += md; }
+            else if (bill === "pending" && (sub.includes("pass") || sub.includes("mom"))) unbilledCount++;
+            
+            if (String(r.invoiceNo || "").trim() !== "") invoiceCount++;
+            if (String(r.reportReceived || "").trim().toLowerCase() === "yes") reportReceivedCnt++;
+            if (String(r.reportMail || "").trim().toLowerCase() === "yes") reportMailedCnt++;
+            
+            const nablVal = String(r.nablStatusDate || "").trim();
+            if (nablVal.toLowerCase().includes("sample send for nabl test")) {
+                nablSentCnt++;
+            }
+
+            let dRec = window.parseAnyDateToObject(r.receivedDate);
+            let dSch = window.parseAnyDateToObject(r.scheduleDate);
+            if (dRec && dSch) {
+                let diff = (dSch - dRec) / 86400000;
+                if (diff >= 0) { lagSchedSum += diff; lagSchedCount++; }
+            }
+        });
+
+        const validCalls = total - cancelledRevWav;
+        const passRate = validCalls > 0 ? ((pass / validCalls) * 100).toFixed(1) : 0;
+        const momRate = validCalls > 0 ? ((mom / validCalls) * 100).toFixed(1) : 0;
+        const billedRate = validCalls > 0 ? ((billedCount / validCalls) * 100).toFixed(0) : 0;
+        const unbilledRate = validCalls > 0 ? ((unbilledCount / validCalls) * 100).toFixed(0) : 0;
+        const billedMdRate = totalManDays > 0 ? ((billedManDays / totalManDays) * 100).toFixed(0) : 0;
+        const avgSchedLag = lagSchedCount > 0 ? (lagSchedSum / lagSchedCount).toFixed(1) : 0;
+        const activeCount = activeInspectors.size > 0 ? activeInspectors.size : 1;
+        const avgManDaysPerInsp = (totalManDays / activeCount).toFixed(1);
+
+        document.getElementById("kpi-total-calls").innerText = total;
+        document.getElementById("kpi-valid-calls").innerText = `(${validCalls} Valid)`;
+        document.getElementById("kpi-cancelled-revised").innerText = `${cancelledRevWav} Canc / Rev / Wav`;
+        document.getElementById("kpi-pass-count").innerText = pass;
+        document.getElementById("kpi-pass-rate").innerText = `${passRate}% pass rate`;
+        document.getElementById("kpi-mom-count").innerText = mom;
+        document.getElementById("kpi-mom-rate").innerText = `${momRate}% MOM rate`;
+        document.getElementById("kpi-pending-count").innerText = pending;
+        document.getElementById("kpi-avg-per-inspector").innerText = avgManDaysPerInsp;
+        document.getElementById("kpi-inspector-pool").innerText = `Across ${activeInspectors.size} active inspector(s)`;
+        document.getElementById("kpi-total-mandays").innerText = totalManDays.toFixed(1);
+        document.getElementById("kpi-billed-count").innerText = billedCount;
+        document.getElementById("kpi-billed-rate").innerText = `${billedRate}% of total`;
+        document.getElementById("kpi-unbilled-count").innerText = unbilledCount;
+        document.getElementById("kpi-unbilled-rate").innerText = `${unbilledRate}% of total`;
+        document.getElementById("kpi-invoice-count").innerText = invoiceCount;
+        document.getElementById("kpi-billed-mandays").innerText = billedManDays.toFixed(1);
+        document.getElementById("kpi-billed-manday-rate").innerText = `${billedMdRate}% of utilized man-days`;
+        document.getElementById("kpi-report-received-cnt").innerText = reportReceivedCnt;
+        document.getElementById("kpi-report-mailed-cnt").innerText = reportMailedCnt;
+        document.getElementById("kpi-nabl-sent-cnt").innerText = nablSentCnt;
+        document.getElementById("kpi-lag-schedule").innerHTML = `${avgSchedLag}<span class="text-lg">d</span>`;
+
+        let nb = 0, sb = 0, pv = 0;
+        records.forEach(r => {
+            const d = String(r.discom || "").trim().toUpperCase();
+            if (d === "NBPDCL") nb++;
+            else if (d === "SBPDCL") sb++;
+            else if (d === "PVVNL") pv++;
+        });
+        document.getElementById("sub-nb-cnt").innerText = nb;
+        document.getElementById("sub-sb-cnt").innerText = sb;
+        document.getElementById("sub-pv-cnt").innerText = pv;
+    };
+
+    window.renderMonthlyTrendChart = function(records) {
+        const ctx = document.getElementById("chart-monthly-trend");
+        if (!ctx) return;
+
+        const monthMap = {};
+        records.forEach(r => {
+            let m = window.getCompletionMonth(r);
+            if (!monthMap[m]) monthMap[m] = { pass: [], mom: [], pending: [], completedMD: 0, billedMD: 0, compRecords: [], billedRecords: [] };
+            
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            const stat = String(r.status || "").trim().toLowerCase();
+            const bill = String(r.billingStatus || "").trim().toLowerCase();
+            const md = Number(r.manDays || 0);
+            
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            if (sub.includes("pass")) monthMap[m].pass.push(r);
+            else if (sub.includes("mom")) monthMap[m].mom.push(r);
+            else monthMap[m].pending.push(r);
+
+            if (sub.includes("pass") || sub.includes("mom")) {
+                monthMap[m].completedMD += md;
+                monthMap[m].compRecords.push(r);
+            }
+            if (bill === "billed") {
+                monthMap[m].billedMD += md;
+                monthMap[m].billedRecords.push(r);
+            }
+        });
+
+        const labels = Object.keys(monthMap).sort((a, b) => {
+            if (a === "Unspecified") return -1;
+            if (b === "Unspecified") return 1;
+            const dA = new Date("01 " + a);
+            const dB = new Date("01 " + b);
+            return (isNaN(dA) || isNaN(dB)) ? a.localeCompare(b) : dA - dB;
+        });
+
+        const passData = labels.map(l => monthMap[l].pass.length);
+        const momData = labels.map(l => monthMap[l].mom.length);
+        const pendingData = labels.map(l => monthMap[l].pending.length);
+        const compData = labels.map(l => Number(monthMap[l].completedMD.toFixed(1)));
+        const billData = labels.map(l => Number(monthMap[l].billedMD.toFixed(1)));
+
+        if (window.analyticsChartInstances.monthlyTrend) window.analyticsChartInstances.monthlyTrend.destroy();
+
+        window.analyticsChartInstances.monthlyTrend = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ["No Data"],
+                datasets: [
+                    { type: 'bar', label: 'Material Pass (Calls)', data: passData, backgroundColor: '#10b981', yAxisID: 'y', stack: 'Calls', borderRadius: 4 },
+                    { type: 'bar', label: 'MOM Notice (Calls)', data: momData, backgroundColor: '#a855f7', yAxisID: 'y', stack: 'Calls', borderRadius: 4 },
+                    { type: 'bar', label: 'Pending / Sched (Calls)', data: pendingData, backgroundColor: '#fbbf24', yAxisID: 'y', stack: 'Calls', borderRadius: 4 },
+                    { type: 'bar', label: 'Completed Man-Days', data: compData, backgroundColor: '#3b82f6', yAxisID: 'y1', stack: 'MD_Comp', borderRadius: 4 },
+                    { type: 'bar', label: 'Billed Man-Days', data: billData, backgroundColor: '#06b6d4', yAxisID: 'y1', stack: 'MD_Bill', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                interaction: { mode: 'index', intersect: false }, 
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const clickedDatasetIndex = elements[0].datasetIndex;
+                        const idx = elements[0].index;
+                        const label = labels[idx];
+                        let matched = [];
+                        let dsLabel = "";
+                        
+                        if (clickedDatasetIndex === 0) { matched = monthMap[label].pass; dsLabel = "Material Pass"; }
+                        else if (clickedDatasetIndex === 1) { matched = monthMap[label].mom; dsLabel = "MOM Notice"; }
+                        else if (clickedDatasetIndex === 2) { matched = monthMap[label].pending; dsLabel = "Pending / Scheduled"; }
+                        else if (clickedDatasetIndex === 3) { matched = monthMap[label].compRecords; dsLabel = `Completed Man-Days (${compData[idx]} Total)`; }
+                        else if (clickedDatasetIndex === 4) { matched = monthMap[label].billedRecords; dsLabel = `Billed Man-Days (${billData[idx]} Total)`; }
+
+                        renderInlineDetailsTable('monthly-trend-details-container', matched, `Trend Analysis: ${label} - ${dsLabel}`);
+                    }
+                },
+                scales: { 
+                    y: { type: 'linear', display: true, position: 'left', stacked: true, title: { display: true, text: 'Inspection Volume (Calls)', font: { size: 10, weight: 'bold' }, color: '#64748b' }, grid: { color: '#f1f5f9' } }, 
+                    y1: { type: 'linear', display: true, position: 'right', stacked: true, title: { display: true, text: 'Man-Days Utilized', font: { size: 10, weight: 'bold' }, color: '#64748b' }, grid: { drawOnChartArea: false } },
+                    x: { stacked: true, grid: { display: false } }
+                },
+                plugins: { legend: { position: 'top', labels: { usePointStyle: true, boxWidth: 8, font: { size: 10, weight: 'bold' } } } }
+            }
+        });
+    };
+
+    window.renderMaterialCategoryChart = function(records) {
+        const ctx = document.getElementById("chart-material-category");
+        if (!ctx) return;
+
+        const catMap = {};
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            const cat = String(r.materialInspected || "Unspecified").trim();
+            if (!catMap[cat]) catMap[cat] = [];
+            catMap[cat].push(r);
+        });
+
+        const sortedCats = Object.entries(catMap).sort((a, b) => b[1].length - a[1].length).slice(0, 8);
+        const labels = sortedCats.map(item => item[0]);
+        const counts = sortedCats.map(item => item[1].length);
+
+        if (window.analyticsChartInstances.materialCategory) window.analyticsChartInstances.materialCategory.destroy();
+
+        window.analyticsChartInstances.materialCategory = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: labels.length > 0 ? labels : ["No Data"],
+                datasets: [{ label: 'Inspections', data: counts, backgroundColor: '#3b82f6', borderRadius: 4 }]
+            },
+            options: {
+                indexAxis: 'y', responsive: true, maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        const label = labels[idx];
+                        renderInlineDetailsTable('material-category-details-container', catMap[label], `Material Category: ${label}`);
+                    }
+                },
+                scales: { x: { beginAtZero: true, grid: { color: '#f1f5f9' } }, y: { grid: { display: false }, ticks: { font: { size: 10 } } } },
+                plugins: { legend: { display: false } }
+            }
+        });
+    };
+
+    window.renderAdherenceChart = function(records) {
+        const ctx = document.getElementById("chart-adherence");
+        if (!ctx) return;
+
+        let earlyArr = [], minorArr = [], majorArr = [], notStartArr = [];
+
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            const dSch = extractFirstDate(r.scheduleDate);
+            const dFrm = extractFirstDate(r.dateFrom);
+
+            if (dSch) {
+                if (dFrm) {
+                    let diff = (dFrm - dSch) / 86400000;
+                    if (diff <= 0) earlyArr.push(r);
+                    else if (diff <= 3) minorArr.push(r);
+                    else majorArr.push(r);
+                } else {
+                    notStartArr.push(r);
+                }
+            }
+        });
+
+        if (window.analyticsChartInstances.adherenceChart) window.analyticsChartInstances.adherenceChart.destroy();
+
+        window.analyticsChartInstances.adherenceChart = new Chart(ctx, {
+            type: 'doughnut',
+            data: {
+                labels: ['On-Time / Early', 'Minor Delay (1-3d)', 'Major Delay (>3d)', 'Not Started'],
+                datasets: [{ data: [earlyArr.length, minorArr.length, majorArr.length, notStartArr.length], backgroundColor: ['#10b981', '#facc15', '#f43f5e', '#cbd5e1'], borderWidth: 2, borderColor: '#ffffff' }]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false, cutout: '65%',
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const idx = elements[0].index;
+                        let matched = [];
+                        let catName = '';
+                        if (idx === 0) { matched = earlyArr; catName = 'On-Time / Early Executions'; }
+                        else if (idx === 1) { matched = minorArr; catName = 'Minor Delay (1-3 days)'; }
+                        else if (idx === 2) { matched = majorArr; catName = 'Major Delay (>3 days)'; }
+                        else { matched = notStartArr; catName = 'Not Started Yet'; }
+
+                        renderInlineDetailsTable('adherence-details-container', matched, `Schedule Adherence: ${catName}`);
+                    }
+                },
+                plugins: { legend: { position: 'right', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } } }
+            }
+        });
+    };
+
+    window.renderQualityChart = function(records) {
+        const ctx = document.getElementById("chart-quality");
+        if (!ctx) return;
+
+        let repRecYes = [], repRecNo = [];
+        let repMailYes = [], repMailNo = [];
+        let nablSent = [];
+
+        records.forEach(r => {
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            const stat = String(r.status || "").trim().toLowerCase();
+            if(stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            if(sub.includes("pass") || sub.includes("mom")) {
+                if (String(r.reportReceived || "").trim().toLowerCase() === "yes") repRecYes.push(r); 
+                else repRecNo.push(r);
+                
+                if (String(r.reportMail || "").trim().toLowerCase() === "yes") repMailYes.push(r); 
+                else repMailNo.push(r);
+
+                const nablVal = String(r.nablStatusDate || "").trim().toLowerCase();
+                if (nablVal.includes("sample send for nabl test")) {
+                    nablSent.push(r);
+                }
+            }
+        });
+
+        if (window.analyticsChartInstances.qualityChart) window.analyticsChartInstances.qualityChart.destroy();
+
+        window.analyticsChartInstances.qualityChart = new Chart(ctx, {
+            type: 'bar',
+            data: {
+                labels: ['Report Received', 'Report Mailed', 'NABL Testing'],
+                datasets: [
+                    { label: 'Yes / Sent', data: [repRecYes.length, repMailYes.length, nablSent.length], backgroundColor: '#4f46e5', borderRadius: 4 },
+                    { label: 'No / Pending', data: [repRecNo.length, repMailNo.length, null], backgroundColor: '#e2e8f0', borderRadius: 4 }
+                ]
+            },
+            options: {
+                responsive: true, maintainAspectRatio: false,
+                onClick: (evt, elements) => {
+                    if (elements.length > 0) {
+                        const datasetIdx = elements[0].datasetIndex;
+                        const idx = elements[0].index;
+                        let matched = [];
+                        let catName = '';
+
+                        if (idx === 0) {
+                            matched = datasetIdx === 0 ? repRecYes : repRecNo;
+                            catName = datasetIdx === 0 ? 'Report Received (Yes)' : 'Report Received (Pending/No)';
+                        } else if (idx === 1) {
+                            matched = datasetIdx === 0 ? repMailYes : repMailNo;
+                            catName = datasetIdx === 0 ? 'Report Mailed (Yes)' : 'Report Mailed (Pending/No)';
+                        } else {
+                            if (datasetIdx === 0) {
+                                matched = nablSent;
+                                catName = 'NABL Samples Sent ("Sample send for NABL Test")';
+                            } else {
+                                return;
+                            }
+                        }
+
+                        if(matched) {
+                            renderInlineDetailsTable('quality-details-container', matched, `Compliance Tracking: ${catName}`);
+                        }
+                    }
+                },
+                scales: { x: { grid: { display: false } }, y: { beginAtZero: true, grid: { color: '#f1f5f9' } } },
+                plugins: { legend: { position: 'top', labels: { boxWidth: 10, font: { size: 10, weight: 'bold' } } } }
+            }
+        });
+    };
+
+    window.renderInspectorMatrix = function(records) {
+        const tbody = document.getElementById("matrix-inspector-body");
+        if (!tbody) return;
+
+        let validCallsTotal = 0;
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (!stat.includes("cancel") && !stat.includes("revis") && !stat.includes("waiver") && !sub.includes("waiver")) validCallsTotal++;
+        });
+
+        const inspMap = {};
+        window.analyticsInspectorsMaster.forEach(insp => {
+            const name = getInspectorName(insp);
+            const key = cleanInspectorName(name);
+            if (key) inspMap[key] = { name: name, total: 0, pass: 0, mom: 0, pending: 0, manDays: 0 };
+        });
+
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            const rawName = String(r.conductedBy || r.tpiaInspector || "").trim();
+            const key = cleanInspectorName(rawName);
+            if (!key || ["notappointed", "notupdated", "pending", "-"].includes(key)) return;
+
+            if (!inspMap[key]) inspMap[key] = { name: rawName, total: 0, pass: 0, mom: 0, pending: 0, manDays: 0 };
+
+            inspMap[key].total++;
+            if (sub.includes("pass")) inspMap[key].pass++;
+            else if (sub.includes("mom")) inspMap[key].mom++;
+            else if (stat.includes("pend") || stat.includes("sched") || sub.includes("pend")) inspMap[key].pending++;
+
+            inspMap[key].manDays += Number(r.manDays || 0);
+        });
+
+        const sorted = Object.values(inspMap).sort((a, b) => b.total - a.total);
+
+        let html = "";
+        sorted.forEach((item, idx) => {
+            const passRate = item.total > 0 ? ((item.pass / item.total) * 100).toFixed(1) + "%" : "-";
+            const share = validCallsTotal > 0 ? ((item.total / validCallsTotal) * 100).toFixed(1) + "%" : "0%";
+            const bg = idx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+
+            html += `
+                <tr class="${bg} hover:bg-blue-50/40 transition">
+                    <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                    <td class="p-3 border-r font-bold text-slate-900">${item.name}</td>
+                    <td class="p-3 border-r text-center font-mono font-black text-slate-800">${item.total}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">${item.pass}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-purple-700 bg-purple-50/30">${item.mom}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-amber-700 bg-amber-50/30">${item.pending}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-800">${passRate}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-600">${item.manDays.toFixed(1)}</td>
+                    <td class="p-3 text-center font-mono text-slate-500">${share}</td>
+                </tr>
+            `;
+        });
+
+        tbody.innerHTML = html || `<tr><td colspan="9" class="p-8 text-center text-slate-400">No registered inspectors found.</td></tr>`;
+    }
+
+    function renderManufacturerMatrix(records) {
+        const tbody = document.getElementById("matrix-manufacturer-body");
+        if (!tbody) return;
+
+        const mfgMap = {};
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            const name = String(r.manufacturer || "Unspecified Manufacturer").trim();
+            if (!mfgMap[name]) mfgMap[name] = { total: 0, pass: 0, mom: 0, pending: 0, materials: new Set() };
+
+            mfgMap[name].total++;
+            if (sub.includes("pass")) mfgMap[name].pass++;
+            else if (sub.includes("mom")) mfgMap[name].mom++;
+            else if (stat.includes("pend") || stat.includes("sched") || sub.includes("pend")) mfgMap[name].pending++;
+
+            if (r.materialInspected) mfgMap[name].materials.add(String(r.materialInspected).trim());
+        });
+
+        const sorted = Object.entries(mfgMap).sort((a, b) => b[1].total - a[1].total);
+
+        let html = "";
+        sorted.forEach(([mfgName, stats], idx) => {
+            const passRate = stats.total > 0 ? ((stats.pass / stats.total) * 100).toFixed(1) + "%" : "-";
+            const matList = Array.from(stats.materials).slice(0, 3).join(", ") || "-";
+            const bg = idx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+
+            html += `
+                <tr class="${bg} hover:bg-purple-50/30 transition">
+                    <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                    <td class="p-3 border-r font-bold text-slate-900">${mfgName}</td>
+                    <td class="p-3 border-r text-center font-mono font-black text-slate-800">${stats.total}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">${stats.pass}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-purple-700 bg-purple-50/30">${stats.mom}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-amber-700 bg-amber-50/30">${stats.pending}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-800">${passRate}</td>
+                    <td class="p-3 text-[11px] text-slate-600 truncate max-w-xs" title="${matList}">${matList}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html || `<tr><td colspan="8" class="p-8 text-center text-slate-400">No manufacturer records found.</td></tr>`;
+    }
+
+    function renderMaterialsMatrix(records) {
+        const tbody = document.getElementById("matrix-materials-body");
+        if (!tbody) return;
+
+        const catMap = {};
+        records.forEach(r => {
+            const stat = String(r.status || "").trim().toLowerCase();
+            const sub = String(r.subStatus || "").trim().toLowerCase();
+            if (stat.includes("cancel") || stat.includes("revis") || stat.includes("waiver") || sub.includes("waiver")) return;
+
+            const cat = String(r.materialInspected || "Unspecified Category").trim();
+            if (!catMap[cat]) catMap[cat] = { total: 0, pass: 0, mom: 0, pending: 0, mfgs: new Set() };
+
+            catMap[cat].total++;
+            if (sub.includes("pass")) catMap[cat].pass++;
+            else if (sub.includes("mom")) catMap[cat].mom++;
+            else if (stat.includes("pend") || stat.includes("sched") || sub.includes("pend")) catMap[cat].pending++;
+
+            if (r.manufacturer) catMap[cat].mfgs.add(String(r.manufacturer).trim());
+        });
+
+        const sorted = Object.entries(catMap).sort((a, b) => b[1].total - a[1].total);
+
+        let html = "";
+        sorted.forEach(([catName, stats], idx) => {
+            const passRate = stats.total > 0 ? ((stats.pass / stats.total) * 100).toFixed(1) + "%" : "-";
+            const mfgList = Array.from(stats.mfgs).slice(0, 3).join(", ") || "-";
+            const bg = idx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+
+            html += `
+                <tr class="${bg} hover:bg-emerald-50/30 transition">
+                    <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                    <td class="p-3 border-r font-bold text-slate-900">${catName}</td>
+                    <td class="p-3 border-r text-center font-mono font-black text-slate-800">${stats.total}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">${stats.pass}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-purple-700 bg-purple-50/30">${stats.mom}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-amber-700 bg-amber-50/30">${stats.pending}</td>
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-800">${passRate}</td>
+                    <td class="p-3 text-[11px] text-slate-600 truncate max-w-xs" title="${mfgList}">${mfgList}</td>
+                </tr>
+            `;
+        });
+        tbody.innerHTML = html || `<tr><td colspan="8" class="p-8 text-center text-slate-400">No material category records found.</td></tr>`;
+    }
+
+    async function initAnalyticsModule() {
+        try {
+            const [combRes, inspRes, portalMRes] = await Promise.all([
+                fetch(`${API_URL}?action=getCombinedInspections`),
+                fetch(`${API_URL}?action=getInspectors`),
+                fetch(`${API_URL}?action=getPortalMInspections`)
+            ]);
+
+            const combText = await combRes.text();
+            try {
+                const combData = JSON.parse(combText);
+                if (combData.status) window.analyticsRawData = combData.data || [];
+            } catch(e) {}
+
+            const inspText = await inspRes.text();
+            try {
+                const inspData = JSON.parse(inspText);
+                if (inspData.status && inspData.data) window.analyticsInspectorsMaster = inspData.data || [];
+            } catch(e) {}
+
+            const portalMText = await portalMRes.text();
+            try {
+                const pMData = JSON.parse(portalMText);
+                if (pMData.status && pMData.data) window.portalMData = pMData.data || [];
+            } catch(e) {}
+
+            const dateInput = document.getElementById("completed-log-filter-date");
+            if (dateInput && !dateInput.value) {
+                const d = new Date();
+                d.setDate(d.getDate() - 1);
+                dateInput.value = d.toISOString().split('T')[0];
+            }
+
+            populateMonthFilter();
+            populateIdFilter(); 
+            window.runAnalyticsPipeline();
+        } catch (err) {
+            console.error("Failed to load analytics records", err);
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function populateMonthFilter() {
+        const monthDropdown = document.getElementById("an-filter-month");
+        if (!monthDropdown) return;
+
+        const monthsSet = new Set();
+        window.analyticsRawData.forEach(r => {
+            let m = getCompletionMonth(r);
+            if (m && m !== "Unspecified") monthsSet.add(m);
+        });
+
+        const sortedMonths = Array.from(monthsSet).sort((a, b) => {
+            const dA = new Date("01 " + a);
+            const dB = new Date("01 " + b);
+            return (isNaN(dA) || isNaN(dB)) ? a.localeCompare(b) : dA - dB;
+        });
+
+        let html = `<option value="ALL">All Months</option>`;
+        sortedMonths.forEach(m => {
+            html += `<option value="${m}">${m}</option>`;
+        });
+        monthDropdown.innerHTML = html;
+    }
+
+    function populateIdFilter() {
+        const list = document.getElementById("an-filter-id-list");
+        if (!list) return;
+        const ids = new Set();
+        window.analyticsRawData.forEach(r => {
+            const id = String(r.inspectionId || r.InspectionID || "").trim();
+            if (id) ids.add(id);
+        });
+        let html = "";
+        Array.from(ids).sort().forEach(id => {
+            html += `<option value="${id}"></option>`;
+        });
+        list.innerHTML = html;
+    }
+
+    window.resetAnalyticsFilters = function() {
+        document.getElementById("an-filter-id").value = "";
+        document.getElementById("an-filter-discom").value = "ALL";
+        document.getElementById("an-filter-month").value = "ALL";
+        document.getElementById("an-filter-status").value = "ALL";
+        document.getElementById("an-filter-substatus").value = "ALL";
+        window.runAnalyticsPipeline();
+    };
+
+    window.resetMatrixFilters = function() {
+        document.getElementById("matrix-grp-1").value = "none";
+        document.getElementById("matrix-grp-2").value = "none";
+        document.getElementById("matrix-filter-primary").value = "ALL";
+        document.getElementById("matrix-filter-discom").value = "ALL";
+        window.renderFinancialMatrix();
+    };
+
+    window.runAnalyticsPipeline = function() {
+        const idFilter = document.getElementById("an-filter-id").value.trim().toLowerCase();
+        const discomFilter = document.getElementById("an-filter-discom").value;
+        const monthFilter = document.getElementById("an-filter-month").value;
+        const statusFilter = document.getElementById("an-filter-status").value;
+        const subStatusFilter = document.getElementById("an-filter-substatus").value;
+
+        window.analyticsFilteredCache = window.analyticsRawData.filter(row => {
+            if (idFilter) {
+                const inspId = String(row.inspectionId || row.InspectionID || "").trim().toLowerCase();
+                if (!inspId.includes(idFilter)) return false;
+            }
+
+            if (discomFilter !== "ALL" && String(row.discom || "").trim().toUpperCase() !== discomFilter.toUpperCase()) return false;
+             
+            if (monthFilter !== "ALL") {
+                let m = getCompletionMonth(row);
+                if (m.toLowerCase() !== monthFilter.toLowerCase()) return false;
+            }
+
+            if (statusFilter !== "ALL") {
+                const s = String(row.status || "").trim().toLowerCase();
+                if (statusFilter === "Schedule" && !s.includes("sched")) return false;
+                else if (statusFilter !== "Schedule" && s !== statusFilter.toLowerCase()) return false;
+            }
+
+            if (subStatusFilter !== "ALL") {
+                const ss = String(row.subStatus || "").trim().toLowerCase();
+                if (subStatusFilter.toLowerCase().includes("pass") && !ss.includes("pass")) return false;
+                else if (subStatusFilter.toLowerCase().includes("mom") && !ss.includes("mom")) return false;
+                else if (subStatusFilter.toLowerCase() === "pending" && ss !== "pending") return false;
+            }
+
+            return true;
+        });
+
+        window.computeExecutiveKpis(window.analyticsFilteredCache);
+
+        window.renderMonthlyTrendChart(window.analyticsFilteredCache);
+        window.renderOutcomeDoughnutChart(window.analyticsFilteredCache);
+        window.renderMaterialCategoryChart(window.analyticsFilteredCache);
+         
+        window.renderAdherenceChart(window.analyticsFilteredCache);
+        window.renderQualityChart(window.analyticsFilteredCache);
+
+        renderInspectorMatrix(window.analyticsFilteredCache);
+        renderManufacturerMatrix(window.analyticsFilteredCache);
+        renderMaterialsMatrix(window.analyticsFilteredCache);
+         
+        window.renderFinancialMatrix(window.analyticsFilteredCache);
+        window.renderCompletedDateLog();
+
+        document.getElementById("analytics-record-count-badge").innerText = `${window.analyticsFilteredCache.length} of ${window.analyticsRawData.length} Inspections`;
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.renderCompletedDateLog = function() {
+        const dateInput = document.getElementById("completed-log-filter-date");
+        const discomFilter = document.getElementById("an-filter-discom").value;
+        const tbody = document.getElementById("yesterday-tbody");
+        const countSpan = document.getElementById("yesterday-table-count");
+         
+        if (!dateInput || !dateInput.value || !tbody) return;
+
+        const parts = dateInput.value.split('-'); 
+        if (parts.length !== 3) return;
+        const targetFormattedStr = `${parts[2]}/${parts[1]}/${parts[0]}`; 
+
+        const matchedRows = [];
+        window.analyticsRawData.forEach(row => {
+            const isCompleted = String(row.status || '').trim() === 'Completed';
+            const compOnStr = String(row.inspectionCompletedOn || '').trim();
+            const rowDiscom = String(row.discom || '').trim().toUpperCase();
+
+            const discomMatch = (discomFilter === "ALL" || rowDiscom === discomFilter.toUpperCase());
+
+            if (isCompleted && compOnStr === targetFormattedStr && discomMatch) {
+                matchedRows.push(row);
+            }
+        });
+
+        let html = "";
+        if (matchedRows.length === 0) {
+            html = `<tr><td colspan="6" class="p-6 text-center text-slate-400 font-bold italic">No completed inspections found for date ${targetFormattedStr} under selected DISCOM.</td></tr>`;
+        } else {
+            matchedRows.forEach(r => {
+                const matDetails = `
+                    <div class="font-bold text-slate-800 whitespace-normal break-words">${r.materialInspected || '-'}</div>
+                    <div class="text-[9px] text-slate-500 whitespace-normal break-words mt-0.5">${r.materialSpec || '-'}</div>
+                    <div class="text-xs font-black text-indigo-600 mt-1">Qty: ${r.quantity || '-'}</div>
+                `;
+                const mfgDetails = `
+                    <div class="font-bold text-slate-800 whitespace-normal break-words">${r.manufacturer || '-'}</div>
+                    <div class="text-[10px] text-slate-500 whitespace-normal break-words mt-0.5"><i data-lucide="map-pin" class="w-3 h-3 inline relative -top-0.5"></i> ${r.address || '-'}</div>
+                `;
+                 
+                let detailsHtml = `<div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-3 mt-2">`;
+                Object.keys(fullHeaderCustomNames).forEach(k => {
+                    const label = fullHeaderCustomNames[k], rawVal = r[k], val = (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== "") ? String(rawVal) : "-";
+                    detailsHtml += `<div><span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">${label}</span><span class="text-xs font-semibold text-slate-800 whitespace-pre-wrap break-words">${val}</span></div>`;
+                });
+                detailsHtml += `</div>`;
+
+                html += `
+                <tr class="flex flex-col md:table-row bg-white hover:bg-slate-50 transition border-b border-violet-100 cursor-pointer" onclick="window.toggleMobileRow(this)">
+                    <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
+                        <div class="flex items-start gap-2 overflow-hidden flex-1">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0 mt-0.5"></i>
+                            <div class="min-w-0 pr-2">
+                                <div class="font-mono font-black text-indigo-700 truncate">${r.inspectionId || '-'}</div>
+                                <div class="text-[10px] font-bold text-slate-800 line-clamp-2 mt-0.5">${r.manufacturer || '-'}</div>
+                            </div>
+                        </div>
+                        <div class="flex flex-col items-end shrink-0 max-w-[40%] text-right">
+                            <span class="text-[9px] font-bold px-1.5 py-0.5 rounded bg-emerald-50 text-emerald-700 border border-emerald-200 truncate max-w-full">${r.status || 'Completed'}</span>
+                            <span class="text-[8px] text-slate-500 mt-1 truncate max-w-full block">${r.subStatus || '-'}</span>
+                        </div>
+                    </td>
+
+                    <td class="p-3 font-mono font-bold text-indigo-700 align-top hidden md:table-cell border-r border-violet-100">
+                        <div class="flex items-center gap-2">
+                            <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
+                            ${r.inspectionId || '-'}
+                        </div>
+                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 inline-block mt-1">${r.discom || '-'}</span>
+                    </td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${mfgDetails}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${matDetails}</td>
+                    <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-violet-100">${r.conductedBy || '-'}</td>
+                    <td class="p-3 align-top hidden md:table-cell border-r border-violet-100"><div class="font-bold text-emerald-700">${r.status || '-'}</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">${r.subStatus || '-'}</div></td>
+                    <td class="p-3 text-center font-mono font-black bg-violet-50/50 align-top text-violet-900 whitespace-nowrap hidden md:table-cell">${r.inspectionCompletedOn || '-'}</td>
+                </tr>
+                <tr class="mobile-expand-drawer hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
+                    <td colspan="6" class="p-4 border-t border-slate-100 text-xs w-full block md:table-cell">
+                        <div class="pl-6 md:pl-2">
+                            <h5 class="text-[10px] font-black uppercase text-indigo-400 mb-3 border-b border-slate-200 pb-2 flex items-center gap-2"><i data-lucide="file-search" class="w-4 h-4"></i> Complete Inspection Profile</h5>
+                            ${detailsHtml}
+                        </div>
+                    </td>
+                </tr>`;
+            });
+        }
+        tbody.innerHTML = html;
+        if (countSpan) countSpan.innerText = matchedRows.length;
+        if (window.lucide) lucide.createIcons();
+    };
+
+    window.renderFinancialMatrix = function(records = window.analyticsFilteredCache) {
+        const tbody = document.getElementById("matrix-financial-body");
+        const thead = document.getElementById("matrix-financial-head");
+        const filterWrap = document.getElementById("matrix-filter-wrap");
+        if (!tbody || !thead) return;
+
+        const matrixDiscomSelect = document.getElementById("matrix-filter-discom");
+        let matrixDiscom = matrixDiscomSelect ? matrixDiscomSelect.value : "ALL";
+         
+        let matrixRecords = records;
+        if (matrixDiscom !== "ALL") {
+            matrixRecords = records.filter(r => String(r.discom || "").trim().toUpperCase() === matrixDiscom.toUpperCase());
+        }
+
+        const grp1Select = document.getElementById("matrix-grp-1");
+        const grp2Select = document.getElementById("matrix-grp-2");
+         
+        let grp1 = grp1Select ? grp1Select.value : "none";
+        let grp2 = grp2Select ? grp2Select.value : "none";
+
+        if (grp1 === grp2 && grp1 !== "none") grp2 = "none"; 
+
+        let dataList = [];
+
+        matrixRecords.forEach(r => {
+            const stat = String(r.status || "Pending").trim();
+            const subStat = String(r.subStatus || "Pending").trim();
+            if (stat.toLowerCase().includes("cancel") || stat.toLowerCase().includes("revis") || stat.toLowerCase().includes("waiver") || subStat.toLowerCase().includes("waiver")) return;
+
+            const inspId = String(r.inspectionId || r.InspectionID || "").trim();
+            const mfg = String(r.manufacturer || "-").trim();
+            const cat = String(r.materialInspected || "-").trim();
+            const spec = String(r.materialSpec || "-").trim();
+            const qty = String(r.quantity || "-").trim();
+            const conductedBy = String(r.conductedBy || 'Pending').trim();
+            const discom = String(r.discom || '-').trim();
+             
+            const portalMRecord = window.portalMData.find(m => 
+                String(m.inspectionId_manager).trim() === inspId || 
+                String(m.inspectionId).trim() === inspId
+            );
+
+            const criteria = portalMRecord ? (String(portalMRecord.criteria || "Value Percent").trim()) : "Value Percent";
+            const cVal = portalMRecord ? (Number(portalMRecord.criteriaValue) || 0) : 0;
+            const criteriaFmt = `${criteria} (${cVal})`; 
+             
+            const tMatVal = portalMRecord ? (Number(portalMRecord.totalMaterialValue) || 0) : 0;
+
+            let totalQty = 0;
+            const rawSpecs = spec.split("\n").filter(Boolean);
+            const rawQtys = qty.split("\n").filter(Boolean);
+            let qtyIndex = 0; 
+             
+            if (rawSpecs.length > 0) {
+                rawSpecs.forEach((specLine) => {
+                    let cleanSpec = specLine.trim();
+                    if (!cleanSpec) return;
+
+                    const matchPrefix = cleanSpec.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                    if (matchPrefix) {
+                        let q = 0;
+                        if (qtyIndex < rawQtys.length) {
+                            let qLine = rawQtys[qtyIndex].trim();
+                            const qMatch = qLine.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                            q = parseFloat(qMatch ? qMatch[2] : qLine) || 0;
+                            qtyIndex++;
+                        }
+                        totalQty += q;
+                    }
+                });
+            }
+
+            const isPvvnl = discom.toUpperCase() === "PVVNL";
+            const initialMultiplier = isPvvnl ? 20 : 100;
+            let calculatedFee = 0;
+
+            if (criteria.toLowerCase() === 'per unit') {
+                calculatedFee = totalQty * cVal;
+            } else {
+                calculatedFee = tMatVal * (cVal / 100);
+            }
+            calculatedFee = calculatedFee * (initialMultiplier / 100);
+
+            const rawManDays = (r.manDays !== undefined && r.manDays !== null && String(r.manDays).trim() !== "") ? Number(r.manDays) : 0;
+            const datesFormatted = `${r.dateFrom || '-'} to ${r.dateTo || '-'}`;
+
+            dataList.push({
+                mfg: mfg,
+                cat: cat,
+                spec: spec,
+                qty: qty,
+                id: inspId,
+                discom: discom,
+                statusFmt: stat,
+                subStatusFmt: subStat,
+                criteriaFmt: criteriaFmt,
+                tMatVal: tMatVal,
+                calculatedFee: calculatedFee,
+                insp: conductedBy,
+                manDays: rawManDays,
+                dates: datesFormatted,
+                raw: r
+            });
+        });
+
+        if (grp1 === "none") {
+            if (filterWrap) filterWrap.classList.add("hidden");
+
+            thead.innerHTML = `
+                <tr>
+                    <th class="p-3 border-r border-slate-700 w-12 text-center">Sr</th>
+                    <th class="p-3 border-r border-slate-700">Manufacturer</th>
+                    <th class="p-3 border-r border-slate-700">Material Category</th>
+                    <th class="p-3 border-r border-slate-700 w-64">Spec & Quantity</th>
+                    <th class="p-3 border-r border-slate-700">Inspection ID</th>
+                    <th class="p-3 border-r border-slate-700 text-center">Discom</th>
+                    <th class="p-3 border-r border-slate-700 text-emerald-300 text-center">Billing Criteria (Value)</th>
+                    <th class="p-3 border-r border-slate-700 text-right text-emerald-300">Total Material Value</th>
+                    <th class="p-3 border-r border-slate-700 text-amber-300">Conducted By</th>
+                    <th class="p-3 border-r border-slate-700 text-amber-300">Execution Dates</th>
+                    <th class="p-3 text-right text-purple-300">Calculated Fee</th>
+                </tr>
+            `;
+
+            dataList.sort((a, b) => a.mfg.localeCompare(b.mfg));
+
+            let html = "";
+            dataList.forEach((item, idx) => {
+                const bg = idx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+                html += `
+                    <tr class="${bg} hover:bg-emerald-50/40 transition align-top">
+                        <td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>
+                        <td class="p-3 border-r font-bold text-slate-900 truncate max-w-[150px]" title="${item.mfg}">${item.mfg}</td>
+                        <td class="p-3 border-r font-bold text-indigo-700 truncate max-w-[150px]" title="${item.cat}">${item.cat}</td>
+                        <td class="p-3 border-r text-[10px] text-slate-600">
+                            <div class="max-h-24 overflow-y-auto custom-scrollbar pr-1 whitespace-pre-wrap leading-tight"><strong class="text-slate-800">Spec:</strong>\n${item.spec}\n\n<strong class="text-blue-700">Qty:</strong>\n${item.qty}</div>
+                        </td>
+                        <td class="p-3 border-r font-mono font-bold text-blue-600">${item.id}</td>
+                        <td class="p-3 border-r text-center"><span class="text-[9px] font-black px-2 py-0.5 rounded border bg-slate-100 border-slate-200">${item.discom}</span></td>
+                        <td class="p-3 border-r text-center font-mono font-bold text-emerald-700 bg-emerald-50/30">${item.criteriaFmt}</td>
+                        <td class="p-3 border-r text-right font-mono font-bold text-slate-900">Rs ${item.tMatVal > 0 ? item.tMatVal.toLocaleString('en-IN') : '0'}</td>
+                        <td class="p-3 border-r font-bold text-slate-800">${item.insp}</td>
+                        <td class="p-3 border-r text-[10px] font-mono text-slate-600 leading-tight">${item.dates}</td>
+                        <td class="p-3 text-right font-mono font-black text-purple-700">Rs ${item.calculatedFee > 0 ? item.calculatedFee.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '0.00'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="11" class="p-8 text-center text-slate-400">No financial parameter records available.</td></tr>`;
+
+        } else {
+            if (filterWrap) filterWrap.classList.remove("hidden");
+
+            const propMap = {
+                "mfg": "Manufacturer",
+                "cat": "Material Category",
+                "insp": "Conducted By",
+                "discom": "DISCOM"
+            };
+
+            const g1Lbl = propMap[grp1];
+            const g2Lbl = grp2 !== "none" ? propMap[grp2] : null;
+
+            thead.innerHTML = `
+                <tr>
+                    <th class="p-3 border-r border-slate-700 w-16 text-center">Sr</th>
+                    <th class="p-3 border-r border-slate-700">${g1Lbl}</th>
+                    ${g2Lbl ? `<th class="p-3 border-r border-slate-700">${g2Lbl}</th>` : ''}
+                    <th class="p-3 border-r border-slate-700 text-center text-blue-300">Total Calls</th>
+                    <th class="p-3 border-r border-slate-700 text-center text-emerald-300">Billing Criteria (Value)</th>
+                    <th class="p-3 text-right text-emerald-300">Aggregated Material Value (Rs)</th>
+                </tr>
+            `;
+
+            window.currentPivotRecords = {};
+            dataList.forEach(row => {
+                const v1 = row[grp1] || 'Unspecified';
+                const v2 = grp2 !== "none" ? (row[grp2] || 'Unspecified') : '';
+                const key = v1 + "|||" + v2;
+
+                if (!window.currentPivotRecords[key]) {
+                    window.currentPivotRecords[key] = { v1, v2, calls: 0, tMatVal: 0, criteriaSet: new Set(), records: [] };
+                }
+                window.currentPivotRecords[key].calls++;
+                window.currentPivotRecords[key].tMatVal += row.tMatVal;
+                window.currentPivotRecords[key].criteriaSet.add(row.criteriaFmt);
+                window.currentPivotRecords[key].records.push(row);
+            });
+
+            let pivotArr = Object.values(window.currentPivotRecords);
+
+            const filterInput = document.getElementById("matrix-filter-primary");
+            const filterList = document.getElementById("matrix-filter-primary-list");
+            let uniqueV1s = [...new Set(pivotArr.map(p => p.v1))].sort();
+            let currentFilterVal = filterInput.value;
+             
+            let filterHtml = `<option value="ALL">-- All ${g1Lbl}s --</option>`;
+            uniqueV1s.getInstance = uniqueV1s.forEach(v => {
+                filterHtml += `<option value="${v}">${v}</option>`;
+            });
+            if (filterList) filterList.innerHTML = filterHtml;
+             
+            if (uniqueV1s.includes(currentFilterVal) || currentFilterVal === "ALL") {
+                filterInput.value = currentFilterVal;
+            } else {
+                filterInput.value = "ALL";
+            }
+
+            if (filterInput.value !== "ALL" && filterInput.value !== "") {
+                pivotArr = pivotArr.filter(p => p.v1 === filterInput.value);
+            }
+
+            pivotArr.sort((a, b) => {
+                let cmp1 = String(a.v1).localeCompare(String(b.v1));
+                if (cmp1 !== 0) return cmp1;
+                if (a.v2 && b.v2) return String(a.v2).localeCompare(String(b.v2));
+                return 0;
+            });
+
+            let html = "";
+            pivotArr.forEach((item, idx) => {
+                const bg = idx % 2 === 0 ? "bg-white" : "bg-slate-50/50";
+                const cacheKey = item.v1 + "|||" + item.v2;
+                const criteriaStr = Array.from(item.criteriaSet).join(", ");
+
+                html += `
+                    <tr class="${bg} hover:bg-emerald-50/40 transition cursor-pointer group" onclick="window.toggleMatrixExpand('${cacheKey}', this)">
+                        <td class="p-3 border-r text-center font-mono text-slate-400">
+                            <div class="flex items-center justify-center gap-1">
+                                <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 transition-transform expand-icon"></i>
+                                ${idx + 1}
+                            </div>
+                        </td>
+                        <td class="p-3 border-r font-bold text-slate-900">${item.v1}</td>
+                        ${g2Lbl ? `<td class="p-3 border-r font-bold text-indigo-700">${item.v2}</td>` : ''}
+                         
+                        <td class="p-3 border-r text-center font-mono font-black text-blue-700">${item.calls}</td>
+                        <td class="p-3 border-r text-center font-mono font-bold text-emerald-700 text-[10px]">${criteriaStr}</td>
+                        <td class="p-3 text-right font-mono font-bold text-slate-900">Rs ${item.tMatVal > 0 ? item.tMatVal.toLocaleString('en-IN', {maximumFractionDigits: 0}) : '0'}</td>
+                    </tr>
+                `;
+            });
+            tbody.innerHTML = html || `<tr><td colspan="${g2Lbl ? 6 : 5}" class="p-8 text-center text-slate-400">No comparison records available for this grouping.</td></tr>`;
+        }
+         
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.applyMatrixFilter = function() {
+        window.renderFinancialMatrix(); 
+    };
+
+    window.toggleMatrixExpand = function(key, rowEl) {
+        const nextRow = rowEl.nextElementSibling;
+        const icon = rowEl.querySelector('.expand-icon');
+
+        if (nextRow && nextRow.classList.contains('matrix-expanded-row')) {
+            nextRow.remove();
+            if(icon) icon.style.transform = "rotate(0deg)";
+            rowEl.classList.remove('bg-emerald-50');
+            return;
+        }
+
+        if(icon) icon.style.transform = "rotate(90deg)";
+        rowEl.classList.add('bg-emerald-50');
+
+        const groupData = window.currentPivotRecords[key];
+        if(!groupData) return;
+
+        const colspan = rowEl.children.length;
+
+        let subHtml = `
+            <tr class="matrix-expanded-row bg-slate-50 border-b border-slate-200 shadow-inner">
+                <td colspan="${colspan}" class="p-4">
+                    <div class="space-y-4">
+        `;
+
+        groupData.records.forEach(item => {
+            const r = item.raw || {};
+            const insp = String(r.conductedBy || r.tpiaInspector || "").trim();
+            const isAppointed = insp && insp.toLowerCase() !== "pending" && insp.toLowerCase() !== "not appointed" && insp !== "-";
+
+            let detailsHtml = `<div class="grid grid-cols-1 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 xl:grid-cols-6 gap-x-4 gap-y-3 mt-2">`;
+            Object.keys(fullHeaderCustomNames).forEach(k => {
+                const label = fullHeaderCustomNames[k], rawVal = r[k], val = (rawVal !== null && rawVal !== undefined && String(rawVal).trim() !== "") ? String(rawVal) : "-";
+                detailsHtml += `<div><span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5">${label}</span><span class="text-xs font-semibold text-slate-800 whitespace-pre-wrap break-words">${val}</span></div>`;
+            });
+            detailsHtml += `</div>`;
+
+            subHtml += `
+                <div class="bg-white p-5 rounded-2xl shadow-sm border border-slate-200 space-y-3">
+                    <div class="flex items-center justify-between border-b border-slate-100 pb-2">
+                        <div class="flex items-center gap-2">
+                            <span class="font-mono font-black text-blue-700 text-sm">${item.id}</span>
+                            <span class="text-[10px] font-mono px-2 py-0.5 rounded bg-slate-100 border text-slate-700">${item.discom}</span>
+                            ${isAppointed ? `<span class="bg-emerald-100 text-emerald-800 text-[9px] px-2 py-0.5 rounded-full font-black uppercase border border-emerald-200">Appointed</span>` : ''}
+                        </div>
+                        <span class="text-xs font-mono font-black text-purple-700 bg-purple-50 px-2.5 py-1 rounded-lg">Fee: Rs ${item.calculatedFee > 0 ? item.calculatedFee.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '0.00'}</span>
+                    </div>
+                    <div class="pl-1">
+                        <h5 class="text-[10px] font-black uppercase text-indigo-400 mb-3 flex items-center gap-2"><i data-lucide="file-search" class="w-4 h-4"></i> Complete Inspection Profile</h5>
+                        ${detailsHtml}
+                    </div>
+                </div>
+            `;
+        });
+
+        subHtml += `
+                    </div>
+                </td>
+            </tr>
+        `;
+
+        rowEl.insertAdjacentHTML('afterend', subHtml);
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    if (typeof Chart === 'undefined') {
+        const script = document.createElement('script');
+        script.src = 'https://cdn.jsdelivr.net/npm/chart.js';
+        script.onload = () => setTimeout(initAnalyticsModule, 50);
+        document.head.appendChild(script);
+    } else {
+        setTimeout(initAnalyticsModule, 50);
+    }
+</script>

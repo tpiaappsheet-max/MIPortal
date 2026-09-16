@@ -1,0 +1,273 @@
+<div class="max-w-4xl mx-auto space-y-6 animate-fade-in pb-16">
+    
+    <!-- Top Header -->
+    <div class="bg-white p-5 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-4">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="list-tree" class="text-amber-500 w-5 h-5"></i> Material Specification Extractor
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Auto-parse, deep-clean, and extract *missing* billable items from historical records.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="window.copyExtractedSpecs()" id="btn-copy-specs" class="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white text-xs font-black rounded-xl transition cursor-pointer flex items-center gap-2 shadow-sm disabled:opacity-50">
+                    <i data-lucide="copy" class="w-3.5 h-3.5"></i> Copy List
+                </button>
+            </div>
+        </div>
+
+        <!-- Filter Control -->
+        <div class="bg-amber-50/50 p-4 rounded-2xl border border-amber-100/50">
+            <label class="block text-[10px] font-black uppercase text-amber-800 mb-2 flex items-center gap-1.5">
+                <i data-lucide="layers" class="w-3 h-3"></i> Select Material Category (Material Inspected)
+            </label>
+            <select id="spec-category-dropdown" onchange="window.extractSpecsForCategory()" class="w-full p-3 border border-slate-300 rounded-xl text-sm font-bold outline-none bg-white focus:border-amber-500 focus:ring-2 focus:ring-amber-200 transition cursor-pointer shadow-xs">
+                <option value="">-- Loading Categories... --</option>
+            </select>
+            <p class="text-[10px] text-slate-500 font-bold mt-2 italic">* Generates a pristine list of specifications <strong class="text-rose-600">NOT YET PRESENT</strong> in the Material Specifications master sheet.</p>
+        </div>
+    </div>
+
+    <!-- Extraction Results Container -->
+    <div class="bg-white rounded-3xl border shadow-sm overflow-hidden flex flex-col">
+        <div class="bg-slate-50 p-4 border-b border-slate-200 flex justify-between items-center shrink-0">
+            <h4 class="font-black text-sm uppercase text-slate-700 tracking-wider flex items-center gap-2">
+                <i data-lucide="check-square" class="w-4 h-4 text-emerald-600"></i> New / Unconfigured Specifications
+            </h4>
+            <span id="extracted-count" class="bg-emerald-100 text-emerald-800 py-1 px-3 rounded-full text-[10px] font-black border border-emerald-200 shadow-xs">0 Items Found</span>
+        </div>
+        
+        <div class="p-1 overflow-x-auto overflow-y-auto custom-scrollbar max-h-[60vh]">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="bg-white text-slate-400 uppercase text-[9px] font-black border-b sticky top-0">
+                    <tr>
+                        <th class="p-3 w-16 text-center border-r">Sr</th>
+                        <th class="p-3 border-r">Clean Material Specification</th>
+                        <th class="p-3 w-32 text-center">Extracted Unit</th>
+                    </tr>
+                </thead>
+                <tbody id="extracted-specs-body" class="divide-y divide-slate-50 font-medium text-slate-700">
+                    <tr><td colspan="3" class="p-12 text-center text-slate-400">Select a category to view parsed specifications.</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<style>
+    .custom-scrollbar::-webkit-scrollbar { width: 8px; height: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
+    .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
+    .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+</style>
+
+<script>
+    window.specExtractorData = [];
+    window.materialSpecsMasterList = []; // 🎯 Added to cache existing specifications
+    window.extractedTextCache = ""; 
+
+    async function initSpecExtractor() {
+        try {
+            // 🎯 Fetch BOTH Inspection Data AND existing Material Specs simultaneously
+            const [combRes, specRes] = await Promise.all([
+                fetch(`${API_URL}?action=getCombinedInspections`),
+                fetch(`${API_URL}?action=getMaterialSpecs`)
+            ]);
+            
+            const textData = await combRes.text();
+            const parsed = JSON.parse(textData);
+            
+            const specTextData = await specRes.text();
+            const parsedSpec = JSON.parse(specTextData);
+
+            if (parsedSpec.status && parsedSpec.data) {
+                window.materialSpecsMasterList = parsedSpec.data;
+            }
+
+            if (parsed.status && parsed.data) {
+                window.specExtractorData = parsed.data;
+                populateCategoryDropdown();
+            } else {
+                document.getElementById("spec-category-dropdown").innerHTML = `<option value="">Data Unavailable</option>`;
+            }
+        } catch (e) {
+            document.getElementById("spec-category-dropdown").innerHTML = `<option value="">Network Error</option>`;
+        }
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function populateCategoryDropdown() {
+        const dropdown = document.getElementById("spec-category-dropdown");
+        const categories = new Set();
+        
+        window.specExtractorData.forEach(row => {
+            const cat = String(row.materialInspected || "").trim();
+            if (cat && cat !== "-") categories.add(cat);
+        });
+
+        const sortedCategories = Array.from(categories).sort((a, b) => a.localeCompare(b));
+        
+        let html = `<option value="">-- Choose a Category to Parse --</option>`;
+        sortedCategories.forEach(c => {
+            html += `<option value="${c}">${c}</option>`;
+        });
+        
+        dropdown.innerHTML = html;
+    }
+
+    window.extractSpecsForCategory = function() {
+        const selectedCat = document.getElementById("spec-category-dropdown").value;
+        const tbody = document.getElementById("extracted-specs-body");
+        const countBadge = document.getElementById("extracted-count");
+        
+        window.extractedTextCache = ""; 
+        
+        if (!selectedCat) {
+            tbody.innerHTML = `<tr><td colspan="3" class="p-12 text-center text-slate-400">Select a category to view parsed specifications.</td></tr>`;
+            countBadge.innerText = "0 Items Found";
+            return;
+        }
+
+        // 🎯 Prepare a lowercased, space-normalized SET of ALREADY EXISTING specifications
+        const existingSpecsSet = new Set(
+            (window.materialSpecsMasterList || []).map(m => 
+                String(m.materialSpec || "").trim().replace(/\s+/g, ' ').toLowerCase()
+            )
+        );
+
+        const matchingRows = window.specExtractorData.filter(r => String(r.materialInspected || "").trim() === selectedCat);
+        const uniqueSpecsMap = new Map();
+
+        matchingRows.forEach(row => {
+            const rawSpecs = String(row.materialSpec || "").split("\n").filter(Boolean);
+            
+            if (rawSpecs.length > 0) {
+                rawSpecs.forEach(specLine => {
+                    let cleanSpec = specLine.trim();
+                    if (!cleanSpec) return;
+
+                    let actualSpec = cleanSpec;
+                    let unitName = "No";
+                    let isBillableItem = false;
+
+                    // 1. Identify billable items via Roman Numerals / Numbers
+                    const matchPrefix = cleanSpec.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                    if (matchPrefix) {
+                        actualSpec = matchPrefix[2];
+                        isBillableItem = true;
+                    } 
+                    else {
+                        const lowerSpec = cleanSpec.toLowerCase();
+                        // Reject boilerplate descriptive headers
+                        if (rawSpecs.length > 1 && (lowerSpec.includes("as per technical specification") || lowerSpec.includes("scope of work") || lowerSpec.includes("approved drawings"))) {
+                            return; 
+                        }
+                        isBillableItem = true; 
+                    }
+
+                    if (isBillableItem) {
+                        // ==========================================
+                        // 🎯 ADVANCED DEEP-CLEANING ALGORITHM
+                        // ==========================================
+
+                        // Step A: Safe Unit Extraction FIRST (so it doesn't get destroyed by the purger)
+                        const unitMatch = actualSpec.match(/\(([^)]+)\)\s*$/);
+                        if (unitMatch) {
+                            let innerText = unitMatch[1].trim();
+                            // Ensure it's not a schedule masking as a unit
+                            if (!innerText.toLowerCase().match(/sch|sl\.|item|serial|to|ml\//) && innerText.length <= 15) {
+                                unitName = innerText;
+                                actualSpec = actualSpec.replace(/\([^)]+\)\s*$/, "").trim(); 
+                            }
+                        }
+
+                        // Step B: Nuke all square brackets and their inner contents (e.g., [H0000001 to H0025025])
+                        actualSpec = actualSpec.replace(/\[.*?\]/g, ' ');
+
+                        // Step C: Nuke "SI Nos", "Sl Nos.", "Serial No" and trailing range numbers explicitly
+                        actualSpec = actualSpec.replace(/(?:SI|Sl|Sr|Serial|Seal)\s*(?:Nos?|Numbers?)\.?\s*[:-]?\s*(?:[A-Za-z0-9-/]+\s*(?:to|-|&)\s*[A-Za-z0-9-/]+)?/gi, ' ');
+
+                        // Step D: ITERATIVE Nested Parenthesis Purge
+                        let prevSpec;
+                        do {
+                            prevSpec = actualSpec;
+                            actualSpec = actualSpec.replace(/\([^()]*?(?:Sch|Sl\.?|Si\.?|Item|Serial|Seal|Circle|Zone|Division|District|Region|ML\/|[A-Z]-\d|\bto\b)[^()]*?\)/gi, ' ');
+                        } while (prevSpec !== actualSpec);
+
+                        // Step E: Catch Unclosed trailing parentheses
+                        actualSpec = actualSpec.replace(/\(\s*(?:Sch|Sl\.?|Si\.?|Item|Serial|Seal|Circle|Zone|Division|District|Region|ML\/|[A-Z]-\d|\bto\b)[^)]*$/, ' ');
+
+                        // Step F: Final Polish
+                        actualSpec = actualSpec.replace(/\.+$/, '').trim();
+                        actualSpec = actualSpec.replace(/\s+/g, ' ').trim();
+
+                        if (actualSpec.length > 0) {
+                            const normalizedKey = actualSpec.toLowerCase();
+                            
+                            // 🎯 ONLY ADD IT IF IT'S NOT ALREADY IN THE MATERIAL SPECIFICATION SHEET
+                            if (!existingSpecsSet.has(normalizedKey) && !uniqueSpecsMap.has(normalizedKey)) {
+                                uniqueSpecsMap.set(normalizedKey, {
+                                    name: actualSpec,
+                                    unit: unitName
+                                });
+                            }
+                        }
+                    }
+                });
+            }
+        });
+
+        const sortedUniqueSpecs = Array.from(uniqueSpecsMap.values()).sort((a, b) => a.name.localeCompare(b.name));
+        countBadge.innerText = `${sortedUniqueSpecs.length} Unconfigured Items`;
+
+        if (sortedUniqueSpecs.length === 0) {
+            tbody.innerHTML = `<tr><td colspan="3" class="p-12 text-center text-emerald-600 font-bold bg-emerald-50">All valid specifications for this category are already configured in the Master Sheet!</td></tr>`;
+            return;
+        }
+
+        let html = "";
+        let copyTextArray = [];
+
+        sortedUniqueSpecs.forEach((item, idx) => {
+            const bgClass = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            copyTextArray.push(item.name); 
+            
+            html += `
+                <tr class="${bgClass} hover:bg-amber-50/50 transition">
+                    <td class="p-3 border-r text-center font-mono font-bold text-slate-400">${idx + 1}</td>
+                    <td class="p-3 border-r font-bold text-slate-800 text-sm whitespace-normal leading-relaxed">${item.name}</td>
+                    <td class="p-3 text-center font-mono font-bold text-purple-700 bg-purple-50/30">${item.unit}</td>
+                </tr>
+            `;
+        });
+
+        window.extractedTextCache = copyTextArray.join("\n");
+        tbody.innerHTML = html;
+        if (window.lucide) lucide.createIcons();
+    }
+
+    window.copyExtractedSpecs = function() {
+        if (!window.extractedTextCache) {
+            alert("No specifications available to copy.");
+            return;
+        }
+        
+        navigator.clipboard.writeText(window.extractedTextCache).then(() => {
+            const btn = document.getElementById("btn-copy-specs");
+            const originalHtml = btn.innerHTML;
+            btn.innerHTML = `<i data-lucide="check-check" class="w-3.5 h-3.5 text-emerald-400"></i> Copied!`;
+            btn.classList.add("bg-emerald-900", "text-emerald-400");
+            lucide.createIcons();
+            
+            setTimeout(() => {
+                btn.innerHTML = originalHtml;
+                btn.classList.remove("bg-emerald-900", "text-emerald-400");
+                lucide.createIcons();
+            }, 2000);
+        }).catch(err => {
+            alert("Failed to copy to clipboard.");
+        });
+    }
+
+    setTimeout(initSpecExtractor, 50);
+</script>

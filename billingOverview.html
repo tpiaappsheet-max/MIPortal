@@ -1,0 +1,659 @@
+<!-- html2pdf Library for PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+
+<div class="max-w-7xl mx-auto space-y-4 animate-fade-in pb-12">
+    <!-- Header & Action Bar -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-4">
+        <div class="flex flex-col sm:flex-row items-center justify-between gap-4 border-b pb-3">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">
+                    <i data-lucide="receipt" class="text-purple-600 w-5 h-5"></i> Billing & Financial Fee Overview (Admin Only)
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Detailed material specifications, units, unit rates, quantities, categories, execution dates, man days, remarks, and calculated inspection fees.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <span id="billing-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
+            </div>
+        </div>
+
+        <!-- Cascading / Narrowing Filters: Month > Discom > Status > Inspection ID > Conducted By -->
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 grid grid-cols-1 sm:grid-cols-5 gap-3">
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter Month</label>
+                <select id="billing-filter-month" onchange="window.onBillingFilterChange()" class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                    <option value="">-- All Months --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter Discom</label>
+                <select id="billing-filter-discom" onchange="window.onBillingFilterChange()" class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                    <option value="">-- All Discoms --</option>
+                    <option value="NBPDCL">NBPDCL</option>
+                    <option value="SBPDCL">SBPDCL</option>
+                    <option value="PVVNL">PVVNL</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter Status</label>
+                <select id="billing-filter-status" onchange="window.onBillingFilterChange()" class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                    <option value="">-- All Statuses --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Search Inspection ID</label>
+                <input type="text" id="billing-filter-inspection" list="billing-inspection-ids-list" oninput="window.onBillingFilterChange()" placeholder="Type or select ID..." class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                <datalist id="billing-inspection-ids-list"></datalist>
+            </div>
+            <div class="flex items-end gap-2">
+                <div class="flex-1">
+                    <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">Filter Conducted By</label>
+                    <select id="billing-filter-conducted" onchange="window.onBillingFilterChange()" class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                        <option value="">-- All Inspectors --</option>
+                    </select>
+                </div>
+                <button onclick="window.resetBillingFilters()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition cursor-pointer h-[34px]">Reset</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Table Container with Resizable Columns & Fluid Scrolling -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
+        <div id="billing-table-wrap" class="overflow-x-auto h-[68vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar">
+            <p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing financial records...</p>
+        </div>
+    </div>
+</div>
+
+<style>
+    .resizer { position: absolute; top: 0; right: 0; width: 6px; cursor: col-resize; user-select: none; touch-action: none; height: 100%; background-color: rgba(255, 255, 255, 0.2); transition: background-color 0.2s; }
+    .resizer:hover, .resizing { background-color: #38bdf8; }
+    th.resizable-th { position: relative; overflow: hidden; }
+
+    /* 🎯 Forces table headers and content to break words and wrap properly */
+    #billing-resizable-table th, #billing-resizable-table td {
+        white-space: normal !important;
+        word-wrap: break-word !important;
+        overflow-wrap: break-word !important;
+        word-break: break-word !important;
+    }
+</style>
+
+<script>
+    if (typeof window.materialSpecsMasterList === 'undefined') {
+        window.materialSpecsMasterList = [];
+    }
+    if (typeof window.windowManufacturers === 'undefined') {
+        window.windowManufacturers = [];
+    }
+    if (typeof window.savedFeeDetailsIds === 'undefined') {
+        window.savedFeeDetailsIds = [];
+    }
+    if (typeof window.portalMData === 'undefined') {
+        window.portalMData = [];
+    }
+
+    function convertNumberToWords(num) {
+        if (num === 0) return "Zero Rupees Only";
+        
+        const a = ['', 'One', 'Two', 'Three', 'Four', 'Five', 'Six', 'Seven', 'Eight', 'Nine', 'Ten', 'Eleven', 'Twelve', 'Thirteen', 'Fourteen', 'Fifteen', 'Sixteen', 'Seventeen', 'Eighteen', 'Nineteen'];
+        const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
+
+        function getWords(n) {
+            if (n === 0) return '';
+            if (n < 20) return a[n] + ' ';
+            if (n < 100) return b[Math.floor(n / 10)] + (n % 10 !== 0 ? ' ' + a[n % 10] : '') + ' ';
+            return a[Math.floor(n / 100)] + ' Hundred ' + (n % 100 !== 0 ? getWords(n % 100) : '');
+        }
+
+        let n = Math.floor(num);
+        let str = '';
+
+        let crore = Math.floor(n / 10000000);
+        n %= 10000000;
+        if (crore > 0) str += getWords(crore) + 'Crore ';
+
+        let lakh = Math.floor(n / 100000);
+        n %= 100000;
+        if (lakh > 0) str += getWords(lakh) + 'Lakh ';
+
+        let thousand = Math.floor(n / 1000);
+        n %= 1000;
+        if (thousand > 0) str += getWords(thousand) + 'Thousand ';
+
+        let hundred = Math.floor(n / 100);
+        n %= 100;
+        if (hundred > 0) str += getWords(hundred) + 'Hundred ';
+
+        if (n > 0) {
+            if (str !== '') str += 'and ';
+            str += getWords(n);
+        }
+
+        return 'Rupees ' + str.trim() + ' Only';
+    }
+
+    window.initBillingPortalModule = async function() {
+        if (!currentMiUser || currentMiUser.role !== 'admin') {
+            const viewport = document.getElementById("mi-viewport");
+            if (viewport) {
+                viewport.innerHTML = `
+                    <div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm">
+                        <i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i>
+                        <h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3>
+                        <p class="text-xs text-slate-500">This module is accessible exclusively to System Administrators.</p>
+                    </div>
+                `;
+            }
+            if (window.lucide) lucide.createIcons();
+            return;
+        }
+
+        try {
+            const [combRes, specRes, mfgRes, feeRes, portalMRes] = await Promise.all([
+                fetch(`${API_URL}?action=getCombinedInspections`),
+                fetch(`${API_URL}?action=getMaterialSpecs`),
+                fetch(`${API_URL}?action=getManufacturers`),
+                fetch(`${API_URL}?action=getFeeDetails`),
+                fetch(`${API_URL}?action=getPortalMInspections`)
+            ]);
+            
+            const textData = await combRes.text();
+            const data = JSON.parse(textData);
+            if (data.status) {
+                window.miMasterData = data.data || [];
+            }
+
+            const specData = await specRes.json();
+            if (specData.status) {
+                window.materialSpecsMasterList = specData.data || [];
+            }
+
+            const mfgData = await mfgRes.json();
+            if (mfgData.status) {
+                window.windowManufacturers = mfgData.data || [];
+            }
+
+            const feeData = await feeRes.json();
+            if (feeData.status && feeData.data) {
+                window.savedFeeDetailsIds = feeData.data.map(row => String(row["Inspection ID"] || "").trim());
+            }
+            
+            const portalMDataRaw = await portalMRes.json();
+            if (portalMDataRaw.status && portalMDataRaw.data) {
+                window.portalMData = portalMDataRaw.data;
+            }
+
+        } catch (err) {
+            console.warn("Could not fetch financial configuration data.");
+        }
+
+        updateBillingFilterOptions();
+        renderBillingPortalTable();
+        if (window.lucide) lucide.createIcons();
+    };
+
+    function getFilteredInspections(excludeFilter = "") {
+        const elMonth = document.getElementById("billing-filter-month");
+        const elDiscom = document.getElementById("billing-filter-discom");
+        const elStatus = document.getElementById("billing-filter-status");
+        const elInspection = document.getElementById("billing-filter-inspection");
+        const elConducted = document.getElementById("billing-filter-conducted");
+
+        const fMonth = elMonth ? elMonth.value.trim() : "";
+        const fDiscom = elDiscom ? elDiscom.value.trim().toLowerCase() : "";
+        const fStatus = elStatus ? elStatus.value.trim().toLowerCase() : "";
+        const fInspection = elInspection ? elInspection.value.trim().toLowerCase() : "";
+        const fConducted = elConducted ? elConducted.value.trim().toLowerCase() : "";
+
+        return (window.miMasterData || []).filter(item => {
+            if (excludeFilter !== 'month' && fMonth && String(item.month || "").trim() !== fMonth) return false;
+            if (excludeFilter !== 'discom' && fDiscom && String(item.discom || "").trim().toLowerCase() !== fDiscom) return false;
+            if (excludeFilter !== 'status' && fStatus && String(item.status || "").trim().toLowerCase() !== fStatus) return false;
+            if (excludeFilter !== 'inspection' && fInspection) {
+                const inspId = String(item.inspectionId || item.InspectionID || "").trim().toLowerCase();
+                if (!inspId.includes(fInspection)) return false;
+            }
+            if (excludeFilter !== 'conducted' && fConducted && String(item.conductedBy || "").trim().toLowerCase() !== fConducted) return false;
+            return true;
+        });
+    }
+
+    function updateBillingFilterOptions() {
+        const monthSel = document.getElementById("billing-filter-month");
+        const statusSel = document.getElementById("billing-filter-status");
+        const inspectionDatalist = document.getElementById("billing-inspection-ids-list");
+        const conductedSel = document.getElementById("billing-filter-conducted");
+
+        const currentMonth = monthSel ? monthSel.value : "";
+        const currentStatus = statusSel ? statusSel.value : "";
+        const currentConducted = conductedSel ? conductedSel.value : "";
+
+        const monthPool = getFilteredInspections('month');
+        const monthSet = [...new Set(monthPool.map(i => String(i.month || "").trim()))].filter(m => m && m !== '-');
+        monthSet.sort((a,b) => new Date("01 " + a) - new Date("01 " + b));
+        if (monthSel) {
+            monthSel.innerHTML = `<option value="">-- All Months --</option>` + monthSet.map(m => `<option value="${m}">${m}</option>`).join('');
+            monthSel.value = monthSet.includes(currentMonth) ? currentMonth : "";
+        }
+
+        const statusPool = getFilteredInspections('status');
+        const statusSet = [...new Set(statusPool.map(i => String(i.status || "").trim()))].filter(Boolean);
+        statusSet.sort();
+        if (statusSel) {
+            statusSel.innerHTML = `<option value="">-- All Statuses --</option>` + statusSet.map(s => `<option value="${s}">${s}</option>`).join('');
+            statusSel.value = statusSet.includes(currentStatus) ? currentStatus : "";
+        }
+
+        const inspectionPool = getFilteredInspections('inspection');
+        const inspectionSet = [...new Set(inspectionPool.map(i => String(i.inspectionId || i.InspectionID || "").trim()))].filter(Boolean);
+        inspectionSet.sort();
+        if (inspectionDatalist) {
+            inspectionDatalist.innerHTML = inspectionSet.map(id => `<option value="${id}"></option>`).join('');
+        }
+
+        const conductedPool = getFilteredInspections('conducted');
+        const conductedSet = [...new Set(conductedPool.map(i => String(i.conductedBy || "").trim()))].filter(Boolean);
+        conductedSet.sort();
+        if (conductedSel) {
+            conductedSel.innerHTML = `<option value="">-- All Inspectors --</option>` + conductedSet.map(c => `<option value="${c}">${c}</option>`).join('');
+            conductedSel.value = conductedSet.includes(currentConducted) ? currentConducted : "";
+        }
+    }
+
+    window.onBillingFilterChange = function() {
+        updateBillingFilterOptions();
+        renderBillingPortalTable();
+    };
+
+    window.resetBillingFilters = function() {
+        document.getElementById("billing-filter-month").value = "";
+        document.getElementById("billing-filter-discom").value = "";
+        document.getElementById("billing-filter-status").value = "";
+        document.getElementById("billing-filter-inspection").value = "";
+        document.getElementById("billing-filter-conducted").value = "";
+        updateBillingFilterOptions();
+        renderBillingPortalTable();
+    };
+
+    window.updateRowFeeCalculation = function(inspectionId, rowTotalVal, totalQty, criteria) {
+        const valInput = document.getElementById(`val-input-${inspectionId}`);
+        const multInput = document.getElementById(`mult-input-${inspectionId}`);
+        const feeDisplay = document.getElementById(`fee-display-${inspectionId}`);
+        const feeWords = document.getElementById(`fee-words-${inspectionId}`);
+        const addBtn = document.getElementById(`add-btn-${inspectionId}`);
+        
+        if (!valInput || !multInput || !feeDisplay || !feeWords || !addBtn) return;
+
+        const factor = parseFloat(valInput.value) || 0;
+        const multiplierPct = parseFloat(multInput.value) || 100;
+        let calculatedFee = 0;
+
+        if (criteria.toLowerCase() === 'per unit') {
+            calculatedFee = totalQty * factor;
+        } else {
+            calculatedFee = rowTotalVal * (factor / 100);
+        }
+
+        calculatedFee = calculatedFee * (multiplierPct / 100);
+
+        feeDisplay.innerText = calculatedFee > 0 ? 'Rs ' + calculatedFee.toLocaleString('en-IN', {minimumFractionDigits: 2}) : 'Rs 0.00';
+        feeWords.innerText = convertNumberToWords(calculatedFee);
+
+        try {
+            const currentPayload = JSON.parse(decodeURIComponent(addBtn.getAttribute('data-payload')));
+            currentPayload.criteriaValue = `${criteria} (${factor}) [Share %: ${multiplierPct}%]`;
+            currentPayload.calculatedFee = calculatedFee;
+            addBtn.setAttribute('data-payload', encodeURIComponent(JSON.stringify(currentPayload)));
+        } catch (e) {
+            console.warn("Could not update button payload data attribute.");
+        }
+    };
+
+    window.addRowToFeeDetailsSheet = async function(btnElement, statusVal) {
+        const lowerStatus = String(statusVal || "").trim().toLowerCase();
+        if (lowerStatus === 'cancelled' || lowerStatus === 'revised') {
+            alert(`Cannot process: Inspection status is '${statusVal}'. Cancelled or Revised records are not billed.`);
+            return;
+        }
+
+        const item = JSON.parse(decodeURIComponent(btnElement.getAttribute('data-payload')));
+        const inspectionId = String(item.inspectionId).trim();
+        const isUpdate = window.savedFeeDetailsIds.includes(inspectionId);
+        const actionText = isUpdate ? "overwrite/update" : "add";
+
+        if (!confirm(`Are you sure you want to ${actionText} Inspection ID '${inspectionId}' in the FeeDetails sheet with the calculated fee of Rs ${Number(item.calculatedFee).toLocaleString('en-IN', {minimumFractionDigits: 2})}?`)) {
+            return;
+        }
+
+        btnElement.disabled = true;
+        btnElement.innerText = isUpdate ? "Updating..." : "Adding...";
+
+        const apiAction = isUpdate ? "updateFeeDetails" : "saveFeeDetails";
+
+        try {
+            const res = await fetch(API_URL, {
+                method: 'POST',
+                body: JSON.stringify({
+                    action: apiAction,
+                    overwrite: isUpdate,
+                    sr: item.sr,
+                    letterNameDate: item.letterNameDate,
+                    inspectionId: item.inspectionId,
+                    discom: item.discom,
+                    conductedBy: item.conductedBy,
+                    statusSubStatus: item.statusSubStatus,
+                    dateRangeManDays: item.dateRangeManDays,
+                    manufacturerName: item.manufacturerName,
+                    materialCategory: item.materialCategory,
+                    materialSpecDetails: item.materialSpecDetails,
+                    totalQty: item.totalQty,
+                    totalMaterialValue: item.totalMaterialValue,
+                    criteriaValue: item.criteriaValue,
+                    calculatedFee: item.calculatedFee,
+                    inspector: "",
+                    totalValueCol: "",
+                    inspectorCriteria: "",
+                    inspectorValue: "",
+                    inspectorFee: ""
+                })
+            });
+
+            const text = await res.text();
+            const result = JSON.parse(text);
+
+            if (result.status) {
+                alert(result.message || `Successfully ${isUpdate ? "updated" : "added"} record in the sheet!`);
+                if (!window.savedFeeDetailsIds.includes(inspectionId)) {
+                    window.savedFeeDetailsIds.push(inspectionId);
+                }
+                renderBillingPortalTable();
+            } else {
+                alert("Notice: " + result.message);
+                btnElement.disabled = false;
+                btnElement.innerText = isUpdate ? "Update / Overwrite" : "Add to Sheet";
+            }
+        } catch (err) {
+            alert("Failed to connect to backend service.");
+            btnElement.disabled = false;
+            btnElement.innerText = isUpdate ? "Update / Overwrite" : "Add to Sheet";
+        }
+    };
+
+    function renderBillingPortalTable() {
+        const wrap = document.getElementById("billing-table-wrap");
+        const badge = document.getElementById("billing-count-badge");
+        if (!wrap) return;
+
+        const inspections = getFilteredInspections();
+        if (badge) badge.innerText = `${inspections.length} Records Found`;
+
+        if (inspections.length === 0) {
+            wrap.innerHTML = `<p class="text-xs text-slate-400 py-12 text-center">No inspection records match the selected filters.</p>`;
+            return;
+        }
+
+        let html = `<table id="billing-resizable-table" class="w-full text-left text-xs border-collapse table-fixed"><thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono"><tr>`;
+        
+        const colDefs = [
+            { label: "Sheet Status", width: "130px" },
+            { label: "Sr", width: "60px" },
+            { label: "Letter Name & Date", width: "160px" },
+            { label: "Inspection ID", width: "130px" },
+            { label: "Discom", width: "100px" },
+            { label: "Conducted By", width: "130px" },
+            { label: "Status / SubStatus & Remarks", width: "170px" }, 
+            { label: "Date(s) of Inspection (From - To) & Man Days", width: "190px" },
+            { label: "Manufacturer Name", width: "180px" },
+            { label: "Material Category", width: "150px" },
+            { label: "Material Specification, Unit, Rate & Qty", width: "350px" },
+            { label: "Total Qty", width: "90px" },
+            { label: "Total Material Value (Rs)", width: "150px" },
+            { label: "Criteria, Value & Multiplier", width: "240px" },
+            { label: "Calculated Fee (Rs)", width: "180px" }
+        ];
+
+        colDefs.forEach((col, index) => {
+            html += `<th data-col-index="${index}" style="width: ${col.width}; min-width: ${col.width};" class="p-3 border-r border-slate-700 resizable-th relative truncate">${col.label}<div class="resizer"></div></th>`;
+        });
+
+        html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
+
+        inspections.forEach((item, idx) => {
+            const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+            const inspectionId = String(item.inspectionId || item.InspectionID || "").trim();
+            const isAlreadyAdded = window.savedFeeDetailsIds.includes(inspectionId);
+            const statusVal = String(item.status || "Pending").trim();
+            
+            const rawSpecs = String(item.materialSpec || "").split("\n").filter(Boolean);
+            const rawQtys = String(item.quantity || "").split("\n").filter(Boolean);
+            
+            let totalQty = 0;
+            let specDetailsTextSummary = [];
+            let specDetailsHtml = `<ul class="space-y-1">`;
+            let qtyIndex = 0; 
+
+            if (rawSpecs.length > 0) {
+                rawSpecs.forEach((specLine) => {
+                    let cleanSpec = specLine.trim();
+                    if (!cleanSpec) return;
+
+                    const matchPrefix = cleanSpec.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                    
+                    if (matchPrefix) {
+                        let prefixStr = matchPrefix[1];
+                        let actualSpec = matchPrefix[2];
+                        let unitName = "No";
+                        
+                        const unitMatch = actualSpec.match(/\(([^)]+)\)\s*$/);
+                        if (unitMatch) {
+                            let innerText = unitMatch[1].trim();
+                            if (!innerText.toLowerCase().match(/sch|sl\.|item|serial|to|ml\//) && innerText.length <= 15) {
+                                unitName = innerText;
+                                actualSpec = actualSpec.replace(/\([^)]+\)\s*$/, "").trim();
+                            }
+                        }
+
+                        actualSpec = actualSpec.replace(/\[.*?\]/g, ' ');
+                        actualSpec = actualSpec.replace(/(?:SI|Sl|Sr|Serial|Seal)\s*(?:Nos?|Numbers?)\.?\s*[:-]?\s*(?:[A-Za-z0-9-/]+\s*(?:to|-|&)\s*[A-Za-z0-9-/]+)?/gi, ' ');
+
+                        let prevSpec;
+                        do {
+                            prevSpec = actualSpec;
+                            actualSpec = actualSpec.replace(/\([^()]*?(?:Sch|Sl\.?|Si\.?|Item|Serial|Seal|Circle|Zone|Division|District|Region|ML\/|[A-Z]-\d|\bto\b)[^()]*?\)/gi, ' ');
+                        } while (prevSpec !== actualSpec);
+
+                        actualSpec = actualSpec.replace(/\(\s*(?:Sch|Sl\.?|Si\.?|Item|Serial|Seal|Circle|Zone|Division|District|Region|ML\/|[A-Z]-\d|\bto\b)[^)]*$/, ' ');
+
+                        actualSpec = actualSpec.replace(/\.+$/, '').trim();
+                        actualSpec = actualSpec.replace(/\s+/g, ' ').trim();
+
+                        let qty = 0;
+                        if (qtyIndex < rawQtys.length) {
+                            let qLine = rawQtys[qtyIndex].trim();
+                            const qMatch = qLine.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
+                            qty = parseFloat(qMatch ? qMatch[2] : qLine) || 0;
+                            qtyIndex++;
+                        }
+                        totalQty += qty;
+
+                        let uRate = 0;
+                        if (window.materialSpecsMasterList.length > 0) {
+                            const matched = window.materialSpecsMasterList.find(m => {
+                                if (!m.materialSpec) return false;
+                                const cleanMaster = String(m.materialSpec).replace(/\s+/g, ' ').trim().toLowerCase();
+                                const searchKey = actualSpec.toLowerCase();
+                                return searchKey === cleanMaster || searchKey.includes(cleanMaster) || cleanMaster.includes(searchKey);
+                            });
+                            if (matched) uRate = Number(matched.unitRate || 0);
+                        }
+
+                        specDetailsTextSummary.push(`${prefixStr} ${actualSpec} | Unit: ${unitName} | Rate: Rs ${uRate} | Qty: ${qty}`);
+                        specDetailsHtml += `<li class="font-mono text-[11px] ml-2"><strong class="text-slate-900">${prefixStr}</strong> ${actualSpec} | Unit: <span class="text-purple-700 font-bold">${unitName}</span> | Rate: <span class="text-slate-900 font-bold">Rs ${uRate.toLocaleString('en-IN', {minimumFractionDigits: 2})}</span> | Qty: <span class="text-blue-700 font-bold">${qty}</span></li>`;
+                    } else {
+                        specDetailsTextSummary.push(cleanSpec);
+                        specDetailsHtml += `<li class="font-bold text-[11px] text-slate-800 mt-2">${cleanSpec}</li>`;
+                    }
+                });
+            } else {
+                specDetailsHtml += `<li class="text-slate-400">No specifications listed</li>`;
+            }
+            specDetailsHtml += `</ul>`;
+
+            let rowTotalVal = 0;
+            let criteria = "Value Percent";
+            let valFactor = 0;
+
+            const portalMRecord = window.portalMData.find(m => 
+                String(m.inspectionId_manager).trim() === inspectionId || 
+                String(m.inspectionId).trim() === inspectionId
+            );
+
+            if (portalMRecord) {
+                rowTotalVal = Number(portalMRecord.totalMaterialValue) || 0;
+                criteria = String(portalMRecord.criteria || "Value Percent").trim();
+                valFactor = Number(portalMRecord.criteriaValue) || 0;
+                if (!criteria) criteria = "Value Percent";
+            }
+
+            const isPvvnl = String(item.discom || "").trim().toUpperCase() === "PVVNL";
+            const initialMultiplier = isPvvnl ? 20 : 100;
+
+            let rowFee = 0;
+            if (criteria.toLowerCase() === 'per unit') {
+                rowFee = totalQty * valFactor;
+            } else {
+                rowFee = rowTotalVal * (valFactor / 100);
+            }
+            rowFee = rowFee * (initialMultiplier / 100);
+
+            const discomColor = item.discom === 'SBPDCL' ? 'text-purple-700 bg-purple-50 border-purple-200' : 'text-blue-700 bg-blue-50 border-blue-200';
+            const letterNameDateVal = `${item.letterNo || '-'} (${item.letterDate || ''})`;
+            
+            const rawRemarks = String(item.remarks || "").trim();
+            let statusSubStatusVal = `${statusVal} / ${item.subStatus || 'Pending'}`;
+            if (rawRemarks) {
+                statusSubStatusVal += `\nRemarks- ${rawRemarks}`;
+            }
+            
+            const rawManDays = (item.manDays !== undefined && item.manDays !== null && String(item.manDays).trim() !== "") ? Number(item.manDays) : 0;
+            const dateRangeManDaysVal = `${item.dateFrom || '-'} to ${item.dateTo || '-'} [${rawManDays} Man Days]`;
+
+            const rowDataObject = {
+                sr: idx + 1,
+                letterNameDate: letterNameDateVal,
+                inspectionId: inspectionId,
+                discom: item.discom || '-',
+                conductedBy: item.conductedBy || 'Pending',
+                statusSubStatus: statusSubStatusVal,
+                dateRangeManDays: dateRangeManDaysVal,
+                manufacturerName: item.manufacturer || '-',
+                materialCategory: item.materialInspected || '-',
+                materialSpecDetails: specDetailsTextSummary.join("; "),
+                totalQty: totalQty,
+                totalMaterialValue: rowTotalVal,
+                criteriaValue: `${criteria} (${valFactor}) [Mult: ${initialMultiplier}%]`,
+                calculatedFee: rowFee
+            };
+
+            const encodedPayload = encodeURIComponent(JSON.stringify(rowDataObject));
+
+            let virtualStatusHtml = "";
+            if (isAlreadyAdded) {
+                virtualStatusHtml = `
+                    <div class="space-y-1.5 px-1">
+                        <span class="py-1 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-lg text-[10px] font-bold block text-center font-mono">Added in Sheet</span>
+                        <button id="add-btn-${inspectionId}" onclick="window.addRowToFeeDetailsSheet(this, '${statusVal}')" data-payload="${encodedPayload}" class="px-2 py-1.5 bg-amber-500 hover:bg-amber-600 text-white font-black text-[10px] rounded-lg shadow-sm transition cursor-pointer w-full text-center">Update / Overwrite</button>
+                    </div>`;
+            } else {
+                virtualStatusHtml = `<div class="px-1"><button id="add-btn-${inspectionId}" onclick="window.addRowToFeeDetailsSheet(this, '${statusVal}')" data-payload="${encodedPayload}" class="px-2 py-2 bg-blue-600 hover:bg-blue-700 text-white font-black text-[10px] rounded-lg shadow-sm transition cursor-pointer w-full text-center">Add to Sheet</button></div>`;
+            }
+
+            const letterInfo = `${item.letterNo || '-'}<br/><span class="text-[10px] text-slate-400 font-mono">${item.letterDate || ''}</span>`;
+            const remarksHtml = rawRemarks ? `<div class="mt-1 text-[9px] text-rose-600 font-bold leading-tight">Remarks- ${rawRemarks}</div>` : "";
+            const statusInfo = `<span class="font-bold text-slate-800">${statusVal}</span><br/><span class="text-[10px] text-slate-500">${item.subStatus || 'Pending'}</span>${remarksHtml}`;
+            const dateRangeStr = `${item.dateFrom || '-'}<br/><span class="text-[10px] text-slate-500 font-mono">${item.dateTo || ''}</span> <span class="font-bold text-blue-600">[${rawManDays} Man Days]</span>`;
+
+            const criteriaInputsHtml = `
+                <div class="space-y-1.5 text-left">
+                    <div class="text-[11px] font-bold text-purple-700">${criteria}</div>
+                    <div class="grid grid-cols-2 gap-1.5">
+                        <div>
+                            <span class="block text-[8px] font-black uppercase text-slate-400">Value Factor</span>
+                            <input type="number" step="0.1" id="val-input-${inspectionId}" value="${valFactor}" oninput="window.updateRowFeeCalculation('${inspectionId}', ${rowTotalVal}, ${totalQty}, '${criteria}')" class="w-full p-1 border border-slate-300 rounded text-xs font-mono font-bold text-center bg-slate-50 focus:bg-white outline-none">
+                        </div>
+                        <div>
+                            <span class="block text-[8px] font-black uppercase text-slate-400">Share Multiplier (%)</span>
+                            <input type="number" step="1" min="0" max="100" id="mult-input-${inspectionId}" value="${initialMultiplier}" oninput="window.updateRowFeeCalculation('${inspectionId}', ${rowTotalVal}, ${totalQty}, '${criteria}')" class="w-full p-1 border border-amber-300 rounded text-xs font-mono font-bold text-center bg-amber-50/40 focus:bg-white outline-none text-amber-900">
+                        </div>
+                    </div>
+                </div>
+            `;
+
+            html += `<tr class="${bg} hover:bg-slate-50 transition">`;
+            html += `<td data-col-index="0" style="width: 130px;" class="p-3 border-r text-center align-middle">${virtualStatusHtml}</td>`;
+            html += `<td data-col-index="1" style="width: 60px;" class="p-3 border-r text-center font-mono text-slate-400 truncate">${idx + 1}</td>`;
+            html += `<td data-col-index="2" style="width: 160px;" class="p-3 border-r font-semibold text-slate-700 truncate">${letterInfo}</td>`;
+            html += `<td data-col-index="3" style="width: 130px;" class="p-3 border-r font-mono font-bold text-blue-600 truncate">${inspectionId}</td>`;
+            html += `<td data-col-index="4" style="width: 100px;" class="p-3 border-r truncate"><span class="px-2 py-0.5 rounded border text-[9px] font-black font-mono ${discomColor}">${item.discom || '-'}</span></td>`;
+            html += `<td data-col-index="5" style="width: 130px;" class="p-3 border-r font-bold text-slate-800 truncate">${item.conductedBy || 'Pending'}</td>`;
+            html += `<td data-col-index="6" style="width: 170px;" class="p-3 border-r truncate">${statusInfo}</td>`;
+            html += `<td data-col-index="7" style="width: 190px;" class="p-3 border-r font-semibold text-slate-700 truncate">${dateRangeStr}</td>`;
+            html += `<td data-col-index="8" style="width: 180px;" class="p-3 border-r font-bold text-slate-800 whitespace-normal break-words">${item.manufacturer || '-'}</td>`;
+            html += `<td data-col-index="9" style="width: 150px;" class="p-3 border-r font-semibold text-slate-700 whitespace-normal break-words">${item.materialInspected || '-'}</td>`;
+            html += `<td data-col-index="10" style="width: 350px;" class="p-3 border-r whitespace-pre-wrap break-words">${specDetailsHtml}</td>`;
+            html += `<td data-col-index="11" style="width: 90px;" class="p-3 border-r text-center font-mono font-bold text-blue-700 truncate">${totalQty}</td>`;
+            html += `<td data-col-index="12" style="width: 150px;" class="p-3 border-r text-right font-mono font-bold text-slate-900 truncate">${rowTotalVal > 0 ? rowTotalVal.toLocaleString('en-IN', {minimumFractionDigits: 2}) : '0'}</td>`;
+            html += `<td data-col-index="13" style="width: 240px;" class="p-3 border-r">${criteriaInputsHtml}</td>`;
+            html += `<td data-col-index="14" style="width: 180px;" class="p-3 text-right font-mono font-black text-emerald-700 truncate">
+                <div id="fee-display-${inspectionId}">${rowFee > 0 ? 'Rs ' + rowFee.toLocaleString('en-IN', {minimumFractionDigits: 2}) : 'Rs 0.00'}</div>
+                <div id="fee-words-${inspectionId}" class="text-[9px] text-slate-500 font-bold mt-0.5 whitespace-normal break-words">${convertNumberToWords(rowFee)}</div>
+            </td>`;
+            html += `</tr>`;
+        });
+
+        html += `</tbody></table>`;
+        wrap.innerHTML = html;
+        initBillingColumnResizer();
+
+        if (window.lucide) lucide.createIcons();
+    }
+
+    function initBillingColumnResizer() {
+        const table = document.getElementById('billing-resizable-table');
+        if (!table) return;
+        const cols = table.querySelectorAll('th.resizable-th');
+        cols.forEach((th) => {
+            const resizer = th.querySelector('.resizer');
+            if (!resizer) return;
+            const colIndex = th.getAttribute('data-col-index');
+            const targetCells = table.querySelectorAll(`[data-col-index="${colIndex}"]`);
+            let x = 0, w = 0;
+            const mouseDownHandler = function (e) {
+                x = e.clientX;
+                w = th.offsetWidth;
+                resizer.classList.add('resizing');
+                document.addEventListener('mousemove', mouseMoveHandler);
+                document.addEventListener('mouseup', mouseUpHandler);
+            };
+            const mouseMoveHandler = function (e) {
+                const dx = e.clientX - x;
+                const newWidth = Math.max(50, w + dx);
+                targetCells.forEach(cell => {
+                    cell.style.width = `${newWidth}px`;
+                    cell.style.minWidth = `${newWidth}px`;
+                    cell.style.maxWidth = `${newWidth}px`;
+                });
+            };
+            const mouseUpHandler = function () {
+                resizer.classList.remove('resizing');
+                document.removeEventListener('mousemove', mouseMoveHandler);
+                document.removeEventListener('mouseup', mouseUpHandler);
+            };
+            resizer.addEventListener('mousedown', mouseDownHandler);
+        });
+    }
+
+    setTimeout(() => {
+        window.initBillingPortalModule();
+    }, 50);
+</script>

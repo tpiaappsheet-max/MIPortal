@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>MI Portal</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <style>
+        .sidebar-hidden {
+            display: none !important;
+        }
+
+        @media (min-width: 768px) {
+            .sidebar-hidden {
+                display: flex !important;
+            }
+        }
+
+        /* Scrollbars */
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 10px;
+            height: 10px;
+        }
+
+        @media (max-width: 768px) {
+            .custom-scrollbar::-webkit-scrollbar {
+                width: 6px;
+                height: 6px;
+            }
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: #f1f5f9;
+            border-radius: 8px;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: #cbd5e1;
+            border-radius: 8px;
+            border: 2px solid #f1f5f9;
+        }
+
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: #94a3b8;
+        }
+
+        /* Global Role Visibility Controllers */
+        .role-coordinator .hide-for-coordinator {
+            display: none !important;
+        }
+    </style>
+</head>
+
+<body class="min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0">
+
+    <script>
+        // 🎯 PASTE YOUR DEPLOYED GOOGLE APPS SCRIPT WEB APP URL HERE
+        const API_URL = "https://script.google.com/macros/s/AKfycbwSNTlvfAnf1VtRKCrwz6SiV15yz04EqgevxdHxgupPaXMQGBqAxw3iZBeFRt6KXp3v/exec";
+
+        const CLIENTS = {
+            "AYCL": { name: "Andrew Yule and Company Limited", shortName: "AYCL", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMBVkToRt50US-6-8ZKBQ_ZeaPmA_CfHq9ct_5TSV5SA&s" },
+            "NPCC": { name: "National Projects Construction Corporation Limited", shortName: "NPCC", logo: "https://www.uxdt.nic.in/wp-content/uploads/2020/06/NPCC-Preview.png" }
+        };
+
+        let currentMiUser = null;
+        let activeModule = "notificationPortal";
+
+        window.miMasterData = [];
+        window.miInspectorsList = [];
+        window.CURRENT_CLIENT = "AYCL";
+        let activeLoginTab = 'admin'; // 'admin' or 'inspector'
+
+        // =========================================================================
+        // 🛡️ GLOBAL NETWORK INTERCEPTOR
+        // =========================================================================
+        const originalFetch = window.fetch;
+        window.fetch = async function (...args) {
+            let resource = args[0];
+            let config = args[1] || {};
+            let isApiCall = typeof resource === 'string' && resource.includes("script.google.com/macros");
+
+            if (isApiCall) {
+                if (!config.method || config.method.toUpperCase() === 'GET') {
+                    if (resource.includes('?')) {
+                        if (!resource.includes('client=')) resource += `&client=${window.CURRENT_CLIENT}`;
+                    } else {
+                        resource += `?client=${window.CURRENT_CLIENT}`;
+                    }
+                }
+                else if (config.method && config.method.toUpperCase() === 'POST' && config.body) {
+                    try {
+                        let bodyObj = JSON.parse(config.body);
+                        if (!bodyObj.client) {
+                            bodyObj.client = window.CURRENT_CLIENT;
+                            config.body = JSON.stringify(bodyObj);
+                        }
+                    } catch (e) { }
+                }
+                args[0] = resource;
+                args[1] = config;
+            }
+
+            const response = await originalFetch(...args);
+
+            // Data Masking for Coordinator
+            const userRole = currentMiUser ? currentMiUser.role.toLowerCase() : '';
+            if (isApiCall && userRole === 'coordinator') {
+                try {
+                    const clonedRes = response.clone();
+                    const json = await clonedRes.json();
+
+                    if (json.status && json.data && Array.isArray(json.data)) {
+                        json.data = json.data.map(row => ({
+                            ...row,
+                            totalMaterialValue: 'Restricted',
+                            fee: 'Restricted',
+                            rate: 'Restricted'
+                        }));
+                        return new Response(JSON.stringify(json), { status: response.status, statusText: response.statusText, headers: response.headers });
+                    }
+                } catch (e) { }
+            }
+            return response;
+        };
+    </script>
+
+    <!-- Full height screen container -->
+    <div id="mi-app-root" class="w-full h-full flex flex-col overflow-hidden"></div>
+
+    <script>
+        let isRootInitialized = false;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            if (isRootInitialized) return;
+            isRootInitialized = true;
+
+            const cached = localStorage.getItem("mi_current_user_cache");
+            if (cached) {
+                try {
+                    currentMiUser = JSON.parse(cached);
+
+                    if (currentMiUser.role.toLowerCase() === 'admin') {
+                        currentMiUser.client = 'ALL';
+                    } else if (!currentMiUser.client) {
+                        currentMiUser.client = 'AYCL';
+                    }
+
+                    if (!currentMiUser.selectedClient) {
+                        currentMiUser.selectedClient = currentMiUser.client === "ALL" ? "AYCL" : currentMiUser.client;
+                    }
+
+                    if (currentMiUser.role.toLowerCase() === 'coordinator') currentMiUser.role = "coordinator";
+                    if (currentMiUser.role.toLowerCase() === 'inspector') currentMiUser.role = "inspector";
+
+                    window.CURRENT_CLIENT = currentMiUser.selectedClient;
+                    document.body.className = `min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0 role-${currentMiUser.role}`;
+
+                    // Route Inspector to their own starting point
+                    activeModule = currentMiUser.role === 'inspector' ? 'inspectorDashboard' : 'notificationPortal';
+
+                    mountMiDashboardShell();
+                } catch (e) {
+                    miLogout();
+                }
+            } else {
+                renderMiLogin();
+            }
+        });
+
+        window.switchLoginMode = function (mode) {
+            activeLoginTab = mode;
+            renderMiLogin();
+        }
+
+        function renderMiLogin() {
+            const root = document.getElementById("mi-app-root");
+
+            const adminTabClass = activeLoginTab === 'admin'
+                ? 'bg-white shadow-sm text-blue-700 pointer-events-none'
+                : 'text-slate-500 hover:text-slate-700 cursor-pointer hover:bg-slate-200/50';
+
+            const inspectorTabClass = activeLoginTab === 'inspector'
+                ? 'bg-white shadow-sm text-blue-700 pointer-events-none'
+                : 'text-slate-500 hover:text-slate-700 cursor-pointer hover:bg-slate-200/50';
+
+            const subtitle = activeLoginTab === 'admin'
+                ? 'Admin & Coordinator Access'
+                : 'Field Inspector Operations';
+
+            root.innerHTML = `
+                <div class="flex-1 flex items-center justify-center p-4 bg-slate-900 h-full w-full">
+                    <div class="bg-white w-full max-w-md rounded-3xl shadow-2xl p-8 border border-slate-800">
+                        <div class="text-center mb-6">
+                            <div class="inline-flex p-3 bg-slate-50 rounded-2xl mb-4 shadow-inner border border-slate-100">
+                                <i data-lucide="shield-check" class="w-10 h-10 text-blue-600"></i>
+                            </div>
+                            <h2 class="text-lg font-black text-slate-900 tracking-tight">Material Inspection Portal</h2>
+                            <p class="text-[11px] text-slate-500 mt-1 uppercase font-bold tracking-wider">${subtitle}</p>
+                        </div>
+
+                        <!-- 🎯 Dual Portal Tabs -->
+                        <div class="flex bg-slate-100 p-1.5 rounded-xl mb-6 shadow-inner">
+                            <button type="button" onclick="switchLoginMode('admin')" class="flex-1 py-2 text-xs font-black rounded-lg transition-all ${adminTabClass}">Administration</button>
+                            <button type="button" onclick="switchLoginMode('inspector')" class="flex-1 py-2 text-xs font-black rounded-lg transition-all ${inspectorTabClass}">Field Inspector</button>
+                        </div>
+
+                        <form onsubmit="handleMiLogin(event)" class="space-y-4">
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Username / ID</label>
+                                <input type="text" id="mi-user" required class="w-full px-4 py-3 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500" placeholder="Enter username">
+                            </div>
+                            <div>
+                                <label class="block text-[10px] font-black uppercase text-slate-500 mb-1">Password</label>
+                                <div class="relative">
+                                    <input type="password" id="mi-pass" required class="w-full px-4 py-3 border border-slate-300 rounded-xl text-xs font-bold outline-none focus:ring-2 focus:ring-blue-500 pr-10" placeholder="••••••••">
+                                    <button type="button" onclick="togglePasswordVisibility()" class="absolute inset-y-0 right-0 pr-3 flex items-center text-slate-400 hover:text-slate-600 cursor-pointer">
+                                        <i id="password-eye-icon" data-lucide="eye" class="w-4 h-4"></i>
+                                    </button>
+                                </div>
+                            </div>
+                            <button type="submit" class="w-full py-3 bg-blue-600 hover:bg-blue-700 text-white font-black text-xs uppercase tracking-wider rounded-xl shadow-md transition cursor-pointer">
+                                Authenticate Access
+                            </button>
+                        </form>
+                    </div>
+                </div>
+            `;
+            lucide.createIcons();
+        }
+
+        function togglePasswordVisibility() {
+            const passInput = document.getElementById("mi-pass");
+            const eyeIcon = document.getElementById("password-eye-icon");
+            if (passInput.type === "password") {
+                passInput.type = "text";
+                eyeIcon.setAttribute("data-lucide", "eye-off");
+            } else {
+                passInput.type = "password";
+                eyeIcon.setAttribute("data-lucide", "eye");
+            }
+            lucide.createIcons();
+        }
+
+        async function handleMiLogin(e) {
+            e.preventDefault();
+            const u = document.getElementById("mi-user").value.trim();
+            const p = document.getElementById("mi-pass").value.trim();
+
+            const btn = e.target.querySelector('button[type="submit"]');
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin mx-auto"></i>`;
+            btn.disabled = true;
+
+            try {
+                // Sending credentials to backend, which dynamically searches AYCL and NPCC inspector sheets seamlessly.
+                const res = await originalFetch(`${API_URL}?action=login&username=${encodeURIComponent(u)}&password=${encodeURIComponent(p)}`);
+                const textData = await res.text();
+                const data = JSON.parse(textData);
+
+                if (data.status) {
+                    let role = (data.role || "Readonly").toLowerCase();
+                    let client = data.client || "AYCL";
+                    let name = data.name || "User";
+                    let inspectorId = data.inspectorId || null;
+
+                    // UI Tab Cross-Check Security
+                    if (activeLoginTab === 'inspector' && role !== 'inspector') {
+                        alert("Please use the Administration tab for Admin/Coordinator login.");
+                        renderMiLogin();
+                        return;
+                    }
+                    if (activeLoginTab === 'admin' && role === 'inspector') {
+                        alert("Please use the Field Inspector tab for Inspector login.");
+                        renderMiLogin();
+                        return;
+                    }
+
+                    currentMiUser = {
+                        username: u,
+                        name: name,
+                        role: role,
+                        client: client,
+                        inspectorId: inspectorId,
+                        selectedClient: client === "ALL" ? "AYCL" : client
+                    };
+
+                    window.CURRENT_CLIENT = currentMiUser.selectedClient;
+                    document.body.className = `min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0 role-${currentMiUser.role}`;
+                    localStorage.setItem("mi_current_user_cache", JSON.stringify(currentMiUser));
+
+                    activeModule = currentMiUser.role === 'inspector' ? 'inspectorDashboard' : 'notificationPortal';
+                    mountMiDashboardShell();
+                } else {
+                    alert(data.message || "Invalid credentials.");
+                    btn.innerHTML = "Authenticate Access";
+                    btn.disabled = false;
+                }
+            } catch (err) {
+                alert("Authentication network request failed.");
+                btn.innerHTML = "Authenticate Access";
+                btn.disabled = false;
+            }
+        }
+
+        function miLogout() {
+            currentMiUser = null;
+            localStorage.removeItem("mi_current_user_cache");
+            isRootInitialized = false;
+            document.body.className = "min-h-screen h-screen flex flex-col antialiased bg-slate-50 overflow-hidden m-0 p-0";
+            renderMiLogin();
+        }
+        window.switchAdminClient = function (newClientCode) {
+            if (currentMiUser && (currentMiUser.client === 'ALL' || currentMiUser.role === 'admin')) {
+                currentMiUser.selectedClient = newClientCode;
+                window.CURRENT_CLIENT = newClientCode;
+
+                // 🎯 Update localStorage cache immediately
+                localStorage.setItem("mi_current_user_cache", JSON.stringify(currentMiUser));
+
+                // Force reload to clear old UI states and fetch fresh client-specific data
+                window.location.reload();
+            }
+        };
+        function mountMiDashboardShell() {
+            const root = document.getElementById("mi-app-root");
+            const activeClientObj = CLIENTS[currentMiUser.selectedClient] || CLIENTS["AYCL"];
+            const isInspector = currentMiUser.role === 'inspector';
+
+            root.innerHTML = `
+                <div class="flex w-full h-screen overflow-hidden relative">
+                    <aside id="mi-sidebar" class="sidebar-hidden md:flex absolute md:relative w-64 h-full bg-slate-900 text-white flex-col justify-between border-r border-slate-800 z-50 shadow-2xl">
+                        
+                        <div class="flex-1 overflow-y-auto custom-scrollbar pb-4">
+                            <div class="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between sticky top-0 z-20">
+                                <div class="flex items-center gap-3" title="${activeClientObj.name}">
+                                    <img src="${activeClientObj.logo}" alt="Logo" class="w-8 h-8 object-contain bg-white rounded-lg p-0.5 shadow-sm">
+                                    <span class="font-black text-[12px] tracking-tight uppercase text-slate-200 truncate w-36">${activeClientObj.shortName}</span>
+                                </div>
+                                <button onclick="toggleMiSidebar()" class="md:hidden text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
+                            </div>
+
+                            ${(currentMiUser.client === 'ALL' || currentMiUser.role === 'admin') ? `
+                            <div class="px-4 py-3 border-b border-slate-800/50 bg-slate-900/50">
+                                <label class="text-[9px] font-black uppercase text-slate-500 mb-1 block tracking-wider">Admin Workspace Switcher</label>
+                                <select onchange="switchAdminClient(this.value)" class="w-full bg-slate-800 border border-slate-700 text-xs text-white rounded-lg p-2 focus:border-blue-500 outline-none font-bold cursor-pointer transition shadow-inner">
+                                    <option value="AYCL" ${currentMiUser.selectedClient === 'AYCL' ? 'selected' : ''}>AYCL Project Space</option>
+                                    <option value="NPCC" ${currentMiUser.selectedClient === 'NPCC' ? 'selected' : ''}>NPCC Project Space</option>
+                                </select>
+                            </div>
+                            ` : ''}
+
+                            <nav id="mi-dynamic-nav" class="mt-3 pr-3 space-y-1 pb-4"></nav>
+                        </div>
+                        
+                        <div class="p-4 bg-slate-950 border-t border-slate-800 shrink-0 space-y-3 hidden md:block">
+                            <div class="bg-slate-900 rounded-xl p-3 border border-slate-800/50">
+                                <div class="flex justify-between items-center mb-1">
+                                    <div class="text-[10px] text-slate-400 font-mono">Role: <strong class="text-blue-400 capitalize">${currentMiUser.role}</strong></div>
+                                    <span class="px-1.5 py-0.5 rounded text-[9px] font-black bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">${currentMiUser.selectedClient}</span>
+                                </div>
+                                <div class="text-[10px] text-slate-500 font-mono truncate">User: <span class="text-slate-300 font-bold">${currentMiUser.name}</span></div>
+                            </div>
+                            <button onclick="miLogout()" title="Logout" class="w-full flex items-center justify-center gap-2 px-4 py-2.5 rounded-xl text-xs font-black text-white bg-rose-600 hover:bg-rose-700 shadow-md transition-all cursor-pointer border border-rose-500">
+                                <i data-lucide="power" class="w-4 h-4"></i>
+                                <span>Logout Session</span>
+                            </button>
+                        </div>
+                    </aside>
+                    
+                    <div class="flex-1 flex flex-col min-w-0 h-full overflow-hidden relative">
+                        <div class="bg-white border-b border-slate-200 flex items-center justify-between px-4 py-3 sticky top-0 z-40 shadow-sm md:hidden shrink-0">
+                            <button onclick="toggleMiSidebar()" class="text-slate-800 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="menu" class="w-6 h-6"></i></button>
+                            <div class="flex items-center gap-2" title="${activeClientObj.name}">
+                                <img src="${activeClientObj.logo}" alt="Logo" class="h-6 w-auto max-w-[40px] object-contain">
+                                <span class="font-black text-xs uppercase tracking-wider text-slate-800">${activeClientObj.shortName}</span>
+                            </div>
+                        </div>
+                        
+                        <main id="mi-viewport" class="flex-1 p-3 sm:p-6 overflow-y-auto custom-scrollbar bg-slate-50 relative"></main>
+
+                        <button onclick="miLogout()" title="Logout" class="md:hidden fixed bottom-6 right-6 z-[100] flex items-center justify-center w-14 h-14 rounded-full text-white bg-rose-600 hover:bg-rose-700 shadow-[0_8px_30px_rgb(0,0,0,0.2)] hover:-translate-y-1 transition-all cursor-pointer border-2 border-white">
+                            <i data-lucide="power" class="w-6 h-6"></i>
+                        </button>
+                    </div>
+                </div>
+            `;
+            window.toggleMiSidebar = () => { document.getElementById('mi-sidebar').classList.toggle('sidebar-hidden'); };
+            buildMiNavMenu();
+            loadMiModule(activeModule);
+        }
+
+        function buildMiNavMenu() {
+            const nav = document.getElementById("mi-dynamic-nav");
+            if (!nav) return;
+
+            const r = currentMiUser.role;
+            let html = ``;
+
+            // 🎯 INSPECTOR MENU
+            if (r === "inspector") {
+                html += `
+                    <div class="px-4 mb-2 mt-2"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">My Workspace</span></div>
+                    <button onclick="loadMiModule('inspectorDashboard', this)" id="nav-inspectorDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="briefcase" class="w-4 h-4 text-emerald-400 shrink-0"></i> My Inspections
+                    </button>
+                    <button onclick="loadMiModule('changeCredential', this)" id="nav-changeCredential" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Account Settings
+                    </button>
+                `;
+            }
+            // 🎯 ADMIN & COORDINATOR MENU
+            else {
+                html += `
+                    <div class="px-4 mb-2 mt-2"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Dashboard</span></div>
+                    <button onclick="loadMiModule('notificationPortal', this)" id="nav-notificationPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="bell-ring" class="w-4 h-4 text-rose-400 shrink-0"></i> Command Center
+                    </button>
+                    <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Core Modules</span></div>
+                    <button onclick="loadMiModule('masterRecords', this)" id="nav-masterRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <i data-lucide="table" class="w-4 h-4 text-emerald-400 shrink-0"></i> Master Records
+                    </button>
+                `;
+
+                if (r === "coordinator") {
+                    html += `
+                        <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Operations</span></div>
+                        <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
+                        </button>
+                        <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
+                        </button>
+                        <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
+                        </button>
+                        <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
+                        </button>
+                    `;
+                }
+
+                if (r === "admin") {
+                    html += `
+                        <div class="px-4 mb-2 mt-4"><span class="text-[10px] font-black text-slate-500 uppercase tracking-wider block">Administration</span></div>
+                        <button onclick="loadMiModule('summaryDashboard', this)" id="nav-summaryDashboard" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="bar-chart-3" class="w-4 h-4 text-indigo-400 shrink-0"></i> Executive Summary
+                        </button>
+                        <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
+                        </button>
+                         
+                        <button onclick="loadMiModule('inspectorPlanner', this)" id="nav-inspectorPlanner" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="map-pinned" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspector Planner
+                        </button>
+
+                        <button onclick="loadMiModule('analyticsPortal', this)" id="nav-analyticsPortal" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="line-chart" class="w-4 h-4 text-emerald-400 shrink-0"></i> Operations Analytics
+                        </button>
+                        <button onclick="loadMiModule('sealDetails', this)" id="nav-sealDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="lock" class="w-4 h-4 text-amber-400 shrink-0"></i> Seal Inventory
+                        </button>
+                        <button onclick="loadMiModule('billingOverview', this)" id="nav-billingOverview" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="receipt" class="w-4 h-4 text-purple-600 shrink-0"></i> Billing Overview
+                        </button>
+                        <button onclick="loadMiModule('inspectorsRecords', this)" id="nav-inspectorsRecords" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="users" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspecting Engineers
+                        </button>
+                        <button onclick="loadMiModule('materialSpecs', this)" id="nav-materialSpecs" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="database" class="w-4 h-4 text-purple-400 shrink-0"></i> Material Specifications
+                        </button>
+                        <button onclick="loadMiModule('manufacturerDetails', this)" id="nav-manufacturerDetails" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="shield-check" class="w-4 h-4 text-blue-400 shrink-0"></i> Manufacturer Details
+                        </button>
+                        <button onclick="loadMiModule('specExtractor', this)" id="nav-specExtractor" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                            <i data-lucide="list-tree" class="w-4 h-4 text-amber-400 shrink-0"></i> Spec Extractor
+                        </button>
+                    `;
+                }
+            }
+
+            nav.innerHTML = html;
+            if (window.lucide) lucide.createIcons();
+        }
+
+        async function loadMiModule(moduleName, btnElement) {
+            activeModule = moduleName;
+
+            if (window.innerWidth < 768) {
+                const sidebar = document.getElementById('mi-sidebar');
+                if (sidebar && !sidebar.classList.contains('sidebar-hidden')) {
+                    sidebar.classList.add('sidebar-hidden');
+                }
+            }
+
+            if (btnElement) {
+                document.querySelectorAll(".mi-nav-btn").forEach(b => b.classList.remove("bg-slate-800", "text-slate-200"));
+                btnElement.classList.add("bg-slate-800", "text-slate-200");
+            } else {
+                document.querySelectorAll(".mi-nav-btn").forEach(b => b.classList.remove("bg-slate-800", "text-slate-200"));
+                const activeBtn = document.getElementById(`nav-${moduleName}`);
+                if (activeBtn) activeBtn.classList.add("bg-slate-800", "text-slate-200");
+            }
+
+            const view = document.getElementById("mi-viewport");
+
+            const fileUrl = moduleName === "notificationPortal" ? "notificationPortal.html" :
+                moduleName === "summaryDashboard" ? "summaryDashboard.html" :
+                    moduleName === "inspectorSchedule" ? "inspectorSchedule.html" :
+                        moduleName === "inspectorPlanner" ? "inspectorPlanner.html" :
+                            moduleName === "materialSpecs" ? "materialSpecs.html" :
+                                moduleName === "manufacturerDetails" ? "manufacturerDetails.html" :
+                                    moduleName === "billingOverview" ? "billingOverview.html" :
+                                        moduleName === "sealDetails" ? "sealDetails.html" :
+                                            moduleName === "analyticsPortal" ? "analyticsPortal.html" :
+                                                moduleName === "specExtractor" ? "specExtractor.html" :
+                                                    moduleName === "inspectorDashboard" ? "inspectorDashboard.html" : `${moduleName}.html`;
+
+            const r = currentMiUser ? currentMiUser.role : "";
+            const accessDeniedHTML = `<div class="p-12 text-center space-y-3 bg-white rounded-3xl border shadow-sm"><i data-lucide="shield-alert" class="w-12 h-12 text-rose-500 mx-auto"></i><h3 class="font-black text-slate-800 uppercase text-sm">Access Restricted</h3><p class="text-xs text-slate-500">You do not have permission to view this module.</p></div>`;
+
+            // 🎯 SECURITY GATES 
+            if (r === 'inspector' && moduleName !== 'inspectorDashboard' && moduleName !== 'changeCredential') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+
+            if (moduleName === "summaryDashboard" && r !== 'admin' && r !== 'coordinator') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if ((moduleName === "billingOverview" || moduleName === "analyticsPortal") && r !== 'admin') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if ((moduleName === "materialSpecs" || moduleName === "manufacturerDetails") && r !== 'admin' && r !== 'manager') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if (moduleName === "specExtractor" && r !== 'admin' && r !== 'manager' && r !== 'coordinator') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if (moduleName === "inspectorSchedule" && r !== 'admin' && r !== 'coordinator') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if (moduleName === "sealDetails" && r !== 'admin' && r !== 'coordinator' && r !== 'manager') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if (moduleName === "inspectorsRecords" && r !== 'admin' && r !== 'coordinator') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            if (moduleName === "inspectorPlanner" && r !== 'admin') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+
+            // CUSTOM NATIVE INJECTIONS
+            if (moduleName === "inspectorsRecords") {
+                const isAdmin = r === 'admin';
+                const titleHTML = isAdmin
+                    ? `<i data-lucide="users" class="text-blue-600 w-4 h-4"></i> Inspecting Engineers Directory (Admin Full View)`
+                    : `<i data-lucide="users" class="text-emerald-600 w-4 h-4"></i> Inspecting Engineers (Coordinator View)`;
+
+                view.innerHTML = `<div class="max-w-[98%] mx-auto space-y-3 animate-fade-in"><div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3"><div class="flex flex-col sm:flex-row items-center justify-between border-b pb-3 gap-3"><h3 class="font-black text-sm uppercase text-slate-800 flex items-center gap-2">${titleHTML}</h3><div class="flex items-center gap-2 w-full sm:w-auto"><span id="inspector-count-badge" class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span></div></div><div id="inspectors-table-wrap" class="overflow-auto h-[74vh] border border-slate-200 rounded-2xl shadow-inner relative custom-scrollbar"><p class="text-xs text-slate-400 py-12 text-center animate-pulse">Synchronizing inspector records for ${currentMiUser.selectedClient}...</p></div></div></div>`;
+                if (window.lucide) lucide.createIcons();
+                
+                try {
+                    const res = await fetch(`${API_URL}?action=getInspectors`);
+                    const textData = await res.text();
+                    const data = JSON.parse(textData);
+                    
+                    setTimeout(() => {
+                        const wrap = document.getElementById("inspectors-table-wrap");
+                        const badge = document.getElementById("inspector-count-badge");
+                        if (!wrap) return;
+
+                        if (data.status && data.data && data.data.length > 0) {
+                            const inspectors = data.data;
+                            if (badge) badge.innerText = `${inspectors.length} Records Found`;
+
+                            let keys = Object.keys(inspectors[0]).filter(k => k !== 'srNo');
+
+                            // 🚨 CRITICAL SECURITY PATCH: Hide passwords from rendering in the Data Table.
+                            keys = keys.filter(k => !k.toLowerCase().includes('password'));
+
+                            if (!isAdmin) {
+                                // 🚨 Extended security for non-admins (hide username mapping as well to protect credentials)
+                                const sensitive = ['mobile', 'phone', 'contact', 'email', 'pan', 'aadhar', 'account', 'bank', 'ifsc', 'fee', 'rate', 'payment', 'salary', 'dob', 'address', 'amount', 'username', 'user'];
+                                keys = keys.filter(k => {
+                                    const lower = k.toLowerCase();
+                                    return !sensitive.some(s => lower.includes(s));
+                                });
+                            }
+
+                            let html = `<table class="w-full text-left text-xs border-collapse table-auto"><thead class="sticky top-0 bg-slate-900 text-white uppercase text-[10px] z-20 font-mono"><tr><th class="p-3 border-r border-slate-700 text-center w-12">Sr</th>`;
+                            keys.forEach(k => html += `<th class="p-3 border-r border-slate-700 truncate">${k}</th>`);
+                            html += `</tr></thead><tbody class="divide-y bg-white font-medium align-top">`;
+                            inspectors.forEach((row, idx) => {
+                                const bg = idx % 2 === 0 ? 'bg-white' : 'bg-slate-50/50';
+                                html += `<tr class="${bg} hover:bg-blue-50/40 transition"><td class="p-3 border-r text-center font-mono text-slate-400">${idx + 1}</td>`;
+                                keys.forEach(key => {
+                                    const val = row[key] !== undefined && row[key] !== "" ? row[key] : "-";
+                                    html += `<td class="p-3 border-r text-slate-700 whitespace-pre-wrap break-words">${val}</td>`;
+                                });
+                                html += `</tr>`;
+                            });
+                            html += `</tbody></table>`;
+                            wrap.innerHTML = html;
+                        } else {
+                            if (badge) badge.innerText = `0 Records Found`;
+                            wrap.innerHTML = `<p class="text-xs text-slate-500 py-8 text-center font-bold">No inspector records found in the spreadsheet for ${currentMiUser.selectedClient}.</p>`;
+                        }
+                    }, 50);
+                } catch (e) { const wrap = document.getElementById("inspectors-table-wrap"); if (wrap) wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Failed to synchronize inspectors data.</p>`; }
+                return;
+            }
+
+            view.innerHTML = `<div class="p-8 text-center text-slate-500 font-bold animate-pulse text-xs">Loading module view...</div>`;
+
+            try {
+                const cacheBusterUrl = fileUrl + "?v=" + new Date().getTime();
+                const res = await originalFetch(cacheBusterUrl);
+                const html = await res.text();
+                view.innerHTML = html;
+
+                const scripts = view.getElementsByTagName("script");
+                for (let s of scripts) {
+                    try {
+                        const safeCode = `(function() { try { ${s.textContent} } catch(err) { console.warn("Script execution notice:", err); } })();`;
+                        const sc = document.createElement("script");
+                        sc.text = safeCode;
+                        document.head.appendChild(sc);
+                        document.head.removeChild(sc);
+                    } catch (scriptErr) {
+                        console.error("Error executing module script:", scriptErr);
+                    }
+                }
+
+                setTimeout(() => {
+                    if (moduleName === "materialSpecs" && typeof initMaterialSpecsModule === 'function') initMaterialSpecsModule();
+                    if (moduleName === "manufacturerDetails" && typeof initManufacturerModule === 'function') initManufacturerModule();
+
+                    window.document.dispatchEvent(new Event("DOMContentLoaded", { bubbles: true, cancelable: true }));
+                }, 100);
+
+                if (window.lucide) lucide.createIcons();
+            } catch (err) {
+                view.innerHTML = `<div class="p-6 text-red-600 text-xs font-bold">Failed to load module view: ${fileUrl}</div>`;
+            }
+        }
+    </script>
+</body>
+
+</html>
