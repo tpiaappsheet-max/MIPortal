@@ -322,6 +322,79 @@
         return null;
     };
 
+    // 🎯 NEW: Universal Log Formatter
+    window.formatInspectionLogs = function(rawLogs, schedDate) {
+        if (!rawLogs || String(rawLogs).trim() === "") {
+            return `
+                <div class="text-[10px] text-slate-400 italic bg-white p-2 rounded border border-slate-100 w-full mt-1">No logs found</div>
+            `;
+        }
+        
+        let scheduleLogs = [];
+        let completionLogs = [];
+        let generalLogs = [];
+
+        const lines = String(rawLogs).split('\n');
+        lines.forEach(line => {
+            let tLine = line.trim();
+            if (!tLine) return;
+            
+            if (tLine.includes('**SCHEDULE UPDATED**')) {
+                scheduleLogs.push(tLine.replace(/\*\*SCHEDULE UPDATED\*\*\s*-\s*/i, '').trim());
+            } else if (tLine.includes('**INSPECTION COMPLETION UPDATED**')) {
+                completionLogs.push(tLine.replace(/\*\*INSPECTION COMPLETION UPDATED\*\*\s*-\s*/i, '').trim());
+            } else {
+                generalLogs.push(tLine);
+            }
+        });
+
+        let html = `
+            <div class="flex flex-col gap-1 w-full mt-1">
+                <div class="max-h-48 overflow-y-auto custom-scrollbar bg-white p-3 rounded-xl border border-slate-200 w-full space-y-3">
+        `;
+
+        if (scheduleLogs.length > 0) {
+            html += `<div><div class="text-[9px] font-black uppercase text-amber-600 mb-1 border-b border-amber-200/50 pb-1 tracking-wider">Schedule Log(s)</div>`;
+            scheduleLogs.forEach(l => {
+                html += `<div class="text-[11px] font-mono text-slate-700 leading-snug py-0.5 break-words">${l}</div>`;
+            });
+            html += `</div>`;
+        }
+
+        if (completionLogs.length > 0) {
+            html += `<div><div class="text-[9px] font-black uppercase text-emerald-600 mb-1 border-b border-emerald-200/50 pb-1 tracking-wider">Completion Log(s)</div>`;
+            completionLogs.forEach(l => {
+                let locMatch = l.match(/,\s*(Location\s*-\s*([\d.-]+,\s*[\d.-]+))/i);
+                if (locMatch) {
+                    let baseText = l.replace(locMatch[0], '').trim();
+                    let locCoords = locMatch[2].replace(/\s/g, ''); 
+                    html += `
+                        <div class="text-[11px] font-mono text-slate-700 leading-snug py-0.5 break-words">${baseText}</div>
+                        <div class="text-[11px] font-mono text-slate-700 leading-snug py-0.5 break-words mt-0.5">
+                            <a href="https://maps.google.com/?q=${locCoords}" target="_blank" onclick="event.stopPropagation()" class="text-blue-600 hover:text-blue-800 hover:underline inline-flex items-center gap-1 font-bold bg-blue-50 px-1.5 py-0.5 rounded border border-blue-100 transition">
+                                <i data-lucide="map-pin" class="w-3 h-3 shrink-0"></i> Location - ${locCoords}
+                            </a>
+                        </div>
+                    `;
+                } else {
+                    html += `<div class="text-[11px] font-mono text-slate-700 leading-snug py-0.5 break-words">${l}</div>`;
+                }
+            });
+            html += `</div>`;
+        }
+
+        if (generalLogs.length > 0) {
+            html += `<div><div class="text-[9px] font-black uppercase text-slate-500 mb-1 border-b border-slate-200 pb-1 tracking-wider">Other Log(s)</div>`;
+            generalLogs.forEach(l => {
+                html += `<div class="text-[11px] font-mono text-slate-700 leading-snug py-0.5 break-words">${l}</div>`;
+            });
+            html += `</div>`;
+        }
+
+        html += `</div></div>`;
+        return html;
+    };
+
     window.isInspectionActiveOnDate = function (row, targetKey) {
         const schedKey = window.parseDateToKey(row.scheduleDate);
         if (schedKey && schedKey === targetKey) return true;
@@ -442,11 +515,13 @@
         }
 
         try {
-            const [combRes, specRes, inspRes, portalMRes] = await Promise.all([
+            // 🎯 Added getLogDetails endpoint to gather everything simultaneously
+            const [combRes, specRes, inspRes, portalMRes, logsRes] = await Promise.all([
                 fetch(`${API_URL}?action=getCombinedInspections`),
                 fetch(`${API_URL}?action=getMaterialSpecs`),
                 fetch(`${API_URL}?action=getInspectors`),
-                fetch(`${API_URL}?action=getPortalMInspections`)
+                fetch(`${API_URL}?action=getPortalMInspections`),
+                fetch(`${API_URL}?action=getLogDetails`)
             ]);
 
             const textData = await combRes.text();
@@ -462,6 +537,28 @@
                     ids.forEach(id => html += `<option value="${id}"></option>`);
                     datalist.innerHTML = html;
                 }
+            }
+
+            // 🎯 Integrate Logs into Master Data
+            const logsText = await logsRes.text();
+            try {
+                const logsData = JSON.parse(logsText);
+                if (logsData.status && logsData.data) {
+                    const masterLogs = logsData.data || [];
+                    if(window.miMasterData) {
+                        window.miMasterData.forEach(record => {
+                            const targetId = String(record.inspectionId).trim();
+                            const matchingLogs = masterLogs.filter(l => String(l.inspectionId).trim() === targetId);
+                            if (matchingLogs.length > 0) {
+                                const newLogsStr = matchingLogs.map(l => l.logDetails).join('\n');
+                                const existingLogs = String(record.logDetails || record.logdetails || "").trim();
+                                record.logDetails = existingLogs ? (existingLogs + "\n" + newLogsStr) : newLogsStr;
+                            }
+                        });
+                    }
+                }
+            } catch(e) {
+                console.error("Failed to parse log details", e);
             }
 
             const inspText = await inspRes.text();
@@ -648,22 +745,18 @@
                     const clickAttr = canExpand ? `onclick="window.showInspectionDetailById('${safeId}')"` : '';
                     const linkClass = canExpand ? 'text-blue-600 hover:text-blue-800 underline cursor-pointer' : 'text-slate-700';
                     const schedDateStr = item.scheduleDate ? String(item.scheduleDate).replace('T00:00:00.000Z', '').trim() : 'N/A';
-                    const logDetailsStr = item.logDetails || "System Logged";
 
-                    // Inside window.renderInspectorSchedule where itemSpecsHtml is generated:
                     let rawSpecs = String(item.materialSpec || "").split("\n").filter(Boolean);
                     let rawQtys = String(item.quantity || "").split("\n").filter(Boolean);
                     let itemSpecsHtml = "";
 
                     if (rawSpecs.length > 0) {
-                        // Format all quantities into a clean comma-separated list (e.g., 25, 39, 30, 12...)
                         const commaSeparatedQtys = rawQtys.map(q => {
                             let qL = q.trim();
                             const qM = qL.match(/^([ivxLCDM]+\.|[0-9]+\.)\s*(.*)$/i);
                             return qM ? qM[2] : qL;
                         }).filter(Boolean).join(', ');
 
-                        // Check if any line contains numbering (i., ii., 1., etc.)
                         const hasAnyNumbering = rawSpecs.some(sLine => /^([ivxLCDM]+\.|[0-9]+\.)/i.test(sLine.trim()));
 
                         itemSpecsHtml = `<div class="text-[10px] font-mono text-slate-700 bg-slate-100/90 border border-slate-200 rounded p-1.5 mt-1.5 w-full space-y-1">
@@ -673,7 +766,6 @@
             <div class="space-y-1">`;
 
                         if (!hasAnyNumbering) {
-                            // If no numbering is found, keep each spec on its own new line, and append the comma-separated quantities at the end or per line
                             itemSpecsHtml += rawSpecs.map((sLine) => {
                                 let cleanS = sLine.trim();
                                 return `<div class="bg-white px-2 py-1 rounded border border-slate-200 text-slate-800 break-words leading-snug">
@@ -681,7 +773,6 @@
                 </div>`;
                             }).join('');
                         } else {
-                            // Numbered items logic: maps quantities line-by-line or displays the grouped comma-separated quantities
                             let qtyIdx = 0;
                             itemSpecsHtml += rawSpecs.map((sLine) => {
                                 let cleanS = sLine.trim();
@@ -789,7 +880,6 @@
 
         if (!tbody) return;
 
-        // 🎯 Compute "Yesterday" automatically
         const yd = new Date();
         yd.setDate(yd.getDate() - 1);
         const pad = n => String(n).padStart(2, '0');
@@ -843,12 +933,9 @@
                 });
                 detailsHtml += `</div>`;
 
-                // 🎯 Extract Log Data for "Completed On" Column
                 let completedOnHtml = `<div class="font-black text-violet-900 text-sm mb-1">${r.inspectionCompletedOn || '-'}</div>`;
-
                 completedOnHtml += `<div class="flex flex-col gap-1.5 mt-2 items-center break-inside-avoid">`;
 
-                // 🎯 Dates of Inspection (From - To)
                 let inspDatesStr = [r.dateFrom].filter(Boolean).join(' ').trim();
                 if (inspDatesStr) {
                     completedOnHtml += `<div class="text-[9px] font-bold text-blue-700 bg-blue-50/50 px-1.5 py-0.5 inline-block rounded border border-blue-200 shadow-2xs whitespace-normal text-center leading-tight">Insp Dates : ${inspDatesStr}</div>`;
@@ -1079,13 +1166,14 @@
                 <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Billing Status</strong> <span class="font-bold text-slate-800">${item.billingStatus || 'Pending'}</span></div>
             </div>
 
-             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-    <div class="p-3 bg-slate-50 border rounded-xl col-span-1 sm:col-span-2">
-        <strong class="text-slate-400 block text-[10px] uppercase font-mono mb-1">Schedule Log Details</strong> 
-        <span class="font-bold text-emerald-700 whitespace-pre-wrap block leading-relaxed break-words">${item.logDetails || 'System Logged'}</span>
-    </div>
-    
+            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div class="p-3 bg-slate-50 border rounded-xl col-span-1 sm:col-span-2">
+                    <strong class="text-slate-400 block text-[10px] uppercase font-mono mb-1">Schedule Log Details</strong> 
+                    ${window.formatInspectionLogs(item.logDetails || item.logdetails, item.scheduleDate)}
+                </div>
+            </div>
         `;
+
 
         window.recalculateDynamicFee();
 
