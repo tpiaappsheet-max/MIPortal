@@ -1,3 +1,5 @@
+<!-- html2pdf Library for PDF Generation -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 <!-- Chart.js Library for Visual Analytics -->
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 
@@ -262,8 +264,6 @@
         </div>
     </div>
 
-
-
     <!-- Deep-Dive Breakdown Section with Tab Navigation -->
     <div class="bg-white p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b border-slate-100 pb-3">
@@ -430,7 +430,7 @@
     </div>
 
     <!-- ======================= COMPLETED INSPECTIONS LOG ======================= -->
-    <div class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 mt-8">
+    <div id="main-pdf-container" class="bg-white p-5 sm:p-6 rounded-3xl border border-slate-200 shadow-sm space-y-4 mt-8">
         <div class="flex flex-col sm:flex-row sm:items-center justify-between border-b border-slate-100 pb-4 gap-4">
             <div>
                 <h3 class="font-black text-lg uppercase text-slate-800 flex items-center gap-2">
@@ -444,6 +444,9 @@
                     <label class="text-[10px] font-black uppercase text-violet-800">Select Date:</label>
                     <input type="date" id="completed-log-filter-date" onchange="window.renderCompletedDateLog()" class="p-1 border border-violet-300 rounded-lg text-xs font-bold outline-none bg-white cursor-pointer shadow-2xs">
                 </div>
+                <button id="export-log-pdf-btn" onclick="window.downloadCompletedLogPDF()" class="px-4 py-2.5 rounded-xl text-xs font-black transition cursor-pointer bg-violet-800 hover:bg-violet-900 text-white shadow-md flex items-center gap-2">
+                    <i data-lucide="download-cloud" class="w-4 h-4"></i> Export PDF Log
+                </button>
             </div>
         </div>
 
@@ -454,7 +457,7 @@
                 </h4>
                 <span class="text-xs font-black bg-violet-600 text-white px-3 py-1 rounded-full shadow-sm">Count: <span id="yesterday-table-count">0</span></span>
             </div>
-            <div class="p-0 overflow-auto custom-scrollbar w-full max-h-[65vh] relative scroll-target">
+            <div id="yesterday-table-scroll-area" class="p-0 overflow-auto custom-scrollbar w-full max-h-[65vh] relative scroll-target">
                 <table class="w-full text-left text-[11px] border-collapse table-auto">
                     <thead class="sticky top-0 bg-violet-200 text-violet-900 z-20 font-bold uppercase tracking-wider shadow-sm">
                         <tr>
@@ -502,6 +505,8 @@
     .custom-scrollbar::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 8px; }
     .custom-scrollbar::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 8px; border: 2px solid #f1f5f9; }
     .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+    .pdf-rendering-active { background: white !important; padding: 20px !important; }
+    .pdf-rendering-active .hide-on-print { display: none !important; }
 </style>
 
 <script>
@@ -755,13 +760,12 @@
             labels = subKeys;
             data = subKeys.map(sk => mainGroup.subcategories[sk].length);
             
-            // 🎨 Distinct color scheme for Completed Sub-Categories (rest untouched)
             if (window.outcomeDrilldownMainKey === "Completed") {
                 backgroundColors = subKeys.map(sk => {
-                    if (sk.includes("Material Pass")) return "#10b981"; // Emerald Green
-                    if (sk.includes("MOM")) return "#8b5cf6"; // Vivid Purple
-                    if (sk.includes("Failed in NABL")) return "#f43f5e"; // Rose Red
-                    if (sk.includes("Awaited")) return "#06b6d4"; // Bright Cyan
+                    if (sk.includes("Material Pass")) return "#10b981";
+                    if (sk.includes("MOM")) return "#8b5cf6";
+                    if (sk.includes("Failed in NABL")) return "#f43f5e";
+                    if (sk.includes("Awaited")) return "#06b6d4";
                     return "#3b82f6";
                 });
             } else {
@@ -905,7 +909,6 @@
         if (window.lucide) window.lucide.createIcons();
     };
 
-    // Helper for rendering other chart inline collapse/expand details
     window.renderInlineDetailsTable = function(containerId, recordsList, title) {
         const container = document.getElementById(containerId);
         if (!container) return;
@@ -1656,44 +1659,6 @@
         if (window.lucide) lucide.createIcons();
     }
 
-    function populateMonthFilter() {
-        const monthDropdown = document.getElementById("an-filter-month");
-        if (!monthDropdown) return;
-
-        const monthsSet = new Set();
-        window.analyticsRawData.forEach(r => {
-            let m = getCompletionMonth(r);
-            if (m && m !== "Unspecified") monthsSet.add(m);
-        });
-
-        const sortedMonths = Array.from(monthsSet).sort((a, b) => {
-            const dA = new Date("01 " + a);
-            const dB = new Date("01 " + b);
-            return (isNaN(dA) || isNaN(dB)) ? a.localeCompare(b) : dA - dB;
-        });
-
-        let html = `<option value="ALL">All Months</option>`;
-        sortedMonths.forEach(m => {
-            html += `<option value="${m}">${m}</option>`;
-        });
-        monthDropdown.innerHTML = html;
-    }
-
-    function populateIdFilter() {
-        const list = document.getElementById("an-filter-id-list");
-        if (!list) return;
-        const ids = new Set();
-        window.analyticsRawData.forEach(r => {
-            const id = String(r.inspectionId || r.InspectionID || "").trim();
-            if (id) ids.add(id);
-        });
-        let html = "";
-        Array.from(ids).sort().forEach(id => {
-            html += `<option value="${id}"></option>`;
-        });
-        list.innerHTML = html;
-    }
-
     window.resetAnalyticsFilters = function() {
         document.getElementById("an-filter-id").value = "";
         document.getElementById("an-filter-discom").value = "ALL";
@@ -1767,6 +1732,7 @@
         if (window.lucide) lucide.createIcons();
     };
 
+    // 🎯 Render Records Log with All Schedule Updates & Completion details
     window.renderCompletedDateLog = function() {
         const dateInput = document.getElementById("completed-log-filter-date");
         const discomFilter = document.getElementById("an-filter-discom").value;
@@ -1814,6 +1780,57 @@
                 });
                 detailsHtml += `</div>`;
 
+                // 🎯 Extracted Log Data for "Completed On" Column (Including all **SCHEDULE UPDATED** entries)
+                let logDetails = String(r.logDetails || r.logdetails || "");
+                let loggedOnStr = "";
+                let locationStr = "";
+                let scheduleLogsHtml = "";
+
+                if (logDetails) {
+                    const completionLineMatch = logDetails.match(/\*\*INSPECTION COMPLETION UPDATED\*\*([^\n]*)/i);
+                    if (completionLineMatch) {
+                        const line = completionLineMatch[1];
+                        const dtMatch = line.match(/(\d{2}\/\d{2}\/\d{4}\s*,\s*\d{2}:\d{2}:\d{2})/);
+                        if (dtMatch) loggedOnStr = dtMatch[1];
+
+                        const locMatch = line.match(/Location\s*-\s*([\d.-]+,\s*[\d.-]+)/i);
+                        if (locMatch) locationStr = locMatch[1];
+                    }
+
+                    // Extract all SCHEDULE UPDATED logs
+                    const schedRegex = /\*\*SCHEDULE UPDATED\*\*([^\n]*)/gi;
+                    let schedMatch;
+                    while ((schedMatch = schedRegex.exec(logDetails)) !== null) {
+                        let schedText = schedMatch[1].trim();
+                        if (schedText.startsWith('-')) schedText = schedText.substring(1).trim();
+                        scheduleLogsHtml += `<div class="text-[9px] font-mono text-slate-600 bg-slate-100 px-1.5 py-0.5 rounded border border-slate-200 mt-1 whitespace-normal text-left">Scheduled Logs - ${schedText}</div>`;
+                    }
+                }
+
+                let completedOnHtml = `<div class="font-black text-violet-900 text-sm mb-1">${r.inspectionCompletedOn || '-'}</div>`;
+
+                if (loggedOnStr) {
+                    completedOnHtml += `<div class="text-[9px] font-normal text-slate-500 mt-1 leading-tight text-center">logged on - ${loggedOnStr},</div>`;
+                }
+                if (locationStr) {
+                    completedOnHtml += `<div class="text-[9px] font-normal text-slate-500 mt-0.5 text-center flex justify-center break-inside-avoid">at <a href="https://maps.google.com/?q=${locationStr.replace(/\s/g, '')}" target="_blank" onclick="event.stopPropagation()" class="text-blue-600 hover:underline flex items-center gap-1 inline-flex ml-1"><i data-lucide="map-pin" class="w-2.5 h-2.5"></i>${locationStr}</a></div>`;
+                }
+
+                completedOnHtml += `<div class="flex flex-col gap-1.5 mt-2 items-center break-inside-avoid w-full">`;
+                completedOnHtml += `<div class="text-[9px] font-bold text-slate-700 bg-slate-100 px-1.5 py-0.5 inline-block rounded border border-slate-200 shadow-2xs whitespace-nowrap">Sched. Start : ${r.scheduleDate || '-'}</div>`;
+
+                // Append extracted Schedule Logs entries
+                if (scheduleLogsHtml) {
+                    completedOnHtml += `<div class="w-full flex flex-col">${scheduleLogsHtml}</div>`;
+                }
+
+                // 🎯 Dates of Inspection (From - To)
+                let inspDatesStr = [r.dateFrom, r.dateTo].filter(Boolean).join(' ').trim();
+                if (inspDatesStr) {
+                    completedOnHtml += `<div class="text-[9px] font-bold text-blue-700 bg-blue-50/50 px-1.5 py-0.5 inline-block rounded border border-blue-200 shadow-2xs whitespace-normal text-center leading-tight">Insp Dates : ${inspDatesStr}</div>`;
+                }
+                completedOnHtml += `</div>`;
+
                 html += `
                 <tr class="flex flex-col md:table-row bg-white hover:bg-slate-50 transition border-b border-violet-100 cursor-pointer" onclick="window.toggleMobileRow(this)">
                     <td class="p-3 flex md:hidden items-start justify-between w-full gap-2">
@@ -1841,7 +1858,9 @@
                     <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${matDetails}</td>
                     <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-violet-100">${r.conductedBy || '-'}</td>
                     <td class="p-3 align-top hidden md:table-cell border-r border-violet-100"><div class="font-bold text-emerald-700">${r.status || '-'}</div><div class="text-[10px] font-bold text-slate-500 mt-0.5">${r.subStatus || '-'}</div></td>
-                    <td class="p-3 text-center font-mono font-black bg-violet-50/50 align-top text-violet-900 whitespace-nowrap hidden md:table-cell">${r.inspectionCompletedOn || '-'}</td>
+                    <td class="p-3 text-center align-top hidden md:table-cell">
+                        ${completedOnHtml}
+                    </td>
                 </tr>
                 <tr class="mobile-expand-drawer hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
                     <td colspan="6" class="p-4 border-t border-slate-100 text-xs w-full block md:table-cell">
@@ -1858,6 +1877,81 @@
         if (window.lucide) lucide.createIcons();
     };
 
+    // 🎯 PDF Export feature for Completed Inspections Log
+ // 🎯 PDF Export feature for Completed Inspections Log
+ window.downloadCompletedLogPDF = function() {
+        const dateInput = document.getElementById("completed-log-filter-date");
+        if (!dateInput || !dateInput.value) {
+            alert("Please select a date first.");
+            return;
+        }
+
+        if (!confirm("Generate and download PDF report for the Completed Inspections Log?")) return;
+
+        const btn = document.getElementById("export-log-pdf-btn");
+        const originalText = btn.innerHTML;
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading Engine...`;
+        btn.disabled = true;
+        if (window.lucide) lucide.createIcons();
+
+        // Core export logic wrapped in a callable function
+        const executeExport = () => {
+            btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Exporting...`;
+            if (window.lucide) lucide.createIcons();
+
+            const container = document.getElementById('main-pdf-container');
+            const scrollArea = document.getElementById('yesterday-table-scroll-area');
+            const origMaxHeight = scrollArea.style.maxHeight;
+
+            // Remove scrolling so the PDF captures the entire table
+            scrollArea.classList.remove('max-h-[65vh]', 'overflow-auto', 'custom-scrollbar');
+            scrollArea.style.maxHeight = 'none';
+
+            const opt = {
+                margin: [0.4, 0.4, 0.4, 0.4],
+                filename: `Completed_Inspections_Log_${dateInput.value}.pdf`,
+                image: { type: 'jpeg', quality: 1.0 },
+                html2canvas: { scale: 2, useCORS: true },
+                jsPDF: { unit: 'in', format: 'a4', orientation: 'landscape' }
+            };
+
+            // Safely reference the html2pdf engine
+            const pdfEngine = typeof html2pdf === 'function' ? html2pdf : window.html2pdf;
+
+            pdfEngine().set(opt).from(container).save().then(() => {
+                // Restore UI scrolling
+                scrollArea.classList.add('max-h-[65vh]', 'overflow-auto', 'custom-scrollbar');
+                scrollArea.style.maxHeight = origMaxHeight;
+
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+                if (window.lucide) lucide.createIcons();
+            }).catch(err => {
+                console.error("PDF Export failed", err);
+                scrollArea.classList.add('max-h-[65vh]', 'overflow-auto', 'custom-scrollbar');
+                scrollArea.style.maxHeight = origMaxHeight;
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            });
+        };
+
+        // 🎯 Dynamic Loader Check: If html2pdf isn't present, force-load it.
+        if (typeof window.html2pdf === 'undefined' && typeof html2pdf === 'undefined') {
+            const script = document.createElement('script');
+            script.src = 'https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js';
+            script.onload = executeExport;
+            script.onerror = () => {
+                alert("Failed to download PDF engine. Please disable ad-blockers or check your connection.");
+                btn.innerHTML = originalText;
+                btn.disabled = false;
+            };
+            document.head.appendChild(script);
+        } else {
+            // Engine is already loaded, proceed immediately
+            executeExport();
+        }
+    };
+    
     window.renderFinancialMatrix = function(records = window.analyticsFilteredCache) {
         const tbody = document.getElementById("matrix-financial-body");
         const thead = document.getElementById("matrix-financial-head");
@@ -2054,7 +2148,7 @@
             let currentFilterVal = filterInput.value;
              
             let filterHtml = `<option value="ALL">-- All ${g1Lbl}s --</option>`;
-            uniqueV1s.getInstance = uniqueV1s.forEach(v => {
+            uniqueV1s.forEach(v => {
                 filterHtml += `<option value="${v}">${v}</option>`;
             });
             if (filterList) filterList.innerHTML = filterHtml;
