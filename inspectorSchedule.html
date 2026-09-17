@@ -1078,6 +1078,13 @@
                 <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Status & Sub-Status</strong> <span class="font-bold text-emerald-700">${item.status || 'Pending'} (${item.subStatus || 'Pending'})</span></div>
                 <div class="p-3 bg-slate-50 border rounded-xl"><strong class="text-slate-400 block text-[10px] uppercase font-mono">Billing Status</strong> <span class="font-bold text-slate-800">${item.billingStatus || 'Pending'}</span></div>
             </div>
+
+             <div class="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+    <div class="p-3 bg-slate-50 border rounded-xl col-span-1 sm:col-span-2">
+        <strong class="text-slate-400 block text-[10px] uppercase font-mono mb-1">Schedule Log Details</strong> 
+        <span class="font-bold text-emerald-700 whitespace-pre-wrap block leading-relaxed break-words">${item.logDetails || 'System Logged'}</span>
+    </div>
+    
         `;
 
         window.recalculateDynamicFee();
