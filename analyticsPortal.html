@@ -1940,12 +1940,14 @@
                     </td>
 
                     <td class="p-3 font-mono font-bold text-indigo-700 align-top hidden md:table-cell border-r border-violet-100">
+                         <!-- Increased size classes below: text-[11px] px-2.5 py-1 -->
+                        <span class="text-[14px] font-black px-4 py-1 rounded-lg border bg-slate-100 border-slate-200 text-slate-800 inline-block mt-1.5 shadow-2xs">${r.discom || '-'}</span>
+                  
                         <div class="flex items-center gap-2">
                             <i data-lucide="chevron-right" class="w-4 h-4 text-slate-400 toggle-icon transition-transform duration-200 shrink-0"></i>
                             ${r.inspectionId || '-'}
                         </div>
-                        <span class="text-[9px] font-black px-1.5 py-0.5 rounded border bg-slate-100 border-slate-200 text-slate-700 inline-block mt-1">${r.discom || '-'}</span>
-                    </td>
+                         </td>
                     <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${mfgDetails}</td>
                     <td class="p-3 align-top hidden md:table-cell border-r border-violet-100">${matDetails}</td>
                     <td class="p-3 font-bold align-top whitespace-normal break-words hidden md:table-cell border-r border-violet-100">${r.conductedBy || '-'}</td>
