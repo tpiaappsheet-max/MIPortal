@@ -15,41 +15,103 @@
                     <button onclick="window.switchMasterDiscom('PVVNL')" id="master-btn-PVVNL"
                         class="px-3 py-1.5 rounded-lg text-xs font-black transition cursor-pointer text-slate-600 hover:text-slate-900">PVVNL</button>
                 </div>
+                <button onclick="window.exportToExcel()" class="flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-black rounded-lg shadow-sm transition cursor-pointer">
+                    <i data-lucide="download" class="w-3.5 h-3.5"></i> Export Excel
+                </button>
                 <span id="record-count-badge"
                     class="text-[10px] font-mono bg-slate-100 text-slate-700 px-2.5 py-1 rounded-full font-bold">Loading...</span>
             </div>
         </div>
 
-        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-wrap items-center gap-3">
-            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600">
-                <i data-lucide="filter" class="w-4 h-4 text-blue-600"></i> Filter By:
+        <div class="bg-slate-50 p-3 rounded-2xl border border-slate-200 flex flex-col gap-3">
+            <div class="flex items-center gap-1.5 text-xs font-bold text-slate-600 mb-1">
+                <i data-lucide="filter" class="w-4 h-4 text-blue-600"></i> Advanced Cascading Filters (AND):
             </div>
-            <select id="filter-field-select" onchange="window.populateFilterDropdown()"
-                class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
-                <option value="inspectionId">Inspection ID</option>
-                <option value="scheme">Scheme</option>
-                <option value="letterNo">Letter No</option>
-                <option value="pqccName">PQCC Name</option>
-                <option value="manufacturer">Manufacturer</option>
-                <option value="tkc">TKC</option>
-                <option value="tpiaInspector">TPIA Inspector</option>
-                <option value="scheduleDate">Schedule Date</option>
-                <option value="Status">Status</option>
-                <option value="subStatus">Sub Status</option>
-                <option value="billingStatus">Billing Status</option>
-                <option value="month">Month</option>
-                <option value="conductedBy">Conducted By</option>
-            </select>
+            
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <!-- Filter 1 -->
+                <div class="flex flex-col gap-1.5">
+                    <select id="filter-field-1" onchange="window.handleFilterFieldChange(1)" class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                        <option value="">-- Select Filter 1 --</option>
+                        <option value="scheme">Scheme</option>
+                        <option value="inspectionId">Inspection ID</option>
+                        <option value="letterNo">Letter No</option>
+                        <option value="pqccName">PQCC Name</option>
+                        <option value="manufacturer">Manufacturer</option>
+                        <option value="tkc">TKC</option>
+                        <option value="tpiaInspector">TPIA Inspector</option>
+                        <option value="scheduleDate">Schedule Date</option>
+                        <option value="Status">Status</option>
+                        <option value="subStatus">Sub Status</option>
+                        <option value="billingStatus">Billing Status</option>
+                        <option value="month">Month</option>
+                        <option value="conductedBy">Conducted By</option>
+                    </select>
+                    <div class="w-full relative">
+                        <select id="filter-select-1" onchange="window.applyTableFilter()" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-100 text-xs font-bold outline-none focus:border-blue-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <option value="">Select a filter field first...</option>
+                        </select>
+                        <input type="text" id="filter-text-1" list="filter-value-datalist-1" oninput="window.applyTableFilter()" class="hidden w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition" placeholder="Type or select Inspection ID...">
+                        <datalist id="filter-value-datalist-1"></datalist>
+                    </div>
+                </div>
 
-            <div class="flex-1 min-w-[220px] flex items-center gap-2 relative">
-                <input type="text" id="filter-value-input" list="filter-value-datalist"
-                    oninput="window.applyTableFilter()"
-                    class="w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition"
-                    placeholder="Type or select value to filter...">
-                <datalist id="filter-value-datalist"></datalist>
+                <!-- Filter 2 -->
+                <div class="flex flex-col gap-1.5">
+                    <select id="filter-field-2" onchange="window.handleFilterFieldChange(2)" class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                        <option value="">-- Select Filter 2 --</option>
+                        <option value="scheme">Scheme</option>
+                        <option value="inspectionId">Inspection ID</option>
+                        <option value="letterNo">Letter No</option>
+                        <option value="pqccName">PQCC Name</option>
+                        <option value="manufacturer">Manufacturer</option>
+                        <option value="tkc">TKC</option>
+                        <option value="tpiaInspector">TPIA Inspector</option>
+                        <option value="scheduleDate">Schedule Date</option>
+                        <option value="Status">Status</option>
+                        <option value="subStatus">Sub Status</option>
+                        <option value="billingStatus">Billing Status</option>
+                        <option value="month">Month</option>
+                        <option value="conductedBy">Conducted By</option>
+                    </select>
+                    <div class="w-full relative">
+                        <select id="filter-select-2" onchange="window.applyTableFilter()" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-100 text-xs font-bold outline-none focus:border-blue-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                            <option value="">Select a filter field first...</option>
+                        </select>
+                        <input type="text" id="filter-text-2" list="filter-value-datalist-2" oninput="window.applyTableFilter()" class="hidden w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition" placeholder="Type or select Inspection ID...">
+                        <datalist id="filter-value-datalist-2"></datalist>
+                    </div>
+                </div>
 
-                <button onclick="window.clearTableFilter()"
-                    class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition cursor-pointer">Reset</button>
+                <!-- Filter 3 -->
+                <div class="flex flex-col gap-1.5">
+                    <select id="filter-field-3" onchange="window.handleFilterFieldChange(3)" class="p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none cursor-pointer">
+                        <option value="">-- Select Filter 3 --</option>
+                        <option value="billingStatus">Billing Status</option>
+                        <option value="scheme">Scheme</option>
+                        <option value="inspectionId">Inspection ID</option>
+                        <option value="letterNo">Letter No</option>
+                        <option value="pqccName">PQCC Name</option>
+                        <option value="manufacturer">Manufacturer</option>
+                        <option value="tkc">TKC</option>
+                        <option value="tpiaInspector">TPIA Inspector</option>
+                        <option value="scheduleDate">Schedule Date</option>
+                        <option value="Status">Status</option>
+                        <option value="subStatus">Sub Status</option>
+                        <option value="month">Month</option>
+                        <option value="conductedBy">Conducted By</option>
+                    </select>
+                    <div class="flex gap-2">
+                        <div class="w-full relative">
+                            <select id="filter-select-3" onchange="window.applyTableFilter()" class="w-full p-2 border border-slate-300 rounded-xl bg-slate-100 text-xs font-bold outline-none focus:border-blue-500 transition cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed" disabled>
+                                <option value="">Select a filter field first...</option>
+                            </select>
+                            <input type="text" id="filter-text-3" list="filter-value-datalist-3" oninput="window.applyTableFilter()" class="hidden w-full p-2 border border-slate-300 rounded-xl bg-white text-xs font-bold outline-none focus:border-blue-500 transition" placeholder="Type or select Inspection ID...">
+                            <datalist id="filter-value-datalist-3"></datalist>
+                        </div>
+                        <button onclick="window.clearTableFilter()" class="px-3 py-2 bg-slate-200 hover:bg-slate-300 text-slate-700 text-xs font-black rounded-xl transition cursor-pointer">Reset</button>
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -528,6 +590,40 @@
     </div>
 </div>
 
+<!-- Comparison Modal -->
+<div id="compare-inspection-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-4 sm:p-6 overflow-y-auto">
+    <div class="bg-white w-full max-w-6xl rounded-3xl shadow-2xl flex flex-col max-h-[92vh] border overflow-hidden">
+        <div class="flex items-center justify-between border-b p-4 sm:p-6 bg-slate-50 shrink-0">
+            <div>
+                <h3 class="font-black text-base uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="split-square-horizontal" class="text-blue-600 w-5 h-5"></i> Compare Overlapping Inspections
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Comparing details side-by-side to assist in conflict resolution.</p>
+            </div>
+            <button type="button" onclick="window.closeCompareModal()" class="text-slate-400 hover:text-slate-600 p-2 rounded-xl hover:bg-slate-200 cursor-pointer transition">
+                <i data-lucide="x" class="w-6 h-6"></i>
+            </button>
+        </div>
+        <div class="p-0 overflow-y-auto custom-scrollbar flex-1 relative bg-white">
+            <table class="w-full text-left text-xs border-collapse">
+                <thead class="sticky top-0 bg-slate-100 shadow-sm z-10">
+                    <tr>
+                        <th class="p-3 border-b border-r border-slate-200 font-black text-slate-600 uppercase w-1/4">Field / Attribute</th>
+                        <th id="compare-th-1" class="p-3 border-b border-r border-slate-200 font-black text-blue-700 w-[37.5%]">Primary Record</th>
+                        <th id="compare-th-2" class="p-3 border-b border-slate-200 font-black text-rose-700 w-[37.5%]">Overlapping Record</th>
+                    </tr>
+                </thead>
+                <tbody id="compare-table-body" class="divide-y divide-slate-100">
+                    <!-- Populated by JS -->
+                </tbody>
+            </table>
+        </div>
+        <div class="p-4 bg-slate-50 border-t shrink-0 flex justify-end">
+             <button type="button" onclick="window.closeCompareModal()" class="px-5 py-2.5 bg-slate-200 hover:bg-slate-300 text-slate-700 font-black text-xs rounded-xl cursor-pointer transition shadow-sm">Close Comparison</button>
+        </div>
+    </div>
+</div>
+
 <style>
     .custom-scrollbar::-webkit-scrollbar {
         width: 10px;
@@ -606,20 +702,304 @@
 <script>
     if (typeof window.masterDiscom === 'undefined') window.masterDiscom = "NBPDCL";
     if (typeof window.miMasterData === 'undefined') { window.miMasterData = []; window.miKeys = []; }
+    if (typeof window.filteredData === 'undefined') window.filteredData = [];
     if (typeof window.miInspectorsList === 'undefined') window.miInspectorsList = [];
     if (typeof window.activeSequenceCategory === 'undefined') window.activeSequenceCategory = 'Inspection';
     if (typeof window.activeSequenceType === 'undefined') window.activeSequenceType = 'Initial';
+
+    window.headerCustomNames = {
+        "srNo": "Sr No", "inspectionId": "Inspection ID", "discom": "Discom", "scheme": "Scheme",
+        "district": "District", "letterNo": "Inspection Letter No", "letterDate": "Letter Date",
+        "receivedDate": "Date of received Inspection Call", "pqccName": "PQCC Name",
+        "officials": "Name of Officials", "nodalCe": "Nodal Chief Engineer",
+        "manufacturer": "Manufacturer Name", "address": "Address", "contactPerson": "Contact Person",
+        "mobile": "Mobile No", "materialInspected": "Material Inspected", "materialSpec": "Material Specification",
+        "quantity": "Quantity", "tkc": "Name of TKC", "tpiaInspector": "Name of TPIA Inspector (Appointed)",
+        "tpiaContact": "Contact Number", "authLetterNo": "Authorization Letter No",
+        "scheduleDate": "Schedule Date", "status": "Inspection Status", "subStatus": "Inspection Sub Status",
+        "inspectionCompletedOn": "Inspection Completed On", "reportOm": "Report/ OM No and Date",
+        "conductedBy": "Inspection conducted by TPIA Inspector", "dateFrom": "Date(s) of Inspection (From - To)",
+        "dateTo": "Date(s) of NABL Witness (From - To)", "manDays": "Man Days", "sealType": "Type of Seal",
+        "sealSerial": "Seal Serial No Used in Inspection", "sealNoCount": "No of Seal", "nablStatusDate": "NABL Status and Testing Date",
+        "reportReceived": "Report Received", "reportMail": "Report Mail", "letterRevision": "Letter Revision Status",
+        "remarks": "Remark", "month": "Month of Inspection (conducted)", "billingStatus": "Billing Status", "invoiceNo": "Invoice No"
+    };
+
+    window.parseSequenceToSet = function(seqText) {
+        let daysSet = new Set();
+        if (!seqText) return daysSet;
+        const tokens = seqText.split(/\s+/);
+        let firstDateStr = "";
+        for (let t of tokens) {
+            if (/^\d{2}\/\d{2}\/\d{4}$/.test(t)) {
+                firstDateStr = t;
+                break;
+            }
+        }
+        if (!firstDateStr) return daysSet;
+        let baseDate = window.parseSafeLocalMidnight(firstDateStr);
+        if (!baseDate || isNaN(baseDate.getTime())) return daysSet;
+        daysSet.add(baseDate.toDateString());
+
+        const regex = /(To|And)[\s\n\r]+(\d{2}\/\d{2}\/\d{4})/gi;
+        let match;
+        let lastDate = new Date(baseDate.getTime());
+        while ((match = regex.exec(seqText)) !== null) {
+            const keyword = match[1].toLowerCase();
+            const targetDate = window.parseSafeLocalMidnight(match[2]);
+            if (targetDate && !isNaN(targetDate.getTime())) {
+                if (keyword === 'to') {
+                    let curr = new Date(lastDate.getTime());
+                    curr.setDate(curr.getDate() + 1);
+                    while (curr <= targetDate) {
+                        daysSet.add(curr.toDateString());
+                        curr.setDate(curr.getDate() + 1);
+                    }
+                } else if (keyword === 'and') {
+                    daysSet.add(targetDate.toDateString());
+                }
+                lastDate = new Date(targetDate.getTime());
+            }
+        }
+        return daysSet;
+    };
 
     function cleanInspectorName(name) {
         if (!name) return "";
         return String(name).toLowerCase().replace(/^(er\.|er\s+|mr\.|mr\s+|engr\.|dr\.)\s*/i, "").replace(/[^a-z0-9]/g, '');
     }
 
-    function extractPrefixAndNum(str) {
-        let match = String(str).trim().match(/^([A-Za-z_-]+)?(\d+)$/);
-        if (match) return { prefix: match[1] || "", num: parseInt(match[2], 10), padding: match[2].length, original: String(str).trim() };
-        return null;
-    }
+    window.parseSimpleDate = function(dStr) {
+        if (!dStr || String(dStr).trim() === '-' || String(dStr).trim() === '') return Infinity;
+        let clean = String(dStr).trim().split("T")[0];
+        if (clean.includes('/')) {
+            const p = clean.split('/');
+            if (p.length === 3) return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+        } else if (clean.includes('-')) {
+            const p = clean.split('-');
+            if(p.length === 3) {
+                if(p[0].length === 4) return new Date(parseInt(p[0], 10), parseInt(p[1], 10) - 1, parseInt(p[2], 10)).getTime();
+                return new Date(parseInt(p[2], 10), parseInt(p[1], 10) - 1, parseInt(p[0], 10)).getTime();
+            }
+        }
+        let d = new Date(clean).getTime();
+        return isNaN(d) ? Infinity : d;
+    };
+
+    window.isPrimaryRecord = function(row, other) {
+        let rComp = window.parseSimpleDate(row.inspectionCompletedOn);
+        let oComp = window.parseSimpleDate(other.inspectionCompletedOn);
+        
+        if (rComp < oComp) return true; 
+        if (rComp > oComp) return false;
+        
+        let rLet = window.parseSimpleDate(row.letterDate);
+        let oLet = window.parseSimpleDate(other.letterDate);
+        
+        if (rLet < oLet) return true; 
+        if (rLet > oLet) return false;
+        
+        let rId = String(row.inspectionId || row.InspectionID || row.id || "").toLowerCase();
+        let oId = String(other.inspectionId || other.InspectionID || other.id || "").toLowerCase();
+        return rId < oId;
+    };
+
+    window.groupOverlappingRecords = function(data) {
+        if (!data || data.length === 0) return [];
+        let visited = new Set();
+        let grouped = [];
+
+        for (let i = 0; i < data.length; i++) {
+            let row = data[i];
+            let rowId = row.inspectionId || row.InspectionID || row.id || i;
+            if (visited.has(rowId)) continue;
+            
+            grouped.push(row);
+            visited.add(rowId);
+
+            let inspectorName = String(row.conductedBy || "").trim();
+            if(!inspectorName || inspectorName.toLowerCase() === 'not appointed' || inspectorName.toLowerCase() === 'not updated') continue;
+
+            let rowDays = new Set([...window.parseSequenceToSet(row.dateFrom)]); 
+            if(rowDays.size === 0) continue;
+
+            for (let j = i + 1; j < data.length; j++) {
+                let other = data[j];
+                let otherId = other.inspectionId || other.InspectionID || other.id || j;
+                if (visited.has(otherId)) continue;
+
+                let otherName = String(other.conductedBy || "").trim();
+                if(cleanInspectorName(otherName) !== cleanInspectorName(inspectorName)) continue;
+
+                let otherDays = new Set([...window.parseSequenceToSet(other.dateFrom)]);
+                
+                let hasOverlap = false;
+                for (let d of rowDays) {
+                    if (otherDays.has(d)) {
+                        hasOverlap = true;
+                        break;
+                    }
+                }
+
+                if (hasOverlap) {
+                    grouped.push(other);
+                    visited.add(otherId);
+                }
+            }
+        }
+        return grouped;
+    };
+
+    window.compareInspections = function(id1, id2) {
+        const rec1 = window.miMasterData.find(r => String(r.inspectionId || r.InspectionID || r.id).trim() === String(id1).trim());
+        const rec2 = window.miMasterData.find(r => String(r.inspectionId || r.InspectionID || r.id).trim() === String(id2).trim());
+
+        if(!rec1 || !rec2) {
+            alert("Could not locate one or both records for comparison.");
+            return;
+        }
+
+        document.getElementById("compare-th-1").innerText = "Primary ID: " + id1;
+        document.getElementById("compare-th-2").innerText = "Overlapping ID: " + id2;
+
+        let tbody = "";
+        window.miKeys.forEach(key => {
+            let displayName = window.headerCustomNames[key] || key;
+            if(window.masterDiscom === 'PVVNL') {
+                if(key === 'district') displayName = "District/Location";
+                if(key === 'pqccName') displayName = "Letter Authority";
+                if(key === 'nodalCe') displayName = "PVVNL Office Contact No";
+                if(key === 'receivedDate') displayName = "Tentative Date of Inspection / Status of Material";
+                if(key === 'dateTo') displayName = "Calculated Man days";
+                if(key === 'manDays') displayName = "Corrected Man days (Claimed)";
+            }
+
+            let val1 = String(rec1[key] || "-").trim();
+            let val2 = String(rec2[key] || "-").trim();
+            
+            let isDiff = (val1 !== val2 && val1 !== "-" && val2 !== "-") ? "bg-amber-50" : "";
+            let diffClass1 = (val1 !== val2) ? "font-bold text-slate-800" : "text-slate-600";
+            let diffClass2 = (val1 !== val2) ? "font-bold text-slate-800" : "text-slate-600";
+
+            tbody += `
+                <tr class="hover:bg-slate-100 transition ${isDiff}">
+                    <td class="p-3 border-r border-slate-200 font-bold text-slate-500 bg-slate-50/50 uppercase text-[10px] break-words">${displayName}</td>
+                    <td class="p-3 border-r border-slate-200 ${diffClass1} whitespace-pre-wrap break-words">${val1}</td>
+                    <td class="p-3 ${diffClass2} whitespace-pre-wrap break-words">${val2}</td>
+                </tr>
+            `;
+        });
+
+        document.getElementById("compare-table-body").innerHTML = tbody;
+        document.getElementById("compare-inspection-modal").classList.remove("hidden");
+        if(window.lucide) lucide.createIcons();
+    };
+
+    window.closeCompareModal = function() {
+        document.getElementById("compare-inspection-modal").classList.add("hidden");
+    };
+
+    window.getInspectorOverlaps = function(row, allRecords) {
+        let inspectorName = String(row.conductedBy || "").trim();
+        if(!inspectorName || inspectorName.toLowerCase() === 'not appointed' || inspectorName.toLowerCase() === 'not updated') return { idHtml: '-', detailsHtml: '-', idText: '-', detailsText: '-' };
+
+        let rowDays = new Set([...window.parseSequenceToSet(row.dateFrom)]);
+        if(rowDays.size === 0) return { idHtml: '-', detailsHtml: '-', idText: '-', detailsText: '-' };
+
+        let overlaps = [];
+        let currentRowId = row.inspectionId || row.InspectionID || row.id;
+
+        allRecords.forEach(other => {
+            if(row.inspectionId === other.inspectionId) return; 
+            let otherName = String(other.conductedBy || "").trim();
+            if(cleanInspectorName(otherName) !== cleanInspectorName(inspectorName)) return;
+
+            if (!window.isPrimaryRecord(row, other)) return;
+
+            let otherDays = new Set([...window.parseSequenceToSet(other.dateFrom)]);
+            let matchedDays = [];
+            rowDays.forEach(d => { if(otherDays.has(d)) matchedDays.push(d); });
+
+            if(matchedDays.length > 0) {
+                overlaps.push({
+                    id: other.inspectionId || other.id,
+                    engineer: String(other.conductedBy || "-").trim(),
+                    scheme: other.scheme || '-',
+                    pqcc: other.pqccName || '-',
+                    nodal: other.nodalCe || '-',
+                    dates: matchedDays
+                });
+            }
+        });
+
+        if(overlaps.length === 0) return { idHtml: '-', detailsHtml: '-', idText: '-', detailsText: '-' };
+
+        let idHtmlStr = overlaps.map(o => `
+            <div class="mb-1.5 p-1">
+                <a href="javascript:void(0)" onclick="event.stopPropagation(); window.compareInspections('${currentRowId}', '${o.id}')" class="text-blue-600 hover:text-blue-800 font-bold hover:underline flex items-center gap-1.5 cursor-pointer">
+                    <i data-lucide="external-link" class="w-3.5 h-3.5"></i> ${o.id}
+                </a>
+            </div>
+        `).join('');
+
+        let detailsHtmlStr = overlaps.map(o => `
+            <div class="p-1.5 mb-1.5 bg-rose-50 border border-rose-200 rounded-lg text-[9px] hover:shadow-sm transition">
+                <span class="block text-slate-600">Engineer: <span class="font-bold text-slate-900">${o.engineer}</span></span>
+                <span class="block text-slate-600">Scheme: ${o.scheme}</span>
+                <span class="block text-slate-600">PQCC: ${o.pqcc}</span>
+                <span class="block text-slate-600">Nodal CE: ${o.nodal}</span>
+                <span class="block font-bold text-rose-800 mt-1.5 p-1 bg-rose-100/50 rounded">Matched Dates (${o.dates.length}): ${o.dates.join(', ')}</span>
+            </div>
+        `).join('');
+        
+        let idTextStr = overlaps.map(o => o.id).join(' | ');
+        let detailsTextStr = overlaps.map(o => `[Engineer: ${o.engineer}, Scheme: ${o.scheme}, PQCC: ${o.pqcc}, Nodal CE: ${o.nodal}, Matching Dates (${o.dates.length}): ${o.dates.join(' | ')}]`).join(' || ');
+
+        return { idHtml: idHtmlStr, detailsHtml: detailsHtmlStr, idText: idTextStr, detailsText: detailsTextStr };
+    };
+
+    window.exportToExcel = function() {
+        if(!window.filteredData || window.filteredData.length === 0) {
+            alert("No data available to export.");
+            return;
+        }
+
+        if (!confirm(`Are you sure you want to export ${window.filteredData.length} records to Excel/CSV?`)) {
+            return;
+        }
+
+        let schemes = [...new Set(window.filteredData.map(r => String(r.scheme || "").trim()).filter(s => s !== "" && s !== "-"))];
+        let pqccs = [...new Set(window.filteredData.map(r => String(r.pqccName || "").trim()).filter(p => p !== "" && p !== "-"))];
+
+        let schemeStr = schemes.length === 1 ? schemes[0].replace(/[^a-zA-Z0-9]/g, '_') : (schemes.length > 1 ? "Multi_Schemes" : "All_Schemes");
+        let pqccStr = pqccs.length === 1 ? pqccs[0].replace(/[^a-zA-Z0-9]/g, '_') : (pqccs.length > 1 ? "Multi_PQCC" : "All_PQCC");
+
+        schemeStr = schemeStr.substring(0, 30);
+        pqccStr = pqccStr.substring(0, 30);
+
+        let fileName = `Inspection_${window.masterDiscom}_${schemeStr}_${pqccStr}.csv`;
+
+        let csv = [];
+        let headers = [...window.miKeys, "Overlapped ID (Virtual)", "Overlap Details (Virtual)"];
+        csv.push(headers.map(h => `"${h}"`).join(','));
+        
+        window.filteredData.forEach(row => {
+            let rowArr = window.miKeys.map(k => `"${String(row[k] || '').replace(/"/g, '""')}"`);
+            let overlapData = window.getInspectorOverlaps(row, window.miMasterData);
+            rowArr.push(`"${overlapData.idText.replace(/"/g, '""')}"`); 
+            rowArr.push(`"${overlapData.detailsText.replace(/"/g, '""')}"`); 
+            csv.push(rowArr.join(','));
+        });
+
+        let csvContent = "data:text/csv;charset=utf-8," + csv.join("\n");
+        let encodedUri = encodeURI(csvContent);
+        let link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", fileName);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
 
     window.switchMasterDiscom = function (discomName) {
         window.masterDiscom = discomName;
@@ -647,6 +1027,7 @@
             const data = JSON.parse(textData);
             if (data.status) {
                 window.miMasterData = data.data;
+                
                 if (data.inspectors) {
                     window.miInspectorsList = data.inspectors;
                     window.populateInspectorDropdowns();
@@ -659,8 +1040,14 @@
                 let prioritized = ['status', 'subStatus'];
                 let filteredKeys = rawKeys.filter(k => !prioritized.includes(k));
                 window.miKeys = [...prioritized.filter(k => rawKeys.includes(k)), ...filteredKeys];
-                renderTableRows(window.miMasterData);
-                window.populateFilterDropdown();
+                
+                for(let i=1; i<=3; i++) {
+                    const sel = document.getElementById(`filter-field-${i}`);
+                    if(sel) sel.value = "";
+                    window.handleFilterFieldChange(i);
+                }
+
+                window.applyTableFilter();
             }
         } catch (e) {
             if (wrap) wrap.innerHTML = `<p class="text-xs text-rose-600 py-8 text-center font-bold">Failed to synchronize inspection data.</p>`;
@@ -734,6 +1121,151 @@
         }
     };
 
+    window.handleFilterFieldChange = function(index) {
+        const fieldSelect = document.getElementById(`filter-field-${index}`);
+        const selectEl = document.getElementById(`filter-select-${index}`);
+        const textEl = document.getElementById(`filter-text-${index}`);
+        
+        if (!selectEl || !textEl) return;
+
+        selectEl.value = ""; 
+        textEl.value = "";
+
+        if (fieldSelect.value === "") {
+            selectEl.classList.remove('hidden');
+            textEl.classList.add('hidden');
+            selectEl.disabled = true;
+            selectEl.innerHTML = '<option value="">Select a filter field first...</option>';
+            selectEl.classList.remove('bg-white');
+            selectEl.classList.add('bg-slate-100');
+            selectEl.classList.add('cursor-not-allowed');
+        } else if (fieldSelect.value === "inspectionId") {
+            selectEl.classList.add('hidden');
+            textEl.classList.remove('hidden');
+            textEl.disabled = false;
+            textEl.placeholder = `Type or select ${fieldSelect.options[fieldSelect.selectedIndex].text}...`;
+        } else {
+            selectEl.classList.remove('hidden');
+            textEl.classList.add('hidden');
+            selectEl.disabled = false;
+            selectEl.classList.remove('bg-slate-100');
+            selectEl.classList.remove('cursor-not-allowed');
+            selectEl.classList.add('bg-white');
+            selectEl.innerHTML = `<option value="">-- Select ${fieldSelect.options[fieldSelect.selectedIndex].text} --</option>`;
+        }
+        
+        window.applyTableFilter();
+    };
+
+    window.applyTableFilter = function () {
+        let activeFilters = [];
+        for(let i=1; i<=3; i++) {
+            const field = document.getElementById(`filter-field-${i}`).value;
+            let value = "";
+            
+            if (field === 'inspectionId') {
+                value = document.getElementById(`filter-text-${i}`).value.trim().toLowerCase();
+            } else if (field !== "") {
+                value = document.getElementById(`filter-select-${i}`).value.trim().toLowerCase();
+            }
+
+            if(field && value) {
+                activeFilters.push({index: i, field, value});
+            }
+        }
+
+        let baseFiltered = window.miMasterData;
+
+        if (activeFilters.length > 0) {
+            baseFiltered = window.miMasterData.filter(row => {
+                return activeFilters.every(filter => {
+                    let matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(filter.field.toLowerCase()));
+                    if (!matchingKey) return true;
+
+                    const cellVal = String(row[matchingKey] || "").trim().toLowerCase();
+
+                    if (filter.field === 'billingStatus' && (filter.value === 'un-billed' || filter.value === 'unbilled')) {
+                        return cellVal === 'un-billed' || cellVal === 'unbilled' || cellVal === 'pending' || cellVal === '' || cellVal === '-';
+                    }
+
+                    return cellVal.includes(filter.value);
+                });
+            });
+        }
+
+        let groupedFiltered = window.groupOverlappingRecords(baseFiltered);
+        window.filteredData = groupedFiltered;
+        renderTableRows(groupedFiltered);
+
+        for(let i=1; i<=3; i++) {
+            window.updateDatalist(i, activeFilters);
+        }
+    };
+
+    window.updateDatalist = function(targetIndex, activeFilters) {
+        const fieldSelect = document.getElementById(`filter-field-${targetIndex}`);
+        const selectEl = document.getElementById(`filter-select-${targetIndex}`);
+        const dataList = document.getElementById(`filter-value-datalist-${targetIndex}`);
+        
+        if (!fieldSelect || !fieldSelect.value) return;
+
+        const otherFilters = activeFilters.filter(f => f.index !== targetIndex);
+        
+        let dataForDropdown = window.miMasterData;
+        if (otherFilters.length > 0) {
+            dataForDropdown = window.miMasterData.filter(row => {
+                return otherFilters.every(filter => {
+                    let matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(filter.field.toLowerCase()));
+                    if (!matchingKey) return true;
+
+                    const cellVal = String(row[matchingKey] || "").trim().toLowerCase();
+                    if (filter.field === 'billingStatus' && (filter.value === 'un-billed' || filter.value === 'unbilled')) {
+                        return cellVal === 'un-billed' || cellVal === 'unbilled' || cellVal === 'pending' || cellVal === '' || cellVal === '-';
+                    }
+                    return cellVal.includes(filter.value);
+                });
+            });
+        }
+
+        const matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(fieldSelect.value.toLowerCase()));
+        if (!matchingKey) return;
+
+        const uniqueValues = [...new Set(dataForDropdown.map(row => String(row[matchingKey] || "").trim()))].filter(v => v !== "" && v !== "-");
+        uniqueValues.sort();
+
+        if (fieldSelect.value === 'billingStatus') uniqueValues.push('Un-Billed');
+
+        if (fieldSelect.value === 'inspectionId') {
+            dataList.innerHTML = "";
+            uniqueValues.forEach(val => {
+                let opt = document.createElement("option");
+                opt.value = val;
+                dataList.appendChild(opt);
+            });
+        } else {
+            let currVal = selectEl.value;
+            selectEl.innerHTML = `<option value="">-- All --</option>`;
+            uniqueValues.forEach(val => {
+                let opt = document.createElement("option");
+                opt.value = val;
+                opt.textContent = val;
+                selectEl.appendChild(opt);
+            });
+            
+            let optionsArr = Array.from(selectEl.options).map(o => o.value);
+            if (optionsArr.includes(currVal)) {
+                selectEl.value = currVal;
+            }
+        }
+    };
+
+    window.clearTableFilter = function () {
+        for(let i=1; i<=3; i++) {
+            document.getElementById(`filter-field-${i}`).value = "";
+            window.handleFilterFieldChange(i); 
+        }
+    };
+
     function renderTableRows(recordsToRender) {
         document.getElementById("record-count-badge").innerText = `${recordsToRender.length} of ${window.miMasterData.length} Records`;
 
@@ -753,30 +1285,6 @@
             html += `<th style="width: 110px; min-width: 110px;" class="p-3 border-r border-slate-700 text-center font-bold text-amber-300 sticky-deadline-th">${deadlineTitle}</th>`;
         }
 
-        // Inside renderTableRows function:
-        const isPVVNL = window.masterDiscom === 'PVVNL';
-
-        const headerCustomNames = {
-            "srNo": "Sr No", "inspectionId": "Inspection ID", "discom": "Discom", "scheme": "Scheme",
-            "district": isPVVNL ?"District/Location": "District", "letterNo": "Inspection Letter No", "letterDate": "Letter Date",
-            "receivedDate":isPVVNL ?"Tentative Date of Inspection / Status of Material": "Date of received Inspection Call", 
-            "pqccName": isPVVNL ?"Letter Authority":"PQCC Name",
-            "officials": "Name of Officials", 
-            "nodalCe":isPVVNL ?"PVVNL Office Contact No": "Nodal Chief Engineer",
-            "manufacturer": "Manufacturer Name", "address": "Address", "contactPerson": "Contact Person",
-            "mobile": "Mobile No", "materialInspected": "Material Inspected", "materialSpec": "Material Specification",
-            "quantity": "Quantity", "tkc": "Name of TKC", "tpiaInspector": "Name of TPIA Inspector (Appointed)",
-            "tpiaContact": "Contact Number", "authLetterNo": "Authorization Letter No",
-            "scheduleDate": "Schedule Date", "status": "Inspection Status", "subStatus": "Inspection Sub Status",
-            "inspectionCompletedOn": "Inspection Completed On", "reportOm": "Report/ OM No and Date",
-            "conductedBy": "Inspection conducted by TPIA Inspector", "dateFrom": "Date(s) of Inspection (From - To)",
-            "dateTo": isPVVNL ? "Calculated Man days" : "Date(s) of NABL Witness (From - To)",
-            "manDays": isPVVNL ? "Corrected Man days (Claimed)" : "Man Days",
-            "sealType": "Type of Seal",
-            "sealSerial": "Seal Serial No Used in Inspection", "sealNoCount": "No of Seal", "nablStatusDate": "NABL Status and Testing Date",
-            "reportReceived": "Report Received", "reportMail": "Report Mail", "letterRevision": "Letter Revision Status",
-            "remarks": "Remark", "month": "Month of Inspection (conducted)", "billingStatus": "Billing Status", "invoiceNo": "Invoice No"
-        };
         window.miKeys.forEach((key, index) => {
             let defaultWidth = "150px";
             const lk = key.toLowerCase();
@@ -784,9 +1292,21 @@
             else if (lk.includes('date') || lk.includes('status') || lk.includes('mobile')) defaultWidth = "120px";
             else if (lk.includes('address') || lk.includes('spec') || lk.includes('manufacturer') || lk.includes('remark')) defaultWidth = "280px";
 
-            let displayName = headerCustomNames[key] || key;
+            let displayName = window.headerCustomNames[key] || key;
+            if(window.masterDiscom === 'PVVNL') {
+                if(key === 'district') displayName = "District/Location";
+                if(key === 'pqccName') displayName = "Letter Authority";
+                if(key === 'nodalCe') displayName = "PVVNL Office Contact No";
+                if(key === 'receivedDate') displayName = "Tentative Date of Inspection / Status of Material";
+                if(key === 'dateTo') displayName = "Calculated Man days";
+                if(key === 'manDays') displayName = "Corrected Man days (Claimed)";
+            }
+
             html += `<th data-col-index="${index}" style="width: ${defaultWidth}; min-width: ${defaultWidth};" class="p-3 border-r border-slate-700 resizable-th relative whitespace-normal break-words">${displayName}<div class="resizer"></div></th>`;
         });
+
+        html += `<th data-col-index="${window.miKeys.length}" style="width: 140px; min-width: 140px;" class="p-3 border-r border-slate-700 resizable-th relative whitespace-normal break-words text-rose-300">Overlapped ID<div class="resizer"></div></th>`;
+        html += `<th data-col-index="${window.miKeys.length + 1}" style="width: 250px; min-width: 250px;" class="p-3 border-r border-slate-700 resizable-th relative whitespace-normal break-words text-rose-300">Overlap Details<div class="resizer"></div></th>`;
 
         html += `</tr></thead><tbody class="divide-y md:divide-y-0 divide-slate-100 bg-white font-medium align-top block md:table-row-group">`;
 
@@ -820,7 +1340,6 @@
 
             if (canEdit) {
                 actionHtml = `<button onclick="event.stopPropagation(); window.openEditModal('${safeId}')" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-black rounded-lg text-[10px] transition cursor-pointer shadow-xs flex items-center gap-1 mx-auto"><i data-lucide="edit" class="w-3 h-3"></i> Edit All</button>`;
-
                 html += `<td class="p-2 border-r text-center sticky-actions-td hidden md:table-cell">${actionHtml}</td>`;
                 html += `<td class="p-2 border-r text-center font-mono font-bold text-amber-700 bg-amber-50/40 sticky-deadline-td hidden md:table-cell">${deadlineStr}</td>`;
             }
@@ -835,7 +1354,15 @@
                 else if (lk.includes('date') || lk.includes('status') || lk.includes('mobile')) defaultWidth = "120px";
                 else if (lk.includes('address') || lk.includes('spec') || lk.includes('manufacturer') || lk.includes('remark')) defaultWidth = "280px";
 
-                let displayName = headerCustomNames[key] || key;
+                let displayName = window.headerCustomNames[key] || key;
+                if(window.masterDiscom === 'PVVNL') {
+                    if(key === 'district') displayName = "District/Location";
+                    if(key === 'pqccName') displayName = "Letter Authority";
+                    if(key === 'nodalCe') displayName = "PVVNL Office Contact No";
+                    if(key === 'receivedDate') displayName = "Tentative Date of Inspection / Status of Material";
+                    if(key === 'dateTo') displayName = "Calculated Man days";
+                    if(key === 'manDays') displayName = "Corrected Man days (Claimed)";
+                }
 
                 html += `<td data-col-index="${index}" style="width: ${defaultWidth}; min-width: ${defaultWidth};" class="p-3 border-r text-slate-700 whitespace-pre-wrap break-words hidden md:table-cell">${cellContent}</td>`;
 
@@ -846,9 +1373,25 @@
                     </div>
                 `;
             });
+
+            let overlapData = window.getInspectorOverlaps(row, window.miMasterData);
+            html += `<td data-col-index="${window.miKeys.length}" style="width: 140px; min-width: 140px;" class="p-3 border-r bg-rose-50/20 whitespace-pre-wrap break-words hidden md:table-cell">${overlapData.idHtml}</td>`;
+            html += `<td data-col-index="${window.miKeys.length + 1}" style="width: 250px; min-width: 250px;" class="p-3 border-r bg-rose-50/20 whitespace-pre-wrap break-words hidden md:table-cell">${overlapData.detailsHtml}</td>`;
+            
+            if (overlapData.idHtml !== '-') {
+                mobileDetailsHtml += `
+                    <div class="mb-2 p-2 bg-rose-50 border border-rose-200 rounded-lg">
+                        <span class="block text-[9px] font-black uppercase text-rose-500 mb-0.5">Overlapped IDs</span>
+                        <div class="text-xs font-medium text-slate-800">${overlapData.idHtml}</div>
+                        <span class="block text-[9px] font-black uppercase text-rose-500 mt-2 mb-0.5">Overlap Details</span>
+                        <div class="text-xs font-medium text-slate-800">${overlapData.detailsHtml}</div>
+                    </div>
+                `;
+            }
+
             html += `</tr>`;
 
-            const totalCols = window.miKeys.length + (canEdit ? 2 : 0);
+            const totalCols = window.miKeys.length + (canEdit ? 2 : 0) + 2;
             html += `
                 <tr class="mobile-expand-drawer hidden md:hidden bg-slate-50/80 cursor-default" onclick="event.stopPropagation()">
                     <td colspan="${totalCols}" class="p-4 border-t border-slate-200 text-xs">
@@ -889,59 +1432,6 @@
                 row.classList.remove('bg-slate-50');
             }
         }
-    };
-
-    window.populateFilterDropdown = function () {
-        const field = document.getElementById("filter-field-select").value;
-        const dataList = document.getElementById("filter-value-datalist");
-        const filterInput = document.getElementById("filter-value-input");
-
-        const matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(field.toLowerCase()));
-
-        dataList.innerHTML = "";
-        filterInput.value = "";
-        filterInput.placeholder = `Type or select to filter by ${field}...`;
-
-        if (!matchingKey) return;
-
-        const uniqueValues = [...new Set(window.miMasterData.map(row => String(row[matchingKey] || "").trim()))].filter(v => v !== "" && v !== "-");
-        uniqueValues.sort();
-
-        uniqueValues.forEach(val => {
-            let opt = document.createElement("option");
-            opt.value = val;
-            dataList.appendChild(opt);
-        });
-
-        window.applyTableFilter();
-    };
-
-    window.applyTableFilter = function () {
-        const field = document.getElementById("filter-field-select").value;
-        const selectedValue = document.getElementById("filter-value-input").value.trim().toLowerCase();
-
-        if (!selectedValue) {
-            renderTableRows(window.miMasterData);
-            return;
-        }
-
-        const matchingKey = window.miKeys.find(k => k.toLowerCase().replace(/[^a-z0-9]/g, '').includes(field.toLowerCase()));
-        if (!matchingKey) {
-            renderTableRows(window.miMasterData);
-            return;
-        }
-
-        const filtered = window.miMasterData.filter(row => {
-            const cellVal = String(row[matchingKey] || "").trim().toLowerCase();
-            return cellVal.includes(selectedValue);
-        });
-
-        renderTableRows(filtered);
-    };
-
-    window.clearTableFilter = function () {
-        document.getElementById("filter-value-input").value = "";
-        renderTableRows(window.miMasterData);
     };
 
     window.parseDateToYYYYMMDD = function (dateStr) {
@@ -985,7 +1475,6 @@
         }
     };
 
-    // 🎯 OPEN MODAL (EDIT ALL)
     window.openEditModal = function (inspectionId) {
         const row = window.miMasterData.find(r => {
             const idVal = r.inspectionId || r.InspectionID || r.inspectionID || r.id;
@@ -1052,11 +1541,9 @@
         setVal("edit-sealSerial", row.sealSerial || "");
         setVal("edit-sealNoCount", row.sealNoCount || "");
 
-        // Date(s) of Inspection (Col AC)
         setVal("edit-inspectionDatesSequence", row.dateFrom || "");
         setVal("edit-manDays", row.manDays || 0);
 
-        // NABL parsing
         const nblRaw = String(row.nablStatusDate || "").trim();
         let nablStatusVal = "";
         let nablDateVal = "";
@@ -1093,7 +1580,6 @@
         setVal("edit-nablDateInput", nablDateVal);
         setVal("edit-nablWitnessInspector", witnessVal);
 
-        // Date(s) of NABL Witness (Col AD)
         setVal("edit-nablDatesSequence", row.dateTo || "");
 
         setVal("edit-reportReceived", row.reportReceived || "No");
@@ -1113,7 +1599,6 @@
 
     window.closeEditModal = function () { document.getElementById("edit-inspection-modal").classList.add("hidden"); };
 
-    // 🎯 MODAL DATE SEQUENCE BUILDER (+ Add Date, + Add 'To' Date, + Add 'And' Date)
     window.openDatePrompt = function (category, type) {
         window.activeSequenceCategory = category;
         window.activeSequenceType = type;
@@ -1168,57 +1653,16 @@
         }
     };
 
-    // 🎯 MAN-DAYS COMBINED CALCULATION MECHANISM (Including NABL Dates & Inspector Overlap Tracking)
     window.recalculateManDays = function () {
         const inspSeqText = document.getElementById("edit-inspectionDatesSequence").value.trim();
         const nablSeqText = document.getElementById("edit-nablDatesSequence").value.trim();
 
-        function parseSequenceToSet(seqText) {
-            let daysSet = new Set();
-            if (!seqText) return daysSet;
-            const tokens = seqText.split(/\s+/);
-            let firstDateStr = "";
-            for (let t of tokens) {
-                if (/^\d{2}\/\d{2}\/\d{4}$/.test(t)) {
-                    firstDateStr = t;
-                    break;
-                }
-            }
-            if (!firstDateStr) return daysSet;
-            let baseDate = window.parseSafeLocalMidnight(firstDateStr);
-            if (!baseDate || isNaN(baseDate.getTime())) return daysSet;
-            daysSet.add(baseDate.toDateString());
-
-            const regex = /(To|And)[\s\n\r]+(\d{2}\/\d{2}\/\d{4})/gi;
-            let match;
-            let lastDate = new Date(baseDate.getTime());
-            while ((match = regex.exec(seqText)) !== null) {
-                const keyword = match[1].toLowerCase();
-                const targetDate = window.parseSafeLocalMidnight(match[2]);
-                if (targetDate && !isNaN(targetDate.getTime())) {
-                    if (keyword === 'to') {
-                        let curr = new Date(lastDate.getTime());
-                        curr.setDate(curr.getDate() + 1);
-                        while (curr <= targetDate) {
-                            daysSet.add(curr.toDateString());
-                            curr.setDate(curr.getDate() + 1);
-                        }
-                    } else if (keyword === 'and') {
-                        daysSet.add(targetDate.toDateString());
-                    }
-                    lastDate = new Date(targetDate.getTime());
-                }
-            }
-            return daysSet;
-        }
-
         let combinedDaysSet = new Set();
-        parseSequenceToSet(inspSeqText).forEach(d => combinedDaysSet.add(d));
-        parseSequenceToSet(nablSeqText).forEach(d => combinedDaysSet.add(d));
+        window.parseSequenceToSet(inspSeqText).forEach(d => combinedDaysSet.add(d));
+        window.parseSequenceToSet(nablSeqText).forEach(d => combinedDaysSet.add(d));
 
         let totalDays = combinedDaysSet.size;
 
-        // Inspector Overlap Tracking against sibling records
         const currentId = document.getElementById("edit-inspectionId").value;
         const inspectorName = document.getElementById("edit-conductedBy").value;
 
@@ -1226,16 +1670,14 @@
             const siblingRecords = (window.miMasterData || []).filter(row => {
                 const rowId = String(row.inspectionId || row.InspectionID || "").trim();
                 const rowDiscom = String(row.discom || "").trim();
-                const rowInspector = String(row.conductedBy || row.tpiaInspector || "").trim();
+                const rowInspector = String(row.conductedBy || "").trim(); // STRICT conductedBy
                 return rowId !== String(currentId).trim() && rowDiscom.toUpperCase() === String(window.masterDiscom).toUpperCase() && rowInspector.toLowerCase() === cleanInspectorName(inspectorName);
             });
 
             let occupiedDaysSet = new Set();
             for (let sibling of siblingRecords) {
-                let sibInspSeq = String(sibling.dateFrom || "").trim();
-                let sibNablSeq = String(sibling.dateTo || "").trim();
-                parseSequenceToSet(sibInspSeq).forEach(d => occupiedDaysSet.add(d));
-                parseSequenceToSet(sibNablSeq).forEach(d => occupiedDaysSet.add(d));
+                let sibInspSeq = String(sibling.dateFrom || "").trim(); 
+                window.parseSequenceToSet(sibInspSeq).forEach(d => occupiedDaysSet.add(d));
             }
 
             let overlapCount = 0;
@@ -1283,7 +1725,6 @@
             finalAuthLetterOutput = `${pureBase}\nrevised to\n${formattedRev}`;
         }
 
-        // 🎯 COMPILE NABL STATUS STRING
         const nablOpt = document.getElementById("edit-nablStatusOpt").value;
         const nablDt = document.getElementById("edit-nablDateInput").value;
         const nablWitness = document.getElementById("edit-nablWitnessInspector").value;
@@ -1334,8 +1775,8 @@
             inspectionCompletedOn: document.getElementById("edit-inspectionCompletedOn").value,
             reportOm: document.getElementById("edit-reportOm").value.trim(),
             conductedBy: document.getElementById("edit-conductedBy").value,
-            dateFrom: inspectionDatesSeq, // Col AC
-            dateTo: nablDatesSeq,         // Col AD
+            dateFrom: inspectionDatesSeq, 
+            dateTo: nablDatesSeq,          
             manDays: document.getElementById("edit-manDays").value,
             month: document.getElementById("edit-month").value,
             nablStatusDate: combinedNabl,
