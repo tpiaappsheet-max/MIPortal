@@ -60,6 +60,17 @@
         <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10" id="ea-summary-content">
             <!-- Injected Dynamically -->
         </div>
+
+        <!-- NEW COLLAPSIBLE INSPECTOR COUNT -->
+        <div id="ea-insp-counts-wrapper" class="relative z-10 mt-4 pt-4 border-t border-slate-600/50">
+            <button type="button" onclick="document.getElementById('ea-insp-counts-list').classList.toggle('hidden')" class="flex items-center justify-between w-full text-left focus:outline-none cursor-pointer group">
+                <span class="text-[11px] font-black uppercase tracking-wider text-emerald-400 group-hover:text-emerald-300 transition">Inspector Count Tally:</span>
+                <i data-lucide="chevron-down" class="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition"></i>
+            </button>
+            <div id="ea-insp-counts-list" class="hidden mt-3 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+                <!-- Injected Dynamically -->
+            </div>
+        </div>
     </div>
 
     <!-- Mobile-First Collapsible List Container -->
@@ -336,8 +347,13 @@
         let maxVal = -Infinity, minVal = Infinity, maxRow = null;
         let critSet = new Set();
         let validVals = 0;
+        let inspCounts = {};
 
         filtered.forEach(r => {
+            // Count Inspectors
+            let inspectorStr = r[window.EA_KEYS.inspector] || "Unassigned";
+            inspCounts[inspectorStr] = (inspCounts[inspectorStr] || 0) + 1;
+
             let rawV = r[window.EA_KEYS.value];
             if(rawV !== undefined && rawV !== null && String(rawV).trim() !== "") {
                 let v = parseFloat(rawV);
@@ -362,6 +378,7 @@
             maxMeta = `<span title="${maxInsp}">${maxInsp}</span><br><span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate" title="${maxDate}">${maxDate}</span>`;
         }
 
+        // Update Summary Row
         document.getElementById("ea-summary-content").innerHTML = `
             <div>
                 <span class="block text-[10px] text-slate-400 uppercase font-black mb-1">Total Found</span>
@@ -380,6 +397,18 @@
                 <span class="text-[11px] font-bold text-white block leading-tight truncate">${maxMeta}</span>
             </div>
         `;
+
+        // Update Inspector Counts
+        let inspCountHtml = "";
+        Object.keys(inspCounts).sort().forEach(insp => {
+            inspCountHtml += `
+                <div class="bg-slate-800/50 p-2.5 rounded-xl border border-slate-600/50 flex justify-between items-center">
+                    <span class="text-[10px] font-bold text-slate-300 truncate pr-2" title="${insp}">${insp}</span>
+                    <span class="bg-emerald-500/20 text-emerald-400 px-2 py-0.5 rounded-lg text-[10px] font-black">${inspCounts[insp]}</span>
+                </div>
+            `;
+        });
+        document.getElementById("ea-insp-counts-list").innerHTML = inspCountHtml;
         summaryDash.classList.remove("hidden");
 
         let html = "";
@@ -390,7 +419,19 @@
             const currentCrit = String(rec[window.EA_KEYS.criteria] || "").trim();
             const currentVal = rec[window.EA_KEYS.value] || "";
 
-            const displayCrit = currentCrit === '%' ? '% Pct' : (currentCrit === 'Unit' ? 'Unit' : 'N/A');
+            // Parse existing Criteria for UI
+            let mainCrit = "";
+            let subCrit = "No"; // Default subunit
+            if (currentCrit.startsWith("Per Unit")) {
+                mainCrit = "Unit";
+                if (currentCrit.includes("-")) {
+                    subCrit = currentCrit.split("-")[1].trim();
+                }
+            } else if (currentCrit === "%") {
+                mainCrit = "%";
+            }
+
+            const displayCrit = currentCrit === '%' ? '% Pct' : (currentCrit.startsWith('Per Unit') ? currentCrit : 'N/A');
             const displayVal = currentVal !== "" ? currentVal : '--';
 
             const encodedPayload = encodeURIComponent(JSON.stringify(rec));
@@ -419,7 +460,7 @@
                             <div class="flex items-center gap-2 sm:gap-3">
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-[9px] uppercase font-black text-slate-400">CRIT:</span>
-                                    <span id="ea-display-crit-${idx}" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">${displayCrit}</span>
+                                    <span id="ea-display-crit-${idx}" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[100px]" title="${displayCrit}">${displayCrit}</span>
                                 </div>
                                 <span class="text-slate-200">|</span>
                                 <div class="flex items-center gap-1.5">
@@ -440,6 +481,7 @@
 
                     </div>
 
+                    <!-- STATE 2: EDIT MODE with Sub-Select -->
                     <div id="ea-edit-mode-${idx}" class="hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative border-b border-blue-200 transition bg-blue-50/50 p-3">
                         <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
                             <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0">${discomStr}</span>
@@ -448,12 +490,26 @@
                         </div>
                         
                         <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <select id="ea-crit-${idx}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
-                                <option value="" ${currentCrit === '' ? 'selected' : ''}>Select...</option>
-                                <option value="%" ${currentCrit === '%' ? 'selected' : ''}>% Percent</option>
-                                <option value="Unit" ${currentCrit === 'Unit' ? 'selected' : ''}>Per Unit</option>
-                            </select>
+                            <div class="flex flex-col gap-1 w-24 shrink-0">
+                                <select id="ea-crit-${idx}" onchange="document.getElementById('ea-crit-unit-${idx}').classList.toggle('hidden', this.value !== 'Unit')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
+                                    <option value="" ${mainCrit === '' ? 'selected' : ''}>Select...</option>
+                                    <option value="%" ${mainCrit === '%' ? 'selected' : ''}>% Percent</option>
+                                    <option value="Unit" ${mainCrit === 'Unit' ? 'selected' : ''}>Per Unit</option>
+                                </select>
+                                <select id="ea-crit-unit-${idx}" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white ${mainCrit === 'Unit' ? '' : 'hidden'}">
+                                    <option value="No" ${subCrit === 'No' ? 'selected' : ''}>No</option>
+                                    <option value="Drum" ${subCrit === 'Drum' ? 'selected' : ''}>Drum</option>
+                                    <option value="Set" ${subCrit === 'Set' ? 'selected' : ''}>Set</option>
+                                    <option value="MT" ${subCrit === 'MT' ? 'selected' : ''}>MT</option>
+                                    <option value="Tonne" ${subCrit === 'Tonne' ? 'selected' : ''}>Tonne</option>
+                                    <option value="Kg" ${subCrit === 'Kg' ? 'selected' : ''}>Kg</option>
+                                    <option value="Bundle" ${subCrit === 'Bundle' ? 'selected' : ''}>Bundle</option>
+                                    <option value="Other" ${subCrit === 'Other' ? 'selected' : ''}>Other</option>
+                                </select>
+                            </div>
+
                             <input type="number" step="0.01" id="ea-val-${idx}" value="${currentVal}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500" placeholder="Value">
+                            
                             <button onclick="window.toggleEaEditMode(${idx}, false)" class="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-[10px] font-black uppercase rounded-lg shadow-sm transition">Cancel</button>
                             <button id="ea-btn-${idx}" onclick="window.saveEaCriteria('${idStr}', ${idx})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1">
                                 <i data-lucide="save" class="w-3.5 h-3.5"></i> Save
@@ -487,7 +543,12 @@
     };
 
     window.saveEaCriteria = async function(inspectionId, idx) {
-        const critInput = document.getElementById(`ea-crit-${idx}`).value;
+        let critInput = document.getElementById(`ea-crit-${idx}`).value;
+        if (critInput === 'Unit') {
+            const subUnit = document.getElementById(`ea-crit-unit-${idx}`).value;
+            critInput = `Per Unit - ${subUnit}`;
+        }
+        
         const valInput = document.getElementById(`ea-val-${idx}`).value;
         const btn = document.getElementById(`ea-btn-${idx}`);
 
@@ -517,7 +578,7 @@
                     record[window.EA_KEYS.value] = valInput;
                 }
 
-                const displayCrit = critInput === '%' ? '% Pct' : (critInput === 'Unit' ? 'Unit' : 'N/A');
+                const displayCrit = critInput === '%' ? '% Pct' : (critInput.startsWith('Per Unit') ? critInput : 'N/A');
                 const displayVal = valInput !== "" ? valInput : '--';
                 
                 document.getElementById(`ea-display-crit-${idx}`).innerText = displayCrit;
