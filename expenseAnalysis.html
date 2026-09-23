@@ -100,27 +100,28 @@
             <!-- Injected Dynamically -->
         </div>
 
-        <!-- NEW: SIDE-BY-SIDE TALLY TOGGLES -->
-        <div class="relative z-10 mt-6 pt-4 border-t border-slate-600/50 flex flex-col sm:flex-row gap-3">
-            <button type="button" onclick="window.toggleEaTally('combo')" class="flex-1 flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition shadow-sm">
+        <!-- TALLY TOGGLES (SIDE BY SIDE) -->
+        <div class="relative z-10 mt-6 pt-4 border-t border-slate-600/50 grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <button type="button" onclick="window.toggleEaTally('combo')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition shadow-sm">
                 <span class="text-[10px] font-black uppercase tracking-wider text-purple-400 group-hover:text-purple-300 transition">Combinations Tally</span>
                 <i id="icon-tally-combo" data-lucide="chevron-down" class="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition duration-300"></i>
             </button>
             
-            <button type="button" onclick="window.toggleEaTally('insp')" class="flex-1 flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-emerald-500/50 transition shadow-sm">
+            <button type="button" onclick="window.toggleEaTally('insp')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-emerald-500/50 transition shadow-sm">
                 <span class="text-[10px] font-black uppercase tracking-wider text-emerald-400 group-hover:text-emerald-300 transition">Inspector Tally</span>
                 <i id="icon-tally-insp" data-lucide="chevron-down" class="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition duration-300"></i>
+            </button>
+
+            <button type="button" onclick="window.toggleEaTally('status')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-amber-500/50 transition shadow-sm">
+                <span class="text-[10px] font-black uppercase tracking-wider text-amber-400 group-hover:text-amber-300 transition">Status Tally</span>
+                <i id="icon-tally-status" data-lucide="chevron-down" class="w-4 h-4 text-amber-400 group-hover:text-amber-300 transition duration-300"></i>
             </button>
         </div>
 
         <!-- TALLY CONTENT DROPDOWNS -->
-        <div id="ea-combo-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in">
-            <!-- Injected Dynamically -->
-        </div>
-        
-        <div id="ea-insp-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 animate-fade-in">
-            <!-- Injected Dynamically -->
-        </div>
+        <div id="ea-combo-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in"></div>
+        <div id="ea-insp-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 animate-fade-in"></div>
+        <div id="ea-status-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 animate-fade-in"></div>
     </div>
 
     <!-- Mobile-First Collapsible List Container -->
@@ -158,7 +159,6 @@
 </div>
 
 <script>
-    // 🚨 UNIQUE EXPENSE API URL
     const EXPENSE_API_URL = "https://script.google.com/macros/s/AKfycbyuJg8RBOI11jQrkA3CNXujJGeZUr5ZNGqhXxb--ukixnYcy5ullcnSTFUd1_m870VEZg/exec"; 
 
     window.eaRawData = [];
@@ -166,11 +166,11 @@
     window.EA_KEYS = {};
     window.rawMfgCombinations = []; 
     
-    // Track active sub-filters
+    // Active filters
     window.tallyInspectorFilter = null; 
     window.tallyComboFilter = null;
+    window.tallyStatusFilter = null;
     
-    // Arrays for dynamic datalists
     window.eaAllIds = [];
     window.eaAllLetters = [];
 
@@ -196,12 +196,15 @@
         return maxTime;
     };
 
-    // MUTUALLY EXCLUSIVE TALLY TOGGLE LOGIC
+    // MUTUALLY EXCLUSIVE TALLY TOGGLE & FILTER RESET ON CLOSE
     window.toggleEaTally = function(type) {
         const comboList = document.getElementById('ea-combo-counts-list');
         const inspList = document.getElementById('ea-insp-counts-list');
+        const statusList = document.getElementById('ea-status-counts-list');
+        
         const comboIcon = document.getElementById('icon-tally-combo');
         const inspIcon = document.getElementById('icon-tally-insp');
+        const statusIcon = document.getElementById('icon-tally-status');
 
         if (type === 'combo') {
             if (comboList.classList.contains('hidden')) {
@@ -209,9 +212,13 @@
                 comboIcon.style.transform = 'rotate(180deg)';
                 inspList.classList.add('hidden');
                 inspIcon.style.transform = 'rotate(0deg)';
+                statusList.classList.add('hidden');
+                statusIcon.style.transform = 'rotate(0deg)';
             } else {
                 comboList.classList.add('hidden');
                 comboIcon.style.transform = 'rotate(0deg)';
+                window.tallyComboFilter = null;
+                window.renderEaTable();
             }
         } else if (type === 'insp') {
             if (inspList.classList.contains('hidden')) {
@@ -219,14 +226,31 @@
                 inspIcon.style.transform = 'rotate(180deg)';
                 comboList.classList.add('hidden');
                 comboIcon.style.transform = 'rotate(0deg)';
+                statusList.classList.add('hidden');
+                statusIcon.style.transform = 'rotate(0deg)';
             } else {
                 inspList.classList.add('hidden');
                 inspIcon.style.transform = 'rotate(0deg)';
+                window.tallyInspectorFilter = null;
+                window.renderEaTable();
+            }
+        } else if (type === 'status') {
+            if (statusList.classList.contains('hidden')) {
+                statusList.classList.remove('hidden');
+                statusIcon.style.transform = 'rotate(180deg)';
+                comboList.classList.add('hidden');
+                comboIcon.style.transform = 'rotate(0deg)';
+                inspList.classList.add('hidden');
+                inspIcon.style.transform = 'rotate(0deg)';
+            } else {
+                statusList.classList.add('hidden');
+                statusIcon.style.transform = 'rotate(0deg)';
+                window.tallyStatusFilter = null;
+                window.renderEaTable();
             }
         }
     };
 
-    // 1. UI TAB CONTROLLER
     window.switchEaTab = function(tabName) {
         const btnMfg = document.getElementById("ea-tab-btn-mfg");
         const btnId = document.getElementById("ea-tab-btn-id");
@@ -252,7 +276,6 @@
         window.resetEaFilters();
     };
 
-    // 2. DYNAMIC DATALIST POPULATOR
     window.updateSearchDatalist = function() {
         const type = document.getElementById("ea-search-type").value;
         const datalist = document.getElementById("ea-search-datalist");
@@ -271,7 +294,6 @@
         });
     };
 
-    // 3. FAST INITIALIZATION 
     window.initExpenseAnalysisModule = async function() {
         try {
             document.getElementById("ea-record-count").innerText = "Initializing...";
@@ -333,7 +355,6 @@
         if (window.lucide) window.lucide.createIcons();
     };
 
-    // 4. SERVER-SIDE DATA FETCH (TAB 1)
     window.fetchManufacturerData = async function() {
         const selectedMfg = document.getElementById("ea-filter-mfg").value.trim();
         const matSelect = document.getElementById("ea-filter-mat");
@@ -342,6 +363,7 @@
 
         window.tallyInspectorFilter = null; 
         window.tallyComboFilter = null;
+        window.tallyStatusFilter = null;
 
         if (!selectedMfg) {
             window.resetEaFilters();
@@ -397,7 +419,6 @@
         }
     };
 
-    // 5. BACKEND DATA FETCH (TAB 2: By ID / Letter No)
     window.fetchByIdOrLetter = async function() {
         const type = document.getElementById("ea-search-type").value;
         const val = document.getElementById("ea-search-value").value.trim().toLowerCase();
@@ -409,6 +430,7 @@
 
         window.tallyInspectorFilter = null;
         window.tallyComboFilter = null;
+        window.tallyStatusFilter = null;
         document.getElementById("ea-summary-dashboard").classList.add("hidden");
 
         document.getElementById("ea-list-container").innerHTML = `
@@ -532,6 +554,7 @@
         window.eaRawData = [];
         window.tallyInspectorFilter = null;
         window.tallyComboFilter = null;
+        window.tallyStatusFilter = null;
         
         const isMfgTab = !document.getElementById("ea-tab-mfg").classList.contains("hidden");
         const promptMsg = isMfgTab 
@@ -597,6 +620,12 @@
         window.renderEaTable();
     };
 
+    window.filterByTallyStatus = function(statusStr) {
+        if (window.tallyStatusFilter === statusStr) window.tallyStatusFilter = null; 
+        else window.tallyStatusFilter = statusStr;
+        window.renderEaTable();
+    };
+
     window.renderEaTable = function() {
         const isMfgTab = !document.getElementById("ea-tab-mfg").classList.contains("hidden");
         
@@ -624,6 +653,7 @@
         // 2. GENERATE TALLIES
         let inspCounts = {};
         let comboCounts = {};
+        let statusCounts = {};
         
         baseFiltered.forEach(r => {
             let inspectorStr = String(r[window.EA_KEYS.inspector] || "Unassigned").trim();
@@ -631,10 +661,14 @@
 
             let mfgStr = String(r[window.EA_KEYS.mfg] || "Unknown Combination").trim();
             comboCounts[mfgStr] = (comboCounts[mfgStr] || 0) + 1;
+
+            let statusStr = String(r[window.EA_KEYS.status] || "Unspecified").trim();
+            statusCounts[statusStr] = (statusCounts[statusStr] || 0) + 1;
         });
 
         if (window.tallyInspectorFilter && !inspCounts[window.tallyInspectorFilter]) window.tallyInspectorFilter = null;
         if (window.tallyComboFilter && !comboCounts[window.tallyComboFilter]) window.tallyComboFilter = null;
+        if (window.tallyStatusFilter && !statusCounts[window.tallyStatusFilter]) window.tallyStatusFilter = null;
 
         // 3. FINAL FILTER
         let finalFiltered = baseFiltered;
@@ -643,6 +677,9 @@
         }
         if (window.tallyComboFilter) {
             finalFiltered = finalFiltered.filter(r => String(r[window.EA_KEYS.mfg] || "Unknown Combination").trim() === window.tallyComboFilter);
+        }
+        if (window.tallyStatusFilter) {
+            finalFiltered = finalFiltered.filter(r => String(r[window.EA_KEYS.status] || "Unspecified").trim() === window.tallyStatusFilter);
         }
 
         if (countBadge) countBadge.innerText = `${finalFiltered.length} Records Found`;
@@ -692,7 +729,6 @@
             }
         });
 
-        // BUILD SUMMARY DASHBOARD CONTENT
         let dashHtml = `
             <div class="mb-4 bg-slate-800/50 inline-block px-4 py-2 rounded-xl border border-slate-600/50">
                 <span class="block text-[10px] text-slate-400 uppercase font-black mb-0.5">Total Records Found</span>
@@ -771,12 +807,29 @@
             `;
         });
         document.getElementById("ea-insp-counts-list").innerHTML = inspCountHtml;
+
+        // BUILD STATUS TALLY
+        let statusCountHtml = "";
+        Object.keys(statusCounts).sort().forEach(stat => {
+            const isActive = window.tallyStatusFilter === stat;
+            const btnClass = isActive ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/40';
+            const borderClass = isActive ? 'border-amber-500/50' : 'border-slate-600/50';
+            const textClass = isActive ? 'text-white' : 'text-slate-300';
+            const safeStatName = stat.replace(/'/g, "\\'"); 
+            
+            statusCountHtml += `
+                <div class="bg-slate-800/50 p-2.5 rounded-xl border ${borderClass} flex justify-between items-center transition">
+                    <span class="text-[10px] font-bold ${textClass} truncate pr-2" title="${stat}">${stat}</span>
+                    <button type="button" onclick="window.filterByTallyStatus('${safeStatName}')" class="${btnClass} shrink-0 px-2 py-0.5 rounded-lg text-[10px] font-black transition cursor-pointer" title="Click to filter by ${stat}">${statusCounts[stat]}</button>
+                </div>
+            `;
+        });
+        document.getElementById("ea-status-counts-list").innerHTML = statusCountHtml;
+
         summaryDash.classList.remove("hidden");
 
         // RENDER TABLE LIST
         let html = "";
-        const isTallyFiltered = !!window.tallyInspectorFilter;
-
         finalFiltered.forEach((rec, idx) => {
             const idStr = rec[window.EA_KEYS.id] || "Unknown";
             const sourceStr = rec[window.EA_KEYS.source] || "Unknown Source"; 
@@ -819,14 +872,10 @@
                                 <span onclick="window.openEaDetailsModal('${encodedPayload}')" class="font-mono font-black text-blue-700 text-sm hover:underline cursor-pointer" title="View Profile">${idStr}</span>
                             </div>
                             
+                            <!-- MOVED STATUS & SUBSTATUS OUTSIDE OF ARROW -->
                             <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
-                                ${isTallyFiltered ? `
-                                    <span class="text-[9px] font-black text-slate-400 shrink-0">STAT:</span>
-                                    <span class="font-bold text-slate-800 truncate text-[10px]" title="${statusStr} (${subStatusStr})">${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span></span>
-                                ` : `
-                                    <span class="text-[9px] font-black text-slate-400 shrink-0">INSP:</span>
-                                    <span class="font-bold text-slate-800 truncate" title="${inspectorStr}">${inspectorStr}</span>
-                                `}
+                                <span class="text-[9px] font-black text-slate-400 shrink-0">STAT:</span>
+                                <span class="font-bold text-slate-800 truncate text-[10px]" title="${statusStr} (${subStatusStr})">${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span></span>
                             </div>
                         </div>
 
@@ -861,8 +910,8 @@
                         <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
                             <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0 truncate max-w-[120px]" title="${sourceStr}">${sourceStr}</span>
                             <span class="font-mono font-black text-blue-700 text-sm">${idStr}</span>
-                            <span class="font-bold text-slate-800 truncate text-[10px] border-l border-slate-300 pl-2" title="${isTallyFiltered ? `${statusStr} (${subStatusStr})` : inspectorStr}">
-                                ${isTallyFiltered ? `${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span>` : inspectorStr}
+                            <span class="font-bold text-slate-800 truncate text-[10px] border-l border-slate-300 pl-2">
+                                ${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span>
                             </span>
                         </div>
                         
@@ -905,8 +954,8 @@
                                 <span class="font-bold text-slate-800">${rec[window.EA_KEYS.mat] || '-'}</span>
                             </div>
                             <div>
-                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Inspection Status</span>
-                                <span class="font-bold text-slate-800">${rec[window.EA_KEYS.status] || '-'} <span class="text-slate-500 font-normal">(${rec[window.EA_KEYS.subStatus] || '-'})</span></span>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Assigned Inspector</span>
+                                <span class="font-bold text-slate-800">${inspectorStr}</span>
                             </div>
                             <div class="sm:col-span-1 lg:col-span-2">
                                 <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Material Specification</span>
