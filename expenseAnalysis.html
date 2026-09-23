@@ -1,0 +1,575 @@
+<div class="max-w-7xl mx-auto space-y-4 animate-fade-in pb-16">
+
+    <!-- Top Header -->
+    <div class="bg-white p-4 sm:p-6 rounded-3xl border shadow-sm space-y-3">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-slate-100 pb-3">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="indian-rupee" class="text-green-600 w-5 h-5"></i> Expense Analysis Portal
+                </h3>
+                <p class="text-xs text-slate-500 mt-0.5">Fast-loading server-side filtered analysis.</p>
+            </div>
+            <div class="flex items-center gap-2">
+                <span id="ea-record-count" class="text-[11px] font-mono px-3 py-1 rounded-xl bg-slate-100 text-slate-700 font-bold border">
+                    Initializing...
+                </span>
+            </div>
+        </div>
+
+        <!-- Filters Grid -->
+        <div class="grid grid-cols-1 sm:grid-cols-5 gap-3 pt-1 items-end">
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">1. Manufacturer</label>
+                <input list="ea-mfg-list" id="ea-filter-mfg" onchange="window.fetchManufacturerData()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer focus:border-blue-500 shadow-sm" placeholder="Search / Select..." disabled>
+                <datalist id="ea-mfg-list"></datalist>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">2. Material Category</label>
+                <select id="ea-filter-mat" onchange="window.renderEaTable()" disabled class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 shadow-sm">
+                    <option value="ALL">-- Select Mfg First --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">3. Assigned Inspector</label>
+                <select id="ea-filter-inspector" onchange="window.renderEaTable()" disabled class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 shadow-sm">
+                    <option value="ALL">-- Select Mfg First --</option>
+                </select>
+            </div>
+            <div>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">4. Sort By Date (Last Date)</label>
+                <select id="ea-sort-date" onchange="window.renderEaTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer shadow-sm disabled:bg-slate-100" disabled>
+                    <option value="DESC">Latest First (Descending)</option>
+                    <option value="ASC">Oldest First (Ascending)</option>
+                </select>
+            </div>
+            <div class="flex gap-2 items-end">
+                <button onclick="window.resetEaFilters()" class="flex-1 p-2.5 bg-slate-50 border border-slate-200 text-slate-600 hover:bg-slate-100 hover:border-slate-300 rounded-xl text-[10px] font-black uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-sm h-[42px] cursor-pointer" title="Reset Filters Only">
+                    <i data-lucide="filter-x" class="w-4 h-4"></i> Reset
+                </button>
+                <button onclick="window.syncEaData()" class="flex-1 p-2.5 bg-blue-50 border border-blue-200 text-blue-700 hover:bg-blue-100 hover:border-blue-300 rounded-xl text-[10px] font-black uppercase tracking-wider transition flex items-center justify-center gap-1.5 shadow-sm h-[42px] cursor-pointer" title="Sync Live Data">
+                    <i data-lucide="refresh-cw" class="w-4 h-4"></i> Sync
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dynamic Dashboard Summary Tag -->
+    <div id="ea-summary-dashboard" class="hidden bg-gradient-to-r from-blue-900 to-slate-800 rounded-3xl p-5 shadow-lg border border-slate-700 text-white animate-fade-in relative overflow-hidden">
+        <div class="absolute -right-4 -top-4 opacity-10"><i data-lucide="bar-chart-2" class="w-32 h-32"></i></div>
+        <h4 class="text-xs font-black uppercase tracking-wider text-blue-300 mb-4 border-b border-slate-600/50 pb-2">Analysis Summary</h4>
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-4 relative z-10" id="ea-summary-content">
+            <!-- Injected Dynamically -->
+        </div>
+    </div>
+
+    <!-- Mobile-First Collapsible List Container -->
+    <div class="space-y-3" id="ea-list-container">
+        <div class="p-8 text-center bg-white rounded-3xl border text-slate-400 font-bold text-xs animate-pulse shadow-sm">
+            <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+            Initializing portal connection...
+        </div>
+    </div>
+</div>
+
+<!-- ========================================== -->
+<!-- FULL DETAILS MODAL -->
+<!-- ========================================== -->
+<div id="ea-details-modal" class="hidden fixed inset-0 bg-slate-900/70 backdrop-blur-md z-[100] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-4xl rounded-3xl shadow-2xl p-5 sm:p-8 relative border space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
+        <div class="flex items-center justify-between border-b pb-3 sticky top-0 bg-white z-10">
+            <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                <i data-lucide="file-search" class="text-blue-600 w-5 h-5"></i> Complete Inspection Profile
+            </h3>
+            <button onclick="window.closeEaDetailsModal()" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+        </div>
+        <div id="ea-details-body" class="text-xs space-y-3">
+            <!-- Injected dynamically -->
+        </div>
+    </div>
+</div>
+
+<!-- TOAST NOTIFICATION -->
+<div id="ea-toast" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[200] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold flex items-center gap-2.5 transition-all animate-fade-in">
+    <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
+    <span id="ea-toast-text">Criteria saved successfully!</span>
+</div>
+
+<script>
+    // 🚨 UNIQUE EXPENSE API URL
+    const EXPENSE_API_URL = "https://script.google.com/macros/s/AKfycbyuJg8RBOI11jQrkA3CNXujJGeZUr5ZNGqhXxb--ukixnYcy5ullcnSTFUd1_m870VEZg/exec"; 
+
+    window.eaRawData = [];
+    window.eaHeaders = [];
+    window.EA_KEYS = {};
+
+    window.showEaToast = function(message) {
+        const toast = document.getElementById("ea-toast");
+        const txt = document.getElementById("ea-toast-text");
+        if(toast && txt) {
+            txt.innerText = message || "Criteria saved successfully!";
+            toast.classList.remove("hidden");
+            setTimeout(() => { toast.classList.add("hidden"); }, 3000);
+        }
+    };
+
+    window.extractLastDateEpoch = function(dateStr) {
+        if (!dateStr || dateStr === '-' || dateStr.toLowerCase().includes('na')) return 0;
+        const regex = /(\d{2})\/(\d{2})\/(\d{4})/g;
+        let match;
+        let maxTime = 0;
+        while ((match = regex.exec(dateStr)) !== null) {
+            let time = new Date(`${match[3]}-${match[2]}-${match[1]}T00:00:00`).getTime();
+            if (time > maxTime) maxTime = time;
+        }
+        return maxTime;
+    };
+
+    // 1. FAST INITIALIZATION (Only fetches Manufacturer names)
+    window.initExpenseAnalysisModule = async function() {
+        try {
+            const res = await fetch(`${EXPENSE_API_URL}?action=getManufacturers&client=${window.CURRENT_CLIENT}`);
+            const parsed = await res.json();
+
+            if (parsed.status && parsed.manufacturers) {
+                const mfgInput = document.getElementById("ea-filter-mfg");
+                const mfgList = document.getElementById("ea-mfg-list");
+                
+                mfgList.innerHTML = "";
+                parsed.manufacturers.forEach(mfg => {
+                    const option = document.createElement("option");
+                    option.value = mfg;
+                    mfgList.appendChild(option);
+                });
+
+                mfgInput.disabled = false;
+                document.getElementById("ea-record-count").innerText = "Ready";
+                document.getElementById("ea-list-container").innerHTML = `
+                    <div class="bg-white p-12 rounded-3xl border text-center text-slate-400 font-bold text-xs shadow-sm">
+                        <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                        Please search and select a Manufacturer above to pull its records.
+                    </div>
+                `;
+            } else {
+                document.getElementById("ea-record-count").innerText = "Failed to Init";
+            }
+        } catch (e) {
+            console.error("Expense Portal sync error:", e);
+            document.getElementById("ea-record-count").innerText = "Network Error";
+        }
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    // 2. SERVER-SIDE DATA FETCH (Triggered when user selects a manufacturer)
+    window.fetchManufacturerData = async function() {
+        const selectedMfg = document.getElementById("ea-filter-mfg").value.trim();
+        const matSelect = document.getElementById("ea-filter-mat");
+        const inspSelect = document.getElementById("ea-filter-inspector");
+        const sortSelect = document.getElementById("ea-sort-date");
+        const summaryDash = document.getElementById("ea-summary-dashboard");
+
+        if (!selectedMfg) {
+            window.resetEaFilters();
+            return;
+        }
+
+        // Show loading state while querying server
+        document.getElementById("ea-list-container").innerHTML = `
+            <div class="bg-white p-12 rounded-3xl border text-center text-blue-500 font-bold text-xs shadow-sm">
+                <i data-lucide="loader-2" class="w-6 h-6 animate-spin mx-auto mb-2"></i>
+                Downloading records for ${selectedMfg}...
+            </div>
+        `;
+        document.getElementById("ea-record-count").innerText = "Fetching...";
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            const res = await fetch(`${EXPENSE_API_URL}?action=getFilteredData&client=${window.CURRENT_CLIENT}&mfg=${encodeURIComponent(selectedMfg)}`);
+            const parsed = await res.json();
+
+            if (parsed.status && parsed.data) {
+                window.eaRawData = parsed.data;
+                window.eaHeaders = parsed.headers || [];
+                
+                window.EA_KEYS = {
+                    mfg: window.eaHeaders.find(h => h.toLowerCase().includes("manufacturer")) || "Manufacturer Name",
+                    mat: window.eaHeaders.find(h => h.toLowerCase().includes("material inspected")) || "Material Inspected",
+                    id: window.eaHeaders.find(h => h.toLowerCase() === "inspection id") || "Inspection ID",
+                    discom: window.eaHeaders.find(h => h.toLowerCase().includes("discom")) || "DISCOM",
+                    status: window.eaHeaders.find(h => h.toLowerCase() === "inspection status") || "Inspection Status",
+                    subStatus: window.eaHeaders.find(h => h.toLowerCase().includes("sub status")) || "Inspection Sub Status",
+                    inspector: window.eaHeaders.find(h => h.toLowerCase().includes("conducted by tpia inspector")) || "Inspection conducted by TPIA Inspector",
+                    dates: window.eaHeaders.find(h => h.toLowerCase().includes("date (s) of inspection")) || "Date (s) of Inspection (From - To)",
+                    criteria: window.eaHeaders.find(h => h.toLowerCase().includes("criteria")) || "Criteria",
+                    value: window.eaHeaders.find(h => h.toLowerCase() === "value") || "Value"
+                };
+
+                // Populate secondary dropdowns dynamically based on returned data
+                let materials = new Set();
+                let inspectors = new Set();
+                
+                window.eaRawData.forEach(r => {
+                    let matVal = r[window.EA_KEYS.mat];
+                    let inspVal = r[window.EA_KEYS.inspector];
+                    if (matVal && String(matVal).trim() !== "") materials.add(String(matVal).trim());
+                    if (inspVal && String(inspVal).trim() !== "") inspectors.add(String(inspVal).trim());
+                });
+
+                let matHtml = '<option value="ALL">-- All Materials --</option>';
+                Array.from(materials).sort().forEach(mat => { matHtml += `<option value="${mat}">${mat}</option>`; });
+                matSelect.innerHTML = matHtml;
+                matSelect.disabled = false;
+
+                let inspHtml = '<option value="ALL">-- All Assigned Inspectors --</option>';
+                Array.from(inspectors).sort().forEach(insp => { inspHtml += `<option value="${insp}">${insp}</option>`; });
+                inspSelect.innerHTML = inspHtml;
+                inspSelect.disabled = false;
+                
+                sortSelect.disabled = false;
+
+                window.renderEaTable();
+            } else {
+                document.getElementById("ea-list-container").innerHTML = `
+                    <div class="bg-white p-12 rounded-3xl border text-center text-rose-500 font-bold text-xs shadow-sm">
+                        Data error or no records found on the server.
+                    </div>
+                `;
+                document.getElementById("ea-record-count").innerText = "Error";
+            }
+        } catch (e) {
+            console.error("Fetch filtered data error:", e);
+            document.getElementById("ea-record-count").innerText = "Network Error";
+        }
+    };
+
+    window.resetEaFilters = function() {
+        document.getElementById("ea-filter-mfg").value = "";
+        document.getElementById("ea-filter-mat").innerHTML = '<option value="ALL">-- Select Mfg First --</option>';
+        document.getElementById("ea-filter-mat").disabled = true;
+        document.getElementById("ea-filter-inspector").innerHTML = '<option value="ALL">-- Select Mfg First --</option>';
+        document.getElementById("ea-filter-inspector").disabled = true;
+        document.getElementById("ea-sort-date").value = "DESC";
+        document.getElementById("ea-sort-date").disabled = true;
+        document.getElementById("ea-summary-dashboard").classList.add("hidden");
+        
+        window.eaRawData = [];
+        document.getElementById("ea-list-container").innerHTML = `
+            <div class="bg-white p-12 rounded-3xl border text-center text-slate-400 font-bold text-xs shadow-sm">
+                <i data-lucide="search" class="w-8 h-8 text-slate-300 mx-auto mb-2"></i>
+                Please search and select a Manufacturer above to pull its records.
+            </div>
+        `;
+        document.getElementById("ea-record-count").innerText = "Ready";
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.syncEaData = async function() {
+        const currentMfg = document.getElementById("ea-filter-mfg").value.trim();
+        if (currentMfg) {
+            await window.fetchManufacturerData();
+        } else {
+            // If no manufacturer is selected, just refresh the initialization
+            await window.initExpenseAnalysisModule();
+        }
+    };
+
+    window.toggleEaAccordion = function(index) {
+        const detailDiv = document.getElementById(`ea-detail-${index}`);
+        const icon = document.getElementById(`ea-icon-${index}`);
+        if (detailDiv.classList.contains('hidden')) {
+            detailDiv.classList.remove('hidden');
+            icon.style.transform = 'rotate(90deg)';
+        } else {
+            detailDiv.classList.add('hidden');
+            icon.style.transform = 'rotate(0deg)';
+        }
+    };
+
+    window.toggleEaEditMode = function(index, showEdit) {
+        const viewDiv = document.getElementById(`ea-view-mode-${index}`);
+        const editDiv = document.getElementById(`ea-edit-mode-${index}`);
+        
+        if (showEdit) {
+            viewDiv.classList.add('hidden');
+            editDiv.classList.remove('hidden');
+        } else {
+            editDiv.classList.add('hidden');
+            viewDiv.classList.remove('hidden');
+        }
+    };
+
+    window.renderEaTable = function() {
+        const matFilter = document.getElementById("ea-filter-mat").value;
+        const inspFilter = document.getElementById("ea-filter-inspector").value;
+        const sortOrder = document.getElementById("ea-sort-date").value;
+        
+        const container = document.getElementById("ea-list-container");
+        const countBadge = document.getElementById("ea-record-count");
+        const summaryDash = document.getElementById("ea-summary-dashboard");
+
+        // Client-side filtering on the downloaded subset
+        let filtered = window.eaRawData.filter(r => {
+            if (matFilter !== "ALL" && String(r[window.EA_KEYS.mat] || "").trim() !== matFilter) return false;
+            if (inspFilter !== "ALL" && String(r[window.EA_KEYS.inspector] || "").trim() !== inspFilter) return false;
+            return true;
+        });
+
+        if (countBadge) countBadge.innerText = `${filtered.length} Records Found`;
+
+        if (filtered.length === 0) {
+            summaryDash.classList.add("hidden");
+            container.innerHTML = `
+                <div class="bg-white p-12 rounded-3xl border text-center text-slate-400 font-bold text-xs shadow-sm">
+                    No inspection records found for this filter combination.
+                </div>
+            `;
+            return;
+        }
+
+        filtered.sort((a, b) => {
+            const timeA = window.extractLastDateEpoch(a[window.EA_KEYS.dates]);
+            const timeB = window.extractLastDateEpoch(b[window.EA_KEYS.dates]);
+            return sortOrder === "DESC" ? timeB - timeA : timeA - timeB;
+        });
+
+        let maxVal = -Infinity, minVal = Infinity, maxRow = null;
+        let critSet = new Set();
+        let validVals = 0;
+
+        filtered.forEach(r => {
+            let rawV = r[window.EA_KEYS.value];
+            if(rawV !== undefined && rawV !== null && String(rawV).trim() !== "") {
+                let v = parseFloat(rawV);
+                if(!isNaN(v)) {
+                    validVals++;
+                    if(v > maxVal) { maxVal = v; maxRow = r; }
+                    if(v < minVal) { minVal = v; }
+                }
+            }
+            let c = String(r[window.EA_KEYS.criteria] || "").trim();
+            if(c !== "") critSet.add(c);
+        });
+
+        const displayMin = validVals > 0 ? minVal : '-';
+        const displayMax = validVals > 0 ? maxVal : '-';
+        const displayCritTypes = critSet.size > 0 ? Array.from(critSet).join(', ') : 'None Set';
+        
+        let maxMeta = '-';
+        if (maxRow) {
+            const maxInsp = maxRow[window.EA_KEYS.inspector] || 'Unassigned';
+            const maxDate = maxRow[window.EA_KEYS.dates] || 'No Date';
+            maxMeta = `<span title="${maxInsp}">${maxInsp}</span><br><span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate" title="${maxDate}">${maxDate}</span>`;
+        }
+
+        document.getElementById("ea-summary-content").innerHTML = `
+            <div>
+                <span class="block text-[10px] text-slate-400 uppercase font-black mb-1">Total Found</span>
+                <span class="text-xl font-black text-white">${filtered.length}</span>
+            </div>
+            <div>
+                <span class="block text-[10px] text-slate-400 uppercase font-black mb-1">Criteria Utilized</span>
+                <span class="text-xs font-bold text-blue-200 mt-1 block">${displayCritTypes}</span>
+            </div>
+            <div>
+                <span class="block text-[10px] text-slate-400 uppercase font-black mb-1">Min / Max Val</span>
+                <span class="text-sm font-black text-white">${displayMin} <span class="text-slate-500 font-normal mx-1">/</span> <span class="text-emerald-400">${displayMax}</span></span>
+            </div>
+            <div>
+                <span class="block text-[10px] text-slate-400 uppercase font-black mb-1">Max Recorded By</span>
+                <span class="text-[11px] font-bold text-white block leading-tight truncate">${maxMeta}</span>
+            </div>
+        `;
+        summaryDash.classList.remove("hidden");
+
+        let html = "";
+        filtered.forEach((rec, idx) => {
+            const idStr = rec[window.EA_KEYS.id] || "Unknown";
+            const discomStr = rec[window.EA_KEYS.discom] || "DISCOM";
+            const inspectorStr = rec[window.EA_KEYS.inspector] || "Unassigned";
+            const currentCrit = String(rec[window.EA_KEYS.criteria] || "").trim();
+            const currentVal = rec[window.EA_KEYS.value] || "";
+
+            const displayCrit = currentCrit === '%' ? '% Pct' : (currentCrit === 'Unit' ? 'Unit' : 'N/A');
+            const displayVal = currentVal !== "" ? currentVal : '--';
+
+            const encodedPayload = encodeURIComponent(JSON.stringify(rec));
+
+            html += `
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm transition overflow-hidden">
+                    
+                    <div id="ea-view-mode-${idx}" class="p-3 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative transition">
+                        
+                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
+                            <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0">${discomStr}</span>
+                            
+                            <div class="flex items-center gap-1.5 shrink-0">
+                                <span class="text-[9px] font-black text-slate-400 hidden sm:inline">ID:</span>
+                                <span onclick="window.openEaDetailsModal('${encodedPayload}')" class="font-mono font-black text-blue-700 text-sm hover:underline cursor-pointer" title="View Profile">${idStr}</span>
+                            </div>
+                            
+                            <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
+                                <span class="text-[9px] font-black text-slate-400 shrink-0">INSP:</span>
+                                <span class="font-bold text-slate-800 truncate" title="${inspectorStr}">${inspectorStr}</span>
+                            </div>
+                        </div>
+
+                        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-xs w-full sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border sm:border-none border-slate-200">
+                            
+                            <div class="flex items-center gap-2 sm:gap-3">
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] uppercase font-black text-slate-400">CRIT:</span>
+                                    <span id="ea-display-crit-${idx}" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md">${displayCrit}</span>
+                                </div>
+                                <span class="text-slate-200">|</span>
+                                <div class="flex items-center gap-1.5">
+                                    <span class="text-[9px] uppercase font-black text-slate-400">VAL:</span>
+                                    <span id="ea-display-val-${idx}" class="font-mono font-black text-emerald-600">${displayVal}</span>
+                                </div>
+                            </div>
+
+                            <div class="flex items-center gap-1 pl-2 sm:pl-3 border-l border-slate-200">
+                                <button onclick="window.toggleEaEditMode(${idx}, true)" class="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition" title="Edit Criteria & Value">
+                                    <i data-lucide="edit-3" class="w-4 h-4"></i>
+                                </button>
+                                <button type="button" onclick="window.toggleEaAccordion(${idx})" class="text-slate-400 hover:text-slate-700 hover:bg-slate-200 bg-slate-100 sm:bg-transparent p-1.5 rounded-lg transition flex items-center shrink-0">
+                                    <i id="ea-icon-${idx}" data-lucide="chevron-right" class="w-4 h-4 transition-transform"></i>
+                                </button>
+                            </div>
+                        </div>
+
+                    </div>
+
+                    <div id="ea-edit-mode-${idx}" class="hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative border-b border-blue-200 transition bg-blue-50/50 p-3">
+                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
+                            <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0">${discomStr}</span>
+                            <span class="font-mono font-black text-blue-700 text-sm">${idStr}</span>
+                            <span class="font-bold text-slate-800 truncate text-[10px] border-l border-slate-300 pl-2" title="${inspectorStr}">${inspectorStr}</span>
+                        </div>
+                        
+                        <div class="flex items-center gap-2 w-full sm:w-auto">
+                            <select id="ea-crit-${idx}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
+                                <option value="" ${currentCrit === '' ? 'selected' : ''}>Select...</option>
+                                <option value="%" ${currentCrit === '%' ? 'selected' : ''}>% Percent</option>
+                                <option value="Unit" ${currentCrit === 'Unit' ? 'selected' : ''}>Per Unit</option>
+                            </select>
+                            <input type="number" step="0.01" id="ea-val-${idx}" value="${currentVal}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500" placeholder="Value">
+                            <button onclick="window.toggleEaEditMode(${idx}, false)" class="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-[10px] font-black uppercase rounded-lg shadow-sm transition">Cancel</button>
+                            <button id="ea-btn-${idx}" onclick="window.saveEaCriteria('${idStr}', ${idx})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1">
+                                <i data-lucide="save" class="w-3.5 h-3.5"></i> Save
+                            </button>
+                        </div>
+                    </div>
+
+                    <div id="ea-detail-${idx}" class="hidden border-t border-slate-200 bg-white p-4">
+                        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4 text-xs">
+                            <div>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Material Category</span>
+                                <span class="font-bold text-slate-800">${rec[window.EA_KEYS.mat] || '-'}</span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Inspection Status</span>
+                                <span class="font-bold text-slate-800">${rec[window.EA_KEYS.status] || '-'} <span class="text-slate-500 font-normal">(${rec[window.EA_KEYS.subStatus] || '-'})</span></span>
+                            </div>
+                            <div class="sm:col-span-2">
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Date(s) of Inspection (From - To)</span>
+                                <span class="font-mono text-slate-800">${rec[window.EA_KEYS.dates] || '-'}</span>
+                            </div>
+                        </div>
+                    </div>
+
+                </div>
+            `;
+        });
+
+        container.innerHTML = html;
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.saveEaCriteria = async function(inspectionId, idx) {
+        const critInput = document.getElementById(`ea-crit-${idx}`).value;
+        const valInput = document.getElementById(`ea-val-${idx}`).value;
+        const btn = document.getElementById(`ea-btn-${idx}`);
+
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>`;
+        btn.disabled = true;
+        btn.classList.replace('bg-emerald-600', 'bg-amber-500');
+
+        try {
+            const payload = {
+                action: "saveCriteriaData",
+                client: window.CURRENT_CLIENT,
+                inspectionId: inspectionId,
+                criteria: critInput,
+                value: valInput
+            };
+
+            const res = await fetch(EXPENSE_API_URL, { 
+                method: "POST", 
+                body: JSON.stringify(payload) 
+            });
+            const data = await res.json();
+
+            if (data.status) {
+                let record = window.eaRawData.find(r => String(r[window.EA_KEYS.id]) === String(inspectionId));
+                if (record) {
+                    record[window.EA_KEYS.criteria] = critInput;
+                    record[window.EA_KEYS.value] = valInput;
+                }
+
+                const displayCrit = critInput === '%' ? '% Pct' : (critInput === 'Unit' ? 'Unit' : 'N/A');
+                const displayVal = valInput !== "" ? valInput : '--';
+                
+                document.getElementById(`ea-display-crit-${idx}`).innerText = displayCrit;
+                document.getElementById(`ea-display-val-${idx}`).innerText = displayVal;
+                
+                window.toggleEaEditMode(idx, false);
+                window.showEaToast();
+                
+                // Re-trigger summary calculation implicitly
+                window.renderEaTable();
+            } else {
+                alert("Failed to save: " + data.message);
+            }
+        } catch (err) {
+            console.error(err);
+            alert("Network Error saving criteria");
+        } finally {
+            btn.disabled = false; 
+            btn.innerHTML = `<i data-lucide="save" class="w-3.5 h-3.5"></i> Save`;
+            btn.classList.replace('bg-amber-500', 'bg-emerald-600');
+            if (window.lucide) window.lucide.createIcons();
+        }
+    };
+
+    window.openEaDetailsModal = function(encodedPayload) {
+        if (!encodedPayload) return;
+        const r = JSON.parse(decodeURIComponent(encodedPayload));
+        const modal = document.getElementById("ea-details-modal");
+        const body = document.getElementById("ea-details-body");
+
+        let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">`;
+        window.eaHeaders.forEach(header => {
+            if(header && r[header] !== undefined && r[header] !== "") {
+                html += `
+                    <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
+                        <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5 truncate" title="${header}">${header}</span>
+                        <span class="text-xs font-bold text-slate-800 whitespace-pre-wrap break-words">${r[header]}</span>
+                    </div>
+                `;
+            }
+        });
+        html += `</div>`;
+        
+        body.innerHTML = html;
+        modal.classList.remove("hidden");
+    };
+
+    window.closeEaDetailsModal = function() {
+        document.getElementById("ea-details-modal").classList.add("hidden");
+    };
+
+    setTimeout(() => {
+        window.initExpenseAnalysisModule();
+    }, 50);
+</script>
