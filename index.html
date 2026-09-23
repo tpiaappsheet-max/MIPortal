@@ -449,7 +449,9 @@
                         <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
                             <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
                         </button>
-                         
+                         <button onclick="loadMiModule('expenseAnalysis', this)" id="nav-expenseAnalysis" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                             <i data-lucide="indian-rupee" class="w-4 h-4 text-green-400 shrink-0"></i> Expense Analysis
+                        </button>
                         <button onclick="loadMiModule('inspectorPlanner', this)" id="nav-inspectorPlanner" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
                             <i data-lucide="map-pinned" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspector Planner
                         </button>
@@ -549,6 +551,10 @@
                 view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
             }
 
+             if (moduleName === "expenseAnalysis" && r !== 'admin') {
+                view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
+            }
+            
             // CUSTOM NATIVE INJECTIONS
             if (moduleName === "inspectorsRecords") {
                 const isAdmin = r === 'admin';
