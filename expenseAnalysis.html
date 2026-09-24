@@ -1,3 +1,7 @@
+<!-- PDF Generation Libraries -->
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js"></script>
+
 <div class="max-w-7xl mx-auto space-y-4 animate-fade-in pb-16">
 
     <!-- Top Header & Filter Controls -->
@@ -18,9 +22,10 @@
         </div>
 
         <!-- Tab Navigation for Filter Sections -->
-        <div class="flex gap-4 border-b border-slate-200">
-            <button id="ea-tab-btn-mfg" onclick="window.switchEaTab('mfg')" class="pb-2 text-[10px] font-black uppercase tracking-wider text-blue-600 border-b-2 border-blue-600 transition focus:outline-none">Filter by Manufacturer</button>
-            <button id="ea-tab-btn-id" onclick="window.switchEaTab('id')" class="pb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition focus:outline-none">Filter by ID or Letter No</button>
+        <div class="flex gap-4 border-b border-slate-200 overflow-x-auto custom-scrollbar">
+            <button id="ea-tab-btn-mfg" onclick="window.switchEaTab('mfg')" class="pb-2 text-[10px] font-black uppercase tracking-wider text-blue-600 border-b-2 border-blue-600 transition focus:outline-none whitespace-nowrap">Filter by Manufacturer</button>
+            <button id="ea-tab-btn-id" onclick="window.switchEaTab('id')" class="pb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition focus:outline-none whitespace-nowrap">Filter by ID or Letter No</button>
+            <button id="ea-tab-btn-summary" onclick="window.switchEaTab('summary')" class="pb-2 text-[10px] font-black uppercase tracking-wider text-slate-400 border-b-2 border-transparent hover:text-slate-600 transition focus:outline-none whitespace-nowrap">Summary of Value</button>
         </div>
 
         <!-- TAB 1: Filter by Manufacturer -->
@@ -37,7 +42,7 @@
                 </select>
             </div>
             <div>
-                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">3. Assigned Inspector</label>
+                <label class="block text-[9px] font-black uppercase text-slate-400 mb-1">3. Inspector (Conducted By)</label>
                 <select id="ea-filter-inspector" onchange="window.renderEaTable()" disabled class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer disabled:bg-slate-100 disabled:text-slate-400 shadow-sm">
                     <option value="ALL">-- Select Mfg First --</option>
                 </select>
@@ -88,37 +93,60 @@
             </div>
         </div>
 
+        <!-- TAB 3: Summary of Value (FAST SERVER-SIDE) -->
+        <div id="ea-tab-summary" class="hidden space-y-4 pt-1">
+            <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-slate-50 p-4 rounded-2xl border border-slate-200 shadow-sm">
+                <div>
+                    <h4 class="text-xs font-black uppercase text-slate-800">Global Value Summary</h4>
+                    <p class="text-[10px] text-slate-500 mt-0.5">Instant server-side aggregation. Shows multiple criteria grouped securely.</p>
+                </div>
+                <div class="flex items-center gap-2 flex-wrap sm:flex-nowrap">
+                    <button onclick="window.generateGlobalSummary()" id="ea-btn-gen-summary" class="px-4 py-2.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase tracking-wider rounded-xl shadow-sm transition flex items-center gap-1.5 cursor-pointer">
+                        <i data-lucide="bar-chart-2" class="w-4 h-4"></i> Generate Report
+                    </button>
+                    <button onclick="window.downloadSummaryCSV()" id="ea-btn-dl-summary" class="px-4 py-2.5 bg-emerald-50 border border-emerald-200 text-emerald-700 hover:bg-emerald-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-sm flex items-center gap-1.5 cursor-pointer" disabled>
+                        <i data-lucide="file-spreadsheet" class="w-4 h-4"></i> CSV
+                    </button>
+                    <button onclick="window.downloadSummaryPDF()" id="ea-btn-dl-pdf" class="px-4 py-2.5 bg-rose-50 border border-rose-200 text-rose-700 hover:bg-rose-100 disabled:opacity-50 disabled:cursor-not-allowed rounded-xl text-[10px] font-black uppercase tracking-wider transition shadow-sm flex items-center gap-1.5 cursor-pointer" disabled>
+                        <i data-lucide="file-text" class="w-4 h-4"></i> PDF
+                    </button>
+                </div>
+            </div>
+            
+            <div id="ea-summary-table-container" class="overflow-auto rounded-2xl max-h-[60vh] custom-scrollbar bg-white relative">
+                 <div class="p-12 text-center text-slate-400 font-bold text-xs border border-slate-300 rounded-2xl">
+                     <i data-lucide="info" class="w-8 h-8 mx-auto mb-3 text-blue-400"></i>
+                     Click "Generate Report" to build the comprehensive summary table.
+                 </div>
+            </div>
+        </div>
+
     </div>
 
-    <!-- Dynamic Dashboard Summary Tag -->
+    <!-- Dynamic Dashboard Summary Tag (For Tab 1 & 2) -->
     <div id="ea-summary-dashboard" class="hidden bg-gradient-to-r from-blue-900 to-slate-800 rounded-3xl p-5 shadow-lg border border-slate-700 text-white animate-fade-in relative overflow-hidden">
         <div class="absolute -right-4 -top-4 opacity-10"><i data-lucide="bar-chart-2" class="w-32 h-32"></i></div>
         <h4 class="text-xs font-black uppercase tracking-wider text-blue-300 mb-4 border-b border-slate-600/50 pb-2">Analysis Summary</h4>
         
-        <!-- Dynamic Multi-Criteria Content Container -->
         <div class="relative z-10 space-y-4" id="ea-summary-content">
             <!-- Injected Dynamically -->
         </div>
 
-        <!-- TALLY TOGGLES (SIDE BY SIDE) -->
         <div class="relative z-10 mt-6 pt-4 border-t border-slate-600/50 grid grid-cols-1 sm:grid-cols-3 gap-3">
             <button type="button" onclick="window.toggleEaTally('combo')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-purple-500/50 transition shadow-sm">
                 <span class="text-[10px] font-black uppercase tracking-wider text-purple-400 group-hover:text-purple-300 transition">Combinations Tally</span>
                 <i id="icon-tally-combo" data-lucide="chevron-down" class="w-4 h-4 text-purple-400 group-hover:text-purple-300 transition duration-300"></i>
             </button>
-            
             <button type="button" onclick="window.toggleEaTally('insp')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-emerald-500/50 transition shadow-sm">
                 <span class="text-[10px] font-black uppercase tracking-wider text-emerald-400 group-hover:text-emerald-300 transition">Inspector Tally</span>
                 <i id="icon-tally-insp" data-lucide="chevron-down" class="w-4 h-4 text-emerald-400 group-hover:text-emerald-300 transition duration-300"></i>
             </button>
-
             <button type="button" onclick="window.toggleEaTally('status')" class="flex items-center justify-between focus:outline-none cursor-pointer group bg-slate-800/60 p-2.5 rounded-xl border border-slate-600/50 hover:border-amber-500/50 transition shadow-sm">
                 <span class="text-[10px] font-black uppercase tracking-wider text-amber-400 group-hover:text-amber-300 transition">Status Tally</span>
                 <i id="icon-tally-status" data-lucide="chevron-down" class="w-4 h-4 text-amber-400 group-hover:text-amber-300 transition duration-300"></i>
             </button>
         </div>
 
-        <!-- TALLY CONTENT DROPDOWNS -->
         <div id="ea-combo-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 gap-3 animate-fade-in"></div>
         <div id="ea-insp-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 animate-fade-in"></div>
         <div id="ea-status-counts-list" class="hidden mt-3 relative z-10 grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 animate-fade-in"></div>
@@ -165,8 +193,9 @@
     window.eaHeaders = [];
     window.EA_KEYS = {};
     window.rawMfgCombinations = []; 
+    window.globalSummaryData = []; 
+    window.flattenedSummaryData = [];
     
-    // Active filters
     window.tallyInspectorFilter = null; 
     window.tallyComboFilter = null;
     window.tallyStatusFilter = null;
@@ -196,7 +225,41 @@
         return maxTime;
     };
 
-    // MUTUALLY EXCLUSIVE TALLY TOGGLE & FILTER RESET ON CLOSE
+    window.getEffectiveStatus = function(r) {
+        let baseStat = String(r[window.EA_KEYS.status] || "Unspecified").trim();
+        if (baseStat.toLowerCase() === "pending") {
+            let appt = String(r[window.EA_KEYS.appointedInsp] || "").trim();
+            let isAppointed = appt !== "" && appt !== "-" && appt.toLowerCase() !== "not appointed" && appt.toLowerCase() !== "na";
+            return isAppointed ? "Pending & Appointed" : "Pending & Un-appointed";
+        }
+        return baseStat;
+    };
+
+    // 🎯 HELPER: Smart Manufacturer Parser (Splits only on M/s)
+    window.parseManufacturers = function(mfgString) {
+        if (!mfgString || String(mfgString).trim() === "") return [];
+        let s = String(mfgString).replace(/(?!^)(?=\bM\/s\b)/gi, '|');
+        let parts = s.split('|');
+        let result = [];
+        parts.forEach(p => {
+            let clean = p.replace(/(?:,\s*|\s+and\s+|\s*&\s*)$/i, '').trim();
+            if (clean !== "") result.push(clean);
+        });
+        return result;
+    };
+
+    window.toggleAllEaCheckboxes = function(el) {
+        const checkboxes = document.querySelectorAll('.ea-row-cb');
+        checkboxes.forEach(cb => cb.checked = el.checked);
+        window.updateBulkCount();
+    };
+
+    window.updateBulkCount = function() {
+        const checkedCount = document.querySelectorAll('.ea-row-cb:checked').length;
+        const countEl = document.getElementById('ea-bulk-selected-count');
+        if(countEl) countEl.innerText = checkedCount;
+    };
+
     window.toggleEaTally = function(type) {
         const comboList = document.getElementById('ea-combo-counts-list');
         const inspList = document.getElementById('ea-insp-counts-list');
@@ -252,28 +315,34 @@
     };
 
     window.switchEaTab = function(tabName) {
-        const btnMfg = document.getElementById("ea-tab-btn-mfg");
-        const btnId = document.getElementById("ea-tab-btn-id");
-        const contentMfg = document.getElementById("ea-tab-mfg");
-        const contentId = document.getElementById("ea-tab-id");
+        const tabs = ['mfg', 'id', 'summary'];
+        
+        tabs.forEach(t => {
+            const btn = document.getElementById(`ea-tab-btn-${t}`);
+            const content = document.getElementById(`ea-tab-${t}`);
+            if (t === tabName) {
+                btn.classList.add("text-blue-600", "border-blue-600");
+                btn.classList.remove("text-slate-400", "border-transparent");
+                content.classList.remove("hidden");
+            } else {
+                btn.classList.remove("text-blue-600", "border-blue-600");
+                btn.classList.add("text-slate-400", "border-transparent");
+                content.classList.add("hidden");
+            }
+        });
 
-        if (tabName === 'mfg') {
-            btnMfg.classList.add("text-blue-600", "border-blue-600");
-            btnMfg.classList.remove("text-slate-400", "border-transparent");
-            btnId.classList.remove("text-blue-600", "border-blue-600");
-            btnId.classList.add("text-slate-400", "border-transparent");
-            contentMfg.classList.remove("hidden");
-            contentId.classList.add("hidden");
+        if (tabName === 'id') window.updateSearchDatalist();
+        
+        const dash = document.getElementById("ea-summary-dashboard");
+        const listContainer = document.getElementById("ea-list-container");
+        
+        if (tabName === 'summary') {
+            dash.classList.add("hidden");
+            listContainer.classList.add("hidden");
         } else {
-            btnId.classList.add("text-blue-600", "border-blue-600");
-            btnId.classList.remove("text-slate-400", "border-transparent");
-            btnMfg.classList.remove("text-blue-600", "border-blue-600");
-            btnMfg.classList.add("text-slate-400", "border-transparent");
-            contentId.classList.remove("hidden");
-            contentMfg.classList.add("hidden");
-            window.updateSearchDatalist(); 
+            listContainer.classList.remove("hidden");
+            window.resetEaFilters();
         }
-        window.resetEaFilters();
     };
 
     window.updateSearchDatalist = function() {
@@ -311,18 +380,8 @@
                 
                 let uniqueMfgs = new Set();
                 window.rawMfgCombinations.forEach(mfgStr => {
-                    if (mfgStr && typeof mfgStr === 'string') {
-                        let parts = mfgStr.split(/[,\n]/);
-                        parts.forEach(part => {
-                            let msParts = part.split(/(?=M\/s)/i);
-                            msParts.forEach(ms => {
-                                let name = ms.replace(/^[,\s]+|[,\s]+$/g, '').replace(/\s+/g, ' ');
-                                if (name && name.toLowerCase().startsWith("m/s")) {
-                                    uniqueMfgs.add(name);
-                                }
-                            });
-                        });
-                    }
+                    let parsedMfgs = window.parseManufacturers(mfgStr);
+                    parsedMfgs.forEach(m => uniqueMfgs.add(m));
                 });
                 
                 mfgList.innerHTML = "";
@@ -470,9 +529,10 @@
         }
     };
 
-    window.assignEaKeysAndExtractSubsets = function(matSelect, inspSelect, sortSelect) {
+    window.assignEaKeysAndExtractSubsets = function(matSelect, inspSelect, sortSelect, isSilent = false) {
         window.EA_KEYS = {
             mfg: window.eaHeaders.find(h => h.toLowerCase().includes("manufacturer")) || "Manufacturer Name",
+            addr: window.eaHeaders.find(h => h.toLowerCase() === "address" || h.toLowerCase().includes("address")) || "Address",
             mat: window.eaHeaders.find(h => h.toLowerCase().includes("material inspected")) || "Material Inspected",
             id: window.eaHeaders.find(h => h.toLowerCase() === "inspection id") || "Inspection ID",
             discom: window.eaHeaders.find(h => h.toLowerCase().includes("discom")) || "DISCOM",
@@ -482,11 +542,14 @@
             status: window.eaHeaders.find(h => h.toLowerCase() === "inspection status") || "Inspection Status",
             subStatus: window.eaHeaders.find(h => h.toLowerCase().includes("sub status")) || "Inspection Sub Status",
             inspector: window.eaHeaders.find(h => h.toLowerCase().includes("conducted by tpia inspector")) || "Inspection conducted by TPIA Inspector",
+            appointedInsp: window.eaHeaders.find(h => h.toLowerCase().includes("appointed")) || "Name of TPIA Inspector (Appointed)",
             dates: window.eaHeaders.find(h => h.toLowerCase().includes("date (s) of inspection")) || "Date (s) of Inspection (From - To)",
             criteria: window.eaHeaders.find(h => h.toLowerCase().includes("criteria")) || "Criteria",
             value: window.eaHeaders.find(h => h.toLowerCase() === "value") || "Value",
             letterNo: window.eaHeaders.find(h => h.toLowerCase().includes("letter no") || h.toLowerCase().includes("letter")) || "Letter No"
         };
+
+        if (isSilent) return;
 
         const uniqueData = [];
         const seenIds = new Set();
@@ -521,7 +584,7 @@
         }
 
         if (inspSelect) {
-            let inspHtml = '<option value="ALL">-- All Assigned Inspectors --</option>';
+            let inspHtml = '<option value="ALL">-- All Inspector (Conducted By) --</option>';
             Array.from(inspectors).sort().forEach(insp => { inspHtml += `<option value="${insp}">${insp}</option>`; });
             inspSelect.innerHTML = inspHtml;
             inspSelect.disabled = false;
@@ -629,7 +692,7 @@
     window.renderEaTable = function() {
         const isMfgTab = !document.getElementById("ea-tab-mfg").classList.contains("hidden");
         
-        const selectedMfg = document.getElementById("ea-filter-mfg").value.trim().toLowerCase().replace(/\s+/g, ' ');
+        const selectedMfg = document.getElementById("ea-filter-mfg") ? document.getElementById("ea-filter-mfg").value.trim().toLowerCase().replace(/\s+/g, ' ') : "";
         const matFilter = document.getElementById("ea-filter-mat") ? document.getElementById("ea-filter-mat").value : "ALL";
         const inspFilter = document.getElementById("ea-filter-inspector") ? document.getElementById("ea-filter-inspector").value : "ALL";
         const sortOrder = isMfgTab && document.getElementById("ea-sort-date") ? document.getElementById("ea-sort-date").value : "DESC"; 
@@ -638,19 +701,18 @@
         const countBadge = document.getElementById("ea-record-count");
         const summaryDash = document.getElementById("ea-summary-dashboard");
 
-        // 1. BASE FILTER
         let baseFiltered = window.eaRawData;
         if (isMfgTab) {
             baseFiltered = window.eaRawData.filter(r => {
                 if (matFilter !== "ALL" && String(r[window.EA_KEYS.mat] || "").trim() !== matFilter) return false;
                 if (inspFilter !== "ALL" && String(r[window.EA_KEYS.inspector] || "").trim() !== inspFilter) return false;
-                const rowMfg = String(r[window.EA_KEYS.mfg] || "").toLowerCase().replace(/\s+/g, ' ');
-                if (selectedMfg && !rowMfg.includes(selectedMfg)) return false;
+                
+                const rowMfgs = window.parseManufacturers(r[window.EA_KEYS.mfg] || "").map(m => m.toLowerCase());
+                if (selectedMfg && !rowMfgs.includes(selectedMfg)) return false;
                 return true;
             });
         }
 
-        // 2. GENERATE TALLIES
         let inspCounts = {};
         let comboCounts = {};
         let statusCounts = {};
@@ -662,7 +724,7 @@
             let mfgStr = String(r[window.EA_KEYS.mfg] || "Unknown Combination").trim();
             comboCounts[mfgStr] = (comboCounts[mfgStr] || 0) + 1;
 
-            let statusStr = String(r[window.EA_KEYS.status] || "Unspecified").trim();
+            let statusStr = window.getEffectiveStatus(r);
             statusCounts[statusStr] = (statusCounts[statusStr] || 0) + 1;
         });
 
@@ -670,7 +732,6 @@
         if (window.tallyComboFilter && !comboCounts[window.tallyComboFilter]) window.tallyComboFilter = null;
         if (window.tallyStatusFilter && !statusCounts[window.tallyStatusFilter]) window.tallyStatusFilter = null;
 
-        // 3. FINAL FILTER
         let finalFiltered = baseFiltered;
         if (window.tallyInspectorFilter) {
             finalFiltered = finalFiltered.filter(r => String(r[window.EA_KEYS.inspector] || "Unassigned").trim() === window.tallyInspectorFilter);
@@ -679,7 +740,7 @@
             finalFiltered = finalFiltered.filter(r => String(r[window.EA_KEYS.mfg] || "Unknown Combination").trim() === window.tallyComboFilter);
         }
         if (window.tallyStatusFilter) {
-            finalFiltered = finalFiltered.filter(r => String(r[window.EA_KEYS.status] || "Unspecified").trim() === window.tallyStatusFilter);
+            finalFiltered = finalFiltered.filter(r => window.getEffectiveStatus(r) === window.tallyStatusFilter);
         }
 
         if (countBadge) countBadge.innerText = `${finalFiltered.length} Records Found`;
@@ -705,7 +766,6 @@
             return sortOrder === "DESC" ? timeB - timeA : timeA - timeB;
         });
 
-        // 4. GENERATE CRITERIA STATS FOR SUMMARY
         let criteriaStats = {};
         
         finalFiltered.forEach(r => {
@@ -772,7 +832,6 @@
         dashHtml += `</div>`;
         document.getElementById("ea-summary-content").innerHTML = dashHtml;
 
-        // BUILD COMBINATIONS TALLY
         let comboCountHtml = "";
         Object.keys(comboCounts).sort().forEach(mfgStr => {
             const isActive = window.tallyComboFilter === mfgStr;
@@ -790,7 +849,6 @@
         });
         document.getElementById("ea-combo-counts-list").innerHTML = comboCountHtml;
 
-        // BUILD INSPECTOR TALLY
         let inspCountHtml = "";
         Object.keys(inspCounts).sort().forEach(insp => {
             const isActive = window.tallyInspectorFilter === insp;
@@ -808,7 +866,6 @@
         });
         document.getElementById("ea-insp-counts-list").innerHTML = inspCountHtml;
 
-        // BUILD STATUS TALLY
         let statusCountHtml = "";
         Object.keys(statusCounts).sort().forEach(stat => {
             const isActive = window.tallyStatusFilter === stat;
@@ -828,16 +885,58 @@
 
         summaryDash.classList.remove("hidden");
 
-        // RENDER TABLE LIST
         let html = "";
+
+        if (finalFiltered.length > 0) {
+            html += `
+                <div class="bg-blue-50 rounded-2xl border border-blue-200 shadow-sm mb-4 transition overflow-hidden">
+                    <div class="p-3 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative">
+                        <div class="flex items-center gap-3 w-full sm:w-auto overflow-hidden pl-1">
+                            <input type="checkbox" id="ea-select-all" class="w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer shrink-0" onchange="window.toggleAllEaCheckboxes(this)">
+                            <i data-lucide="layers" class="w-4 h-4 text-blue-600 shrink-0"></i>
+                            <span class="text-[10px] font-black uppercase text-blue-800 tracking-wider">Bulk Apply to Selected (<span id="ea-bulk-selected-count">0</span>)</span>
+                        </div>
+                        
+                        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-xs w-full sm:w-auto">
+                            <div class="flex flex-col gap-1 w-24 shrink-0">
+                                <select id="ea-bulk-crit" onchange="document.getElementById('ea-bulk-crit-unit').classList.toggle('hidden', this.value !== 'Unit')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
+                                    <option value="">Select...</option>
+                                    <option value="%">% Percent</option>
+                                    <option value="Unit">Per Unit</option>
+                                </select>
+                                <select id="ea-bulk-crit-unit" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white hidden">
+                                    <option value="No">No</option>
+                                    <option value="Drum">Drum</option>
+                                    <option value="Set">Set</option>
+                                    <option value="MT">MT</option>
+                                    <option value="Tonne">Tonne</option>
+                                    <option value="Kg">Kg</option>
+                                    <option value="Bundle">Bundle</option>
+                                    <option value="Other">Other</option>
+                                </select>
+                            </div>
+                            <input type="number" step="0.01" id="ea-bulk-val" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500" placeholder="Value">
+                            <button id="ea-bulk-btn" onclick="window.bulkSaveEaCriteria()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1">
+                                <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Apply
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
         finalFiltered.forEach((rec, idx) => {
             const idStr = rec[window.EA_KEYS.id] || "Unknown";
             const sourceStr = rec[window.EA_KEYS.source] || "Unknown Source"; 
             const discomStr = rec[window.EA_KEYS.discom] || "DISCOM"; 
+            const mfgStr = rec[window.EA_KEYS.mfg] || "-"; 
             const matSpecStr = rec[window.EA_KEYS.matSpec] || "-";
             const quantityStr = rec[window.EA_KEYS.quantity] || "-";
+            
             const inspectorStr = rec[window.EA_KEYS.inspector] || "Unassigned";
-            const statusStr = rec[window.EA_KEYS.status] || "-";
+            const appointedStr = rec[window.EA_KEYS.appointedInsp] || "Not Appointed";
+            const effectiveStatusStr = window.getEffectiveStatus(rec);
+            
             const subStatusStr = rec[window.EA_KEYS.subStatus] || "-";
             const letterNoStr = rec[window.EA_KEYS.letterNo] || "-";
             const currentCrit = String(rec[window.EA_KEYS.criteria] || "").trim();
@@ -857,26 +956,44 @@
             const displayCrit = currentCrit === '%' ? '% Pct' : (currentCrit.startsWith('Per Unit') ? currentCrit : 'N/A');
             const displayVal = currentVal !== "" ? currentVal : '--';
 
+            const isApptPhase = window.tallyStatusFilter === "Pending & Appointed" || (window.tallyStatusFilter && window.tallyStatusFilter.toLowerCase().includes("schedule"));
+            
+            let compactSlot3Html = "";
+
+            if (isApptPhase) {
+                compactSlot3Html = `
+                    <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
+                        <span class="text-[9px] font-black text-slate-400 shrink-0" title="Appointed Inspector">APPT:</span>
+                        <span class="font-bold text-indigo-600 truncate text-[10px] max-w-[120px]" title="${appointedStr}">${appointedStr}</span>
+                    </div>
+                `;
+            } else {
+                compactSlot3Html = `
+                    <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
+                        <span class="text-[9px] font-black text-slate-400 shrink-0" title="Inspection Status">STAT:</span>
+                        <span class="font-bold text-slate-800 truncate text-[10px] max-w-[120px]" title="${effectiveStatusStr} (${subStatusStr})">${effectiveStatusStr}</span>
+                    </div>
+                `;
+            }
+
             const encodedPayload = encodeURIComponent(JSON.stringify(rec));
 
             html += `
-                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm transition overflow-hidden">
+                <div class="bg-white rounded-2xl border border-slate-200 shadow-sm transition overflow-hidden mb-3">
                     
                     <div id="ea-view-mode-${idx}" class="p-3 bg-slate-50 flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative transition">
                         
-                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
+                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden pl-1">
+                            <input type="checkbox" class="ea-row-cb w-4 h-4 text-blue-600 rounded border-slate-300 cursor-pointer shrink-0" value="${idStr}" onchange="window.updateBulkCount()">
+                            
                             <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0 truncate max-w-[120px]" title="${sourceStr}">${sourceStr}</span>
                             
-                            <div class="flex items-center gap-1.5 shrink-0">
+                            <div class="flex items-center gap-1.5 shrink-0 border-l border-slate-300 pl-2 sm:pl-3">
                                 <span class="text-[9px] font-black text-slate-400 hidden sm:inline">ID:</span>
                                 <span onclick="window.openEaDetailsModal('${encodedPayload}')" class="font-mono font-black text-blue-700 text-sm hover:underline cursor-pointer" title="View Profile">${idStr}</span>
                             </div>
                             
-                            <!-- MOVED STATUS & SUBSTATUS OUTSIDE OF ARROW -->
-                            <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
-                                <span class="text-[9px] font-black text-slate-400 shrink-0">STAT:</span>
-                                <span class="font-bold text-slate-800 truncate text-[10px]" title="${statusStr} (${subStatusStr})">${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span></span>
-                            </div>
+                            ${compactSlot3Html}
                         </div>
 
                         <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-xs w-full sm:w-auto bg-white sm:bg-transparent p-2 sm:p-0 rounded-xl sm:rounded-none border sm:border-none border-slate-200">
@@ -905,14 +1022,16 @@
 
                     </div>
 
-                    <!-- STATE 2: EDIT MODE -->
                     <div id="ea-edit-mode-${idx}" class="hidden flex flex-col sm:flex-row sm:items-center justify-between gap-3 relative border-b border-blue-200 transition bg-blue-50/50 p-3">
-                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden">
+                        <div class="flex items-center gap-2 sm:gap-3 text-xs w-full sm:w-auto overflow-hidden pl-1">
+                            <div class="w-4 h-4 shrink-0"></div>
+
                             <span class="px-2 py-0.5 rounded text-[9px] font-black uppercase bg-purple-100 text-purple-800 border border-purple-200 shrink-0 truncate max-w-[120px]" title="${sourceStr}">${sourceStr}</span>
-                            <span class="font-mono font-black text-blue-700 text-sm">${idStr}</span>
-                            <span class="font-bold text-slate-800 truncate text-[10px] border-l border-slate-300 pl-2">
-                                ${statusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span>
-                            </span>
+                            <span class="font-mono font-black text-blue-700 text-sm border-l border-slate-300 pl-2 sm:pl-3">${idStr}</span>
+                            <div class="flex flex-col sm:flex-row gap-0.5 sm:gap-2 border-l border-slate-300 pl-2 truncate min-w-0">
+                                <span class="font-bold text-slate-800 truncate text-[10px] max-w-[80px]" title="Cond: ${inspectorStr}">C: ${inspectorStr}</span>
+                                <span class="font-bold text-indigo-600 truncate text-[10px] max-w-[80px]" title="Appt: ${appointedStr}">A: ${appointedStr}</span>
+                            </div>
                         </div>
                         
                         <div class="flex items-center gap-2 w-full sm:w-auto">
@@ -945,6 +1064,10 @@
 
                     <div id="ea-detail-${idx}" class="hidden border-t border-slate-200 bg-white p-4">
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 text-xs">
+                            <div class="sm:col-span-1 lg:col-span-2">
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Manufacturer Name</span>
+                                <span class="font-bold text-slate-800">${mfgStr}</span>
+                            </div>
                             <div>
                                 <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">DISCOM</span>
                                 <span class="font-bold text-slate-800">${discomStr}</span>
@@ -954,22 +1077,30 @@
                                 <span class="font-bold text-slate-800">${rec[window.EA_KEYS.mat] || '-'}</span>
                             </div>
                             <div>
-                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Assigned Inspector</span>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Inspection Status</span>
+                                <span class="font-bold text-slate-800">${effectiveStatusStr} <span class="text-slate-500 font-normal">(${subStatusStr})</span></span>
+                            </div>
+                            <div>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Inspector (Conducted By)</span>
                                 <span class="font-bold text-slate-800">${inspectorStr}</span>
                             </div>
-                            <div class="sm:col-span-1 lg:col-span-2">
-                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Material Specification</span>
-                                <span class="font-bold text-slate-800 whitespace-pre-wrap">${matSpecStr}</span>
-                            </div>
-                            <div class="sm:col-span-1 lg:col-span-1">
-                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Quantity</span>
-                                <span class="font-bold text-slate-800 whitespace-pre-wrap">${quantityStr}</span>
+                            <div>
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Appointed Inspector</span>
+                                <span class="font-bold text-indigo-700">${appointedStr}</span>
                             </div>
                             <div class="sm:col-span-1 lg:col-span-1">
                                 <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Letter No</span>
                                 <span class="font-bold text-slate-800 whitespace-pre-wrap">${letterNoStr}</span>
                             </div>
-                            <div class="sm:col-span-2 lg:col-span-2">
+                            <div class="sm:col-span-1 lg:col-span-1">
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Quantity</span>
+                                <span class="font-bold text-slate-800 whitespace-pre-wrap">${quantityStr}</span>
+                            </div>
+                            <div class="sm:col-span-1 lg:col-span-2">
+                                <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Material Specification</span>
+                                <span class="font-bold text-slate-800 whitespace-pre-wrap">${matSpecStr}</span>
+                            </div>
+                            <div class="sm:col-span-2 lg:col-span-3">
                                 <span class="block text-[9px] font-black text-slate-400 uppercase mb-0.5">Date(s) of Inspection (From - To)</span>
                                 <span class="font-mono text-slate-800">${rec[window.EA_KEYS.dates] || '-'}</span>
                             </div>
@@ -982,6 +1113,307 @@
 
         container.innerHTML = html;
         if (window.lucide) window.lucide.createIcons();
+        window.updateBulkCount(); 
+    };
+
+    // 🎯 FRONTEND RE-GROUPING: Generates exact table from screenshot layout
+    window.generateGlobalSummary = async function() {
+        const btn = document.getElementById("ea-btn-gen-summary");
+        const container = document.getElementById("ea-summary-table-container");
+        const dlCsvBtn = document.getElementById("ea-btn-dl-summary");
+        const dlPdfBtn = document.getElementById("ea-btn-dl-pdf");
+        
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Processing...`;
+        btn.disabled = true;
+        dlCsvBtn.disabled = true;
+        dlPdfBtn.disabled = true;
+        
+        container.innerHTML = `
+            <div class="p-12 text-center text-slate-400 font-bold text-xs">
+                <i data-lucide="loader-2" class="w-8 h-8 animate-spin mx-auto mb-3 text-blue-500"></i>
+                <div>Aggregating data across all records on the server...</div>
+                <div class="text-[10px] mt-1 text-slate-400">This makes the process blazing fast!</div>
+            </div>
+        `;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            const res = await fetch(`${EXPENSE_API_URL}?action=getGlobalSummary&client=${window.CURRENT_CLIENT}`);
+            const parsed = await res.json();
+            
+            if (parsed.status && parsed.data) {
+                
+                if (parsed.data.length === 0) {
+                    container.innerHTML = `<div class="p-12 text-center text-slate-400 font-bold text-xs">No records found with assigned values.</div>`;
+                } else {
+                    
+                    let grouped = {};
+                    parsed.data.forEach(r => {
+                        let mfgKey = String(r.mfg || "Unknown").trim();
+                        let matKey = String(r.mat || "Unknown").trim();
+                        
+                        let groupKey = `${mfgKey.toUpperCase()}|${matKey.toUpperCase()}`;
+
+                        if (!grouped[groupKey]) {
+                            grouped[groupKey] = {
+                                displayMfg: mfgKey,
+                                displayAddr: String(r.addr || "").trim(), 
+                                displayMat: matKey,
+                                items: {} // Use object for efficient merging
+                            };
+                        }
+
+                        let critKey = String(r.crit || "N/A").trim();
+                        let rCount = parseInt(r.count) || 0;
+                        let rMin = r.min !== undefined ? parseFloat(r.min) : "N/A";
+                        let rMax = r.max !== undefined ? parseFloat(r.max) : "N/A";
+                        let rInsp = String(r.maxInsp || "Unassigned").trim();
+                        let rDate = String(r.maxDate || "No Date").trim();
+                        let rSrc = String(r.maxSrc || "Unknown Source").trim();
+
+                        if (!grouped[groupKey].items[critKey]) {
+                            grouped[groupKey].items[critKey] = {
+                                crit: critKey,
+                                count: rCount,
+                                min: rMin,
+                                max: rMax,
+                                maxInsp: rInsp,
+                                maxDate: rDate,
+                                maxSrc: rSrc
+                            };
+                        } else {
+                            let existing = grouped[groupKey].items[critKey];
+                            
+                            // Merge counts
+                            existing.count += rCount;
+                            
+                            // Get the absolute minimum
+                            if (rMin !== "N/A") {
+                                if (existing.min === "N/A" || rMin < existing.min) {
+                                    existing.min = rMin;
+                                }
+                            }
+                            
+                            // Get the absolute maximum and resolve tie-breakers
+                            if (rMax !== "N/A") {
+                                let isNewMax = existing.max === "N/A" || rMax > existing.max;
+                                let isTie = existing.max !== "N/A" && rMax === existing.max;
+                                
+                                if (isNewMax) {
+                                    existing.max = rMax;
+                                    existing.maxInsp = rInsp;
+                                    existing.maxDate = rDate;
+                                    existing.maxSrc = rSrc;
+                                } else if (isTie) {
+                                    // Extract the timestamps to evaluate which one occurred latest
+                                    let rEpoch = window.extractLastDateEpoch(rDate);
+                                    let existingEpoch = window.extractLastDateEpoch(existing.maxDate);
+                                    if (rEpoch > existingEpoch) {
+                                        existing.maxInsp = rInsp;
+                                        existing.maxDate = rDate;
+                                        existing.maxSrc = rSrc;
+                                    }
+                                }
+                            }
+                        }
+                    });
+
+                    // Flatten grouped object back into an array mapping format for rendering
+                    let groupArray = Object.values(grouped).map(g => {
+                        return {
+                            ...g,
+                            items: Object.values(g.items)
+                        };
+                    }).sort((a,b) => a.displayMfg.localeCompare(b.displayMfg) || a.displayMat.localeCompare(b.displayMat));
+                    
+                    window.flattenedSummaryData = [];
+
+                    let html = `
+                        <table class="w-full text-left text-xs border-collapse whitespace-nowrap border border-slate-300">
+                            <thead class="bg-slate-900 text-white uppercase text-[9px] sticky top-0 z-10 font-black tracking-wider border-b border-slate-700">
+                                <tr>
+                                    <th class="p-3 border border-slate-700">Name of Manufacturer & Address</th>
+                                    <th class="p-3 border border-slate-700">Material Category</th>
+                                    <th class="p-3 border border-slate-700 text-center">Criteria Utilized</th>
+                                    <th class="p-3 border border-slate-700 text-center">Count</th>
+                                    <th class="p-3 border border-slate-700 text-right">Min Val</th>
+                                    <th class="p-3 border border-slate-700 text-right">Max Val</th>
+                                    <th class="p-3 border border-slate-700">Max Recorded By</th>
+                                </tr>
+                            </thead>
+                            <tbody class="text-slate-700 font-medium">
+                    `;
+
+                    groupArray.forEach((group, i) => {
+                        let bg = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
+                        
+                        group.items.sort((a,b) => a.crit.localeCompare(b.crit));
+                        let rowSpan = group.items.length;
+
+                        group.items.forEach((c, cIdx) => {
+                            
+                            window.flattenedSummaryData.push({
+                                mfg: group.displayMfg,
+                                addr: group.displayAddr,
+                                mat: group.displayMat,
+                                crit: c.crit,
+                                count: c.count,
+                                min: c.min,
+                                max: c.max,
+                                maxInsp: c.maxInsp,
+                                maxSrc: c.maxSrc,
+                                maxDate: c.maxDate
+                            });
+
+                            let maxMeta = `<span title="${c.maxInsp || 'Unassigned'}">${c.maxInsp || 'Unassigned'}</span><br><span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate text-blue-500" title="${c.maxSrc || 'Unknown'} | ${c.maxDate}">${c.maxSrc || 'Unknown'} • ${c.maxDate}</span>`;
+                            let borderB = cIdx === rowSpan - 1 ? 'border-b border-slate-300' : 'border-b border-slate-200 border-dashed';
+
+                            html += `<tr class="${bg} transition hover:bg-blue-50/50">`;
+
+                            // Only print Mfg and Material on the first row of the group, utilizing rowspan to stretch down
+                            if (cIdx === 0) {
+                                html += `
+                                    <td rowspan="${rowSpan}" class="p-3 border-r border-slate-300 border-b align-top max-w-[250px] whitespace-normal bg-transparent">
+                                        <strong class="text-blue-700 block leading-tight">${group.displayMfg}</strong>
+                                        <span class="text-[9px] text-slate-500 mt-0.5 block leading-tight">${group.displayAddr}</span>
+                                    </td>
+                                    <td rowspan="${rowSpan}" class="p-3 border-r border-slate-300 border-b align-top whitespace-normal max-w-[150px] bg-transparent">${group.displayMat}</td>
+                                `;
+                            }
+
+                            html += `
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-purple-700 font-bold whitespace-normal max-w-[150px]">${c.crit !== "N/A" ? c.crit : "-"}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-center">
+                                        <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">${c.count}</span>
+                                    </td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono">${c.min}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono text-emerald-600 font-bold">${c.max}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top max-w-[200px] whitespace-normal">
+                                        ${maxMeta}
+                                    </td>
+                                </tr>
+                            `;
+                        });
+                    });
+
+                    html += `</tbody></table>`;
+                    container.innerHTML = html;
+                    
+                    dlCsvBtn.disabled = false;
+                    dlPdfBtn.disabled = false;
+                }
+            } else {
+                throw new Error(parsed.message || "Failed to fetch summary data");
+            }
+        } catch (err) {
+            console.error(err);
+            container.innerHTML = `<div class="p-12 text-center text-rose-500 font-bold text-xs">Error generating report. Check console for details.</div>`;
+        } finally {
+            btn.innerHTML = `<i data-lucide="bar-chart-2" class="w-4 h-4"></i> Generate Report`;
+            btn.disabled = false;
+            if (window.lucide) window.lucide.createIcons();
+        }
+    };
+
+    window.downloadSummaryCSV = function() {
+        if (!window.flattenedSummaryData || window.flattenedSummaryData.length === 0) {
+            alert("No data available to export. Please generate the report first.");
+            return;
+        }
+
+        let csvContent = "data:text/csv;charset=utf-8,";
+        csvContent += "Name of Manufacturer,Address,Material Category,Criteria Utilized,Value Count,Min Value,Max Value,Max Recorded By,Source Sheet,Max Record Date\n";
+
+        window.flattenedSummaryData.forEach(s => {
+            let mfg = `"${s.mfg.replace(/"/g, '""')}"`;
+            let addr = `"${s.addr.replace(/"/g, '""')}"`;
+            let mat = `"${s.mat.replace(/"/g, '""')}"`;
+            let critStr = (s.crit && s.crit !== "N/A") ? `"${s.crit}"` : "-";
+            let insp = `"${(s.maxInsp || '').replace(/"/g, '""')}"`;
+            let src = `"${(s.maxSrc || '').replace(/"/g, '""')}"`;
+            let dt = `"${(s.maxDate || '').replace(/"/g, '""')}"`;
+
+            let row = [mfg, addr, mat, critStr, s.count, s.min, s.max, insp, src, dt].join(",");
+            csvContent += row + "\n";
+        });
+
+        const encodedUri = encodeURI(csvContent);
+        const link = document.createElement("a");
+        link.setAttribute("href", encodedUri);
+        link.setAttribute("download", `Expense_Summary_Report_${new Date().toISOString().slice(0,10)}.csv`);
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+    };
+
+    window.downloadSummaryPDF = async function() {
+        if (!window.flattenedSummaryData || window.flattenedSummaryData.length === 0) {
+            alert("No data available to export. Please generate the report first.");
+            return;
+        }
+
+        const pdfBtn = document.getElementById("ea-btn-dl-pdf");
+        const originalHtml = pdfBtn.innerHTML;
+        pdfBtn.innerHTML = `<i data-lucide="loader-2" class="w-4 h-4 animate-spin"></i> Loading...`;
+        pdfBtn.disabled = true;
+        if (window.lucide) window.lucide.createIcons();
+
+        try {
+            if (!window.jspdf) {
+                await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js";
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+            if (!window.jspdf || !window.jspdf.jsPDF.API.autoTable) {
+                 await new Promise((resolve, reject) => {
+                    const script = document.createElement('script');
+                    script.src = "https://cdnjs.cloudflare.com/ajax/libs/jspdf-autotable/3.5.31/jspdf.plugin.autotable.min.js";
+                    script.onload = resolve;
+                    script.onerror = reject;
+                    document.head.appendChild(script);
+                });
+            }
+
+            const { jsPDF } = window.jspdf;
+            const doc = new jsPDF('landscape'); 
+
+            doc.setFontSize(14);
+            doc.text(`Global Expense Summary Report - ${new Date().toLocaleDateString()}`, 14, 15);
+
+            const headers = [["Manufacturer Name", "Address", "Material Category", "Criteria", "Count", "Min Val", "Max Val", "Max Recorded By", "Source Sheet", "Date"]];
+            
+            const rows = window.flattenedSummaryData.map(s => [
+                s.mfg, s.addr, s.mat, (s.crit && s.crit !== "N/A") ? s.crit : '-', s.count, s.min, s.max, s.maxInsp || '', s.maxSrc || '', s.maxDate || ''
+            ]);
+
+            doc.autoTable({
+                head: headers,
+                body: rows,
+                startY: 20,
+                styles: { fontSize: 7, cellPadding: 2, lineColor: [200, 200, 200], lineWidth: 0.1 },
+                headStyles: { fillColor: [15, 23, 42], textColor: [255, 255, 255] }, 
+                columnStyles: {
+                    0: { cellWidth: 35 },
+                    1: { cellWidth: 40 },
+                    2: { cellWidth: 30 },
+                    7: { cellWidth: 35 },
+                    8: { cellWidth: 25 }
+                }
+            });
+
+            doc.save(`Expense_Summary_Report_${new Date().toISOString().slice(0,10)}.pdf`);
+        } catch (error) {
+            console.error("PDF Generation Error:", error);
+            alert("Failed to load PDF libraries or generate PDF. Please check your internet connection.");
+        } finally {
+            pdfBtn.innerHTML = originalHtml;
+            pdfBtn.disabled = false;
+            if (window.lucide) window.lucide.createIcons();
+        }
     };
 
     window.saveEaCriteria = async function(inspectionId, idx) {
@@ -1044,6 +1476,83 @@
         }
     };
 
+    window.bulkSaveEaCriteria = async function() {
+        const checkedBoxes = Array.from(document.querySelectorAll('.ea-row-cb:checked')).map(cb => cb.value);
+        
+        let critInput = document.getElementById('ea-bulk-crit').value;
+        if (critInput === 'Unit') {
+            const subUnit = document.getElementById('ea-bulk-crit-unit').value;
+            critInput = `Per Unit - ${subUnit}`;
+        }
+        const valInput = document.getElementById('ea-bulk-val').value.trim();
+        const btn = document.getElementById('ea-bulk-btn');
+
+        if (checkedBoxes.length === 0) {
+            alert("Please select at least one inspection record using the checkboxes on the left to apply criteria.");
+            return;
+        }
+
+        if (!critInput && !valInput) {
+            alert("Please select a criteria and enter a value to bulk apply.");
+            return;
+        }
+
+        btn.innerHTML = `<i data-lucide="loader-2" class="w-3.5 h-3.5 animate-spin"></i> Saving...`;
+        btn.disabled = true;
+        btn.classList.replace('bg-blue-600', 'bg-amber-500');
+
+        let subsetToApply = window.eaRawData.filter(r => checkedBoxes.includes(r[window.EA_KEYS.id]));
+
+        let successCount = 0;
+        let failCount = 0;
+
+        for (let i = 0; i < subsetToApply.length; i++) {
+            const inspectionId = subsetToApply[i][window.EA_KEYS.id];
+            try {
+                const payload = {
+                    action: "saveCriteriaData",
+                    client: window.CURRENT_CLIENT,
+                    inspectionId: inspectionId,
+                    criteria: critInput,
+                    value: valInput
+                };
+                
+                const res = await fetch(EXPENSE_API_URL, { 
+                    method: "POST", 
+                    body: JSON.stringify(payload) 
+                });
+                const data = await res.json();
+                
+                if (data.status) {
+                    let record = window.eaRawData.find(r => String(r[window.EA_KEYS.id]) === String(inspectionId));
+                    if (record) {
+                        record[window.EA_KEYS.criteria] = critInput;
+                        record[window.EA_KEYS.value] = valInput;
+                    }
+                    successCount++;
+                } else {
+                    failCount++;
+                }
+            } catch (e) {
+                console.error("Bulk save error for ID: " + inspectionId, e);
+                failCount++;
+            }
+        }
+
+        if (failCount > 0) {
+            alert(`Bulk Apply Complete.\nSuccess: ${successCount}\nFailed: ${failCount}\n\nPlease sync and try again for failed records.`);
+        } else {
+            window.showEaToast(`Successfully applied to ${successCount} selected records!`);
+        }
+
+        btn.disabled = false;
+        btn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> Apply`;
+        btn.classList.replace('bg-amber-500', 'bg-blue-600');
+        if (window.lucide) window.lucide.createIcons();
+        
+        window.renderEaTable();
+    };
+
     window.openEaDetailsModal = function(encodedPayload) {
         if (!encodedPayload) return;
         const r = JSON.parse(decodeURIComponent(encodedPayload));
@@ -1075,3 +1584,4 @@
         window.initExpenseAnalysisModule();
     }, 50);
 </script>
+```<FollowUp 08/09/2026 12/09/2026" To comparison?" for label="Want me to explain how the date parsing script manages timestamp comparisons?" query="Can you explain how the extractLastDateEpoch function parses dates in strings like "/>
