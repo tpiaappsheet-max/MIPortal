@@ -60,8 +60,8 @@
         const API_URL = "https://script.google.com/macros/s/AKfycbwSNTlvfAnf1VtRKCrwz6SiV15yz04EqgevxdHxgupPaXMQGBqAxw3iZBeFRt6KXp3v/exec";
 
         const CLIENTS = {
-            "AYCL": { name: "Andrew Yule and Company Limited", shortName: "AYCL", logo: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRMBVkToRt50US-6-8ZKBQ_ZeaPmA_CfHq9ct_5TSV5SA&s" },
-            "NPCC": { name: "National Projects Construction Corporation Limited", shortName: "NPCC", logo: "https://www.uxdt.nic.in/wp-content/uploads/2020/06/NPCC-Preview.png" }
+            "AYCL": { name: "Andrew Yule and Company Limited", shortName: "AYCL" },
+            "NPCC": { name: "National Projects Construction Corporation Limited", shortName: "NPCC" }
         };
 
         let currentMiUser = null;
@@ -322,7 +322,7 @@
                 window.location.reload();
             }
         };
-       function mountMiDashboardShell() {
+        function mountMiDashboardShell() {
             const root = document.getElementById("mi-app-root");
             const activeClientObj = CLIENTS[currentMiUser.selectedClient] || CLIENTS["AYCL"];
             const isInspector = currentMiUser.role === 'inspector';
@@ -334,7 +334,7 @@
                         <div class="flex-1 overflow-y-auto custom-scrollbar pb-4">
                             <div class="p-4 border-b border-slate-800 bg-slate-950 flex items-center justify-between sticky top-0 z-20">
                                 <div class="flex items-center gap-3" title="${activeClientObj.name}">
-                                    <span class="font-black text-[12px] tracking-tight uppercase text-slate-200 truncate w-36">${activeClientObj.shortName}</span>
+                                    <span class="font-black text-[12px] tracking-tight uppercase text-slate-200 truncate w-36">${currentMiUser.selectedClient === 'AYCL' ? 'P1' : 'P2'}</span>
                                 </div>
                                 <button onclick="toggleMiSidebar()" class="md:hidden text-slate-400"><i data-lucide="x" class="w-5 h-5"></i></button>
                             </div>
@@ -372,7 +372,7 @@
                             <div class="flex items-center gap-3">
                                 <button onclick="toggleMiSidebar()" class="text-slate-800 p-1 rounded-lg hover:bg-slate-100"><i data-lucide="menu" class="w-6 h-6"></i></button>
                                 <div class="flex items-center gap-2" title="${activeClientObj.name}">
-                                    <span class="font-black text-xs uppercase tracking-wider text-slate-800">${activeClientObj.shortName}</span>
+                                    <span class="font-black text-xs uppercase tracking-wider text-slate-800">${currentMiUser.selectedClient === 'AYCL' ? 'P1' : 'P2'}</span>
                                 </div>
                             </div>
                             <button onclick="miLogout()" title="Logout Session" class="flex items-center justify-center p-2 rounded-xl text-white bg-rose-600 hover:bg-rose-700 shadow-sm transition-all cursor-pointer">
@@ -388,7 +388,7 @@
             buildMiNavMenu();
             loadMiModule(activeModule);
         }
-
+        
         function buildMiNavMenu() {
             const nav = document.getElementById("mi-dynamic-nav");
             if (!nav) return;
@@ -448,9 +448,10 @@
                         <button onclick="loadMiModule('inspectorSchedule', this)" id="nav-inspectorSchedule" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
                             <i data-lucide="calendar-check" class="w-4 h-4 text-emerald-400 shrink-0"></i> Inspector Schedule
                         </button>
-                         <button onclick="loadMiModule('expenseAnalysis', this)" id="nav-expenseAnalysis" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
+                        <button onclick="loadMiModule('expenseAnalysis', this)" id="nav-expenseAnalysis" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
                              <i data-lucide="indian-rupee" class="w-4 h-4 text-green-400 shrink-0"></i> Expense Analysis
                         </button>
+                         
                         <button onclick="loadMiModule('inspectorPlanner', this)" id="nav-inspectorPlanner" class="mi-nav-btn w-full flex items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-400 hover:bg-slate-800/50 hover:text-white transition rounded-r-lg text-left">
                             <i data-lucide="map-pinned" class="w-4 h-4 text-blue-400 shrink-0"></i> Inspector Planner
                         </button>
@@ -549,11 +550,9 @@
             if (moduleName === "inspectorPlanner" && r !== 'admin') {
                 view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
             }
-
-             if (moduleName === "expenseAnalysis" && r !== 'admin') {
+            if (moduleName === "expenseAnalysis" && r !== 'admin') {
                 view.innerHTML = accessDeniedHTML; if (window.lucide) lucide.createIcons(); return;
             }
-            
             // CUSTOM NATIVE INJECTIONS
             if (moduleName === "inspectorsRecords") {
                 const isAdmin = r === 'admin';
