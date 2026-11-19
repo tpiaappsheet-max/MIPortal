@@ -180,6 +180,40 @@
     </div>
 </div>
 
+<!-- ========================================== -->
+<!-- CRITERIA COLUMN GRAPH MODAL -->
+<!-- ========================================== -->
+<div id="ea-crit-graph-modal" class="hidden fixed inset-0 bg-slate-900/75 backdrop-blur-md z-[110] flex items-center justify-center p-3 sm:p-4 overflow-y-auto">
+    <div class="bg-white w-full max-w-5xl rounded-3xl shadow-2xl p-5 sm:p-7 relative border space-y-4 max-h-[92vh] overflow-y-auto custom-scrollbar">
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3 border-b pb-3 sticky top-0 bg-white z-10">
+            <div>
+                <h3 class="font-black text-sm uppercase text-slate-900 flex items-center gap-2">
+                    <i data-lucide="bar-chart-2" class="text-blue-600 w-5 h-5"></i>
+                    Criteria Column Chart: <span id="ea-graph-crit-title" class="text-emerald-600 font-mono"></span>
+                </h3>
+                <p id="ea-graph-crit-subtitle" class="text-[11px] text-slate-500 mt-0.5"></p>
+            </div>
+            <div class="flex items-center gap-2">
+                <div class="inline-flex rounded-xl bg-slate-100 p-1 border">
+                    <button id="ea-sort-mode-val" type="button" onclick="window.setEaGraphSort('val')" class="px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-600 text-white transition cursor-pointer">
+                        Value (Asc)
+                    </button>
+                    <button id="ea-sort-mode-date" type="button" onclick="window.setEaGraphSort('date')" class="px-3 py-1 rounded-lg text-[10px] font-black uppercase text-slate-600 hover:text-slate-900 transition cursor-pointer">
+                        Inspection Date
+                    </button>
+                </div>
+                <button type="button" onclick="window.closeEaGraphModal()" class="text-slate-400 hover:text-rose-600 p-1.5 rounded-xl hover:bg-slate-100 cursor-pointer transition">
+                    <i data-lucide="x" class="w-5 h-5"></i>
+                </button>
+            </div>
+        </div>
+
+        <div id="ea-graph-body" class="space-y-4 text-xs">
+            <!-- Column graph rendered dynamically -->
+        </div>
+    </div>
+</div>
+
 <!-- TOAST NOTIFICATION -->
 <div id="ea-toast" class="hidden fixed bottom-6 left-1/2 transform -translate-x-1/2 z-[200] bg-slate-900 text-white px-5 py-3 rounded-2xl shadow-2xl border border-slate-700 text-xs font-bold flex items-center gap-2.5 transition-all animate-fade-in">
     <i data-lucide="check-circle" class="w-4 h-4 text-emerald-400"></i>
@@ -187,7 +221,7 @@
 </div>
 
 <script>
-    const EXPENSE_API_URL = "https://script.google.com/macros/s/AKfycbyuJg8RBOI11jQrkA3CNXujJGeZUr5ZNGqhXxb--ukixnYcy5ullcnSTFUd1_m870VEZg/exec"; 
+    const EXPENSE_API_URL = "https://script.google.com/macros/s/AKfycbze8XFar3a6yLduLgnHJUG1BRxG04sZbnoJbqPlAVsxbT2i9hX6ge9HhyNs5yaPj_n2Dw/exec";
 
     window.eaRawData = [];
     window.eaHeaders = [];
@@ -195,6 +229,7 @@
     window.rawMfgCombinations = []; 
     window.globalSummaryData = []; 
     window.flattenedSummaryData = [];
+    window.eaLastRenderedRows = [];
     
     window.tallyInspectorFilter = null; 
     window.tallyComboFilter = null;
@@ -202,6 +237,32 @@
     
     window.eaAllIds = [];
     window.eaAllLetters = [];
+
+    // Exact value as-is; preserves 0 and 0.00; returns "" if empty
+    window.getExactCell = function(v) {
+        if (v === undefined || v === null) return "";
+        if (typeof v === "number") return String(v);
+        return String(v).trim();
+    };
+
+    window.hasEaVal = function(v) {
+        return window.getExactCell(v) !== "";
+    };
+
+    window.parseEaNumber = function(v) {
+        const str = window.getExactCell(v).replace(/,/g, "").replace(/\u00A0/g, "");
+        if (str === "") return null;
+        const num = Number(str);
+        return isNaN(num) ? null : num;
+    };
+
+    window.escapeHtml = function(str) {
+        return String(str === undefined || str === null ? "" : str)
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    };
 
     window.showEaToast = function(message) {
         const toast = document.getElementById("ea-toast");
@@ -235,7 +296,6 @@
         return baseStat;
     };
 
-    // 🎯 HELPER: Smart Manufacturer Parser (Splits only on M/s)
     window.parseManufacturers = function(mfgString) {
         if (!mfgString || String(mfgString).trim() === "") return [];
         let s = String(mfgString).replace(/(?!^)(?=\bM\/s\b)/gi, '|');
@@ -258,6 +318,28 @@
         const checkedCount = document.querySelectorAll('.ea-row-cb:checked').length;
         const countEl = document.getElementById('ea-bulk-selected-count');
         if(countEl) countEl.innerText = checkedCount;
+    };
+
+    window.onCritSelectChange = function(selectEl, unitId, customId) {
+        const unitEl = document.getElementById(unitId);
+        const customEl = document.getElementById(customId);
+        if (unitEl) unitEl.classList.toggle('hidden', selectEl.value !== 'Unit');
+        if (customEl) {
+            customEl.classList.toggle('hidden', selectEl.value !== 'Custom');
+            if (selectEl.value === 'Custom') customEl.focus();
+        }
+    };
+
+    window.resolveCriteriaInput = function(selectId, unitId, customId) {
+        const sel = document.getElementById(selectId).value;
+        if (sel === 'Unit') {
+            const subUnit = document.getElementById(unitId).value;
+            return `Per Unit - ${subUnit}`;
+        }
+        if (sel === 'Custom') {
+            return window.getExactCell(document.getElementById(customId).value);
+        }
+        return window.getExactCell(sel);
     };
 
     window.toggleEaTally = function(type) {
@@ -366,7 +448,8 @@
     window.initExpenseAnalysisModule = async function() {
         try {
             document.getElementById("ea-record-count").innerText = "Initializing...";
-            const res = await fetch(`${EXPENSE_API_URL}?action=getManufacturers&client=${window.CURRENT_CLIENT}`);
+            const clientParam = window.CURRENT_CLIENT || "";
+            const res = await fetch(`${EXPENSE_API_URL}?action=getManufacturers&client=${encodeURIComponent(clientParam)}`);
             const parsed = await res.json();
 
             if (parsed.ids) window.eaAllIds = parsed.ids;
@@ -445,8 +528,9 @@
         if (window.lucide) window.lucide.createIcons();
 
         try {
+            const clientParam = window.CURRENT_CLIENT || "";
             const fetchPromises = combosToFetch.map(comboString => 
-                fetch(`${EXPENSE_API_URL}?action=getFilteredData&client=${window.CURRENT_CLIENT}&mfg=${encodeURIComponent(comboString)}`)
+                fetch(`${EXPENSE_API_URL}?action=getFilteredData&client=${encodeURIComponent(clientParam)}&mfg=${encodeURIComponent(comboString)}`)
                 .then(res => res.json())
             );
 
@@ -502,7 +586,8 @@
         if (window.lucide) window.lucide.createIcons();
 
         try {
-            const url = `${EXPENSE_API_URL}?action=searchByIdOrLetter&client=${window.CURRENT_CLIENT}&searchType=${type}&searchValue=${encodeURIComponent(val)}`;
+            const clientParam = window.CURRENT_CLIENT || "";
+            const url = `${EXPENSE_API_URL}?action=searchByIdOrLetter&client=${encodeURIComponent(clientParam)}&searchType=${type}&searchValue=${encodeURIComponent(val)}`;
             const res = await fetch(url);
             const parsed = await res.json();
 
@@ -544,8 +629,8 @@
             inspector: window.eaHeaders.find(h => h.toLowerCase().includes("conducted by tpia inspector")) || "Inspection conducted by TPIA Inspector",
             appointedInsp: window.eaHeaders.find(h => h.toLowerCase().includes("appointed")) || "Name of TPIA Inspector (Appointed)",
             dates: window.eaHeaders.find(h => h.toLowerCase().includes("date (s) of inspection")) || "Date (s) of Inspection (From - To)",
-            criteria: window.eaHeaders.find(h => h.toLowerCase().includes("criteria")) || "Criteria",
-            value: window.eaHeaders.find(h => h.toLowerCase() === "value") || "Value",
+            criteria: "Criteria",
+            value: "Value",
             letterNo: window.eaHeaders.find(h => h.toLowerCase().includes("letter no") || h.toLowerCase().includes("letter")) || "Letter No"
         };
 
@@ -611,10 +696,10 @@
         }
         
         document.getElementById("ea-search-value").value = "";
-
         document.getElementById("ea-summary-dashboard").classList.add("hidden");
         
         window.eaRawData = [];
+        window.eaLastRenderedRows = [];
         window.tallyInspectorFilter = null;
         window.tallyComboFilter = null;
         window.tallyStatusFilter = null;
@@ -641,8 +726,9 @@
             if (currentMfg) await window.fetchManufacturerData();
             else await window.initExpenseAnalysisModule();
         } else {
-            document.getElementById("ea-search-value").value = "";
-            await window.initExpenseAnalysisModule();
+            const currentSearch = document.getElementById("ea-search-value").value.trim();
+            if (currentSearch) await window.fetchByIdOrLetter();
+            else await window.initExpenseAnalysisModule();
         }
     };
 
@@ -672,20 +758,17 @@
     };
 
     window.filterByTallyInspector = function(insp) {
-        if (window.tallyInspectorFilter === insp) window.tallyInspectorFilter = null; 
-        else window.tallyInspectorFilter = insp;
+        window.tallyInspectorFilter = (window.tallyInspectorFilter === insp) ? null : insp;
         window.renderEaTable();
     };
 
     window.filterByTallyCombo = function(comboStr) {
-        if (window.tallyComboFilter === comboStr) window.tallyComboFilter = null; 
-        else window.tallyComboFilter = comboStr;
+        window.tallyComboFilter = (window.tallyComboFilter === comboStr) ? null : comboStr;
         window.renderEaTable();
     };
 
     window.filterByTallyStatus = function(statusStr) {
-        if (window.tallyStatusFilter === statusStr) window.tallyStatusFilter = null; 
-        else window.tallyStatusFilter = statusStr;
+        window.tallyStatusFilter = (window.tallyStatusFilter === statusStr) ? null : statusStr;
         window.renderEaTable();
     };
 
@@ -695,7 +778,7 @@
         const selectedMfg = document.getElementById("ea-filter-mfg") ? document.getElementById("ea-filter-mfg").value.trim().toLowerCase().replace(/\s+/g, ' ') : "";
         const matFilter = document.getElementById("ea-filter-mat") ? document.getElementById("ea-filter-mat").value : "ALL";
         const inspFilter = document.getElementById("ea-filter-inspector") ? document.getElementById("ea-filter-inspector").value : "ALL";
-        const sortOrder = isMfgTab && document.getElementById("ea-sort-date") ? document.getElementById("ea-sort-date").value : "DESC"; 
+        const sortOrder = isMfgTab && document.getElementById("ea-sort-date") ? document.getElementById("ea-sort-date").value : "DESC";
         
         const container = document.getElementById("ea-list-container");
         const countBadge = document.getElementById("ea-record-count");
@@ -746,6 +829,7 @@
         if (countBadge) countBadge.innerText = `${finalFiltered.length} Records Found`;
 
         if (finalFiltered.length === 0) {
+            window.eaLastRenderedRows = [];
             summaryDash.classList.add("hidden");
             container.innerHTML = `
                 <div class="bg-white p-12 rounded-3xl border text-center text-slate-400 font-bold text-xs shadow-sm">
@@ -766,33 +850,65 @@
             return sortOrder === "DESC" ? timeB - timeA : timeA - timeB;
         });
 
+        window.eaLastRenderedRows = finalFiltered;
+
         let criteriaStats = {};
-        
+        let entriesWithCriteria = 0;
+        let entriesWithValue = 0;
+        let entriesWithBoth = 0;
+        let entriesWithAny = 0;
+
         finalFiltered.forEach(r => {
-            let c = String(r[window.EA_KEYS.criteria] || "").trim();
-            let rawV = r[window.EA_KEYS.value];
-            if (c !== "" && rawV !== undefined && rawV !== null && String(rawV).trim() !== "") {
-                let v = parseFloat(rawV);
-                if (!isNaN(v)) {
-                    if (!criteriaStats[c]) {
-                        criteriaStats[c] = { min: v, max: v, maxRow: r };
-                    } else {
-                        if (v > criteriaStats[c].max) {
-                            criteriaStats[c].max = v;
-                            criteriaStats[c].maxRow = r;
-                        }
-                        if (v < criteriaStats[c].min) {
-                            criteriaStats[c].min = v;
-                        }
-                    }
+            const critRaw = r[window.EA_KEYS.criteria] !== undefined ? r[window.EA_KEYS.criteria] : r["__ea_criteria"];
+            const valRaw = r[window.EA_KEYS.value] !== undefined ? r[window.EA_KEYS.value] : r["__ea_value"];
+            const cStr = window.getExactCell(critRaw);
+            const vStr = window.getExactCell(valRaw);
+
+            const hasC = cStr !== "";
+            const hasV = vStr !== "";
+
+            if (hasC) entriesWithCriteria++;
+            if (hasV) entriesWithValue++;
+            if (hasC && hasV) entriesWithBoth++;
+            if (!hasC && !hasV) return;
+
+            entriesWithAny++;
+
+            const numV = window.parseEaNumber(valRaw);
+            const isNum = numV !== null;
+
+            if (!criteriaStats[cStr]) {
+                criteriaStats[cStr] = {
+                    min: isNum ? numV : null,
+                    minRaw: isNum ? vStr : "",
+                    max: isNum ? numV : null,
+                    maxRaw: isNum ? vStr : "",
+                    maxRow: r
+                };
+            } else if (isNum) {
+                if (criteriaStats[cStr].max === null || numV > criteriaStats[cStr].max) {
+                    criteriaStats[cStr].max = numV;
+                    criteriaStats[cStr].maxRaw = vStr;
+                    criteriaStats[cStr].maxRow = r;
+                }
+                if (criteriaStats[cStr].min === null || numV < criteriaStats[cStr].min) {
+                    criteriaStats[cStr].min = numV;
+                    criteriaStats[cStr].minRaw = vStr;
                 }
             }
         });
 
         let dashHtml = `
-            <div class="mb-4 bg-slate-800/50 inline-block px-4 py-2 rounded-xl border border-slate-600/50">
-                <span class="block text-[10px] text-slate-400 uppercase font-black mb-0.5">Total Records Found</span>
-                <span class="text-xl font-black text-white">${finalFiltered.length}</span>
+            <div class="mb-4 flex flex-wrap gap-3">
+                <div class="bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-600/50">
+                    <span class="block text-[10px] text-slate-400 uppercase font-black mb-0.5">Total Records Found</span>
+                    <span class="text-xl font-black text-white">${finalFiltered.length}</span>
+                </div>
+                <div class="bg-slate-800/50 px-4 py-2 rounded-xl border border-slate-600/50">
+                    <span class="block text-[10px] text-slate-400 uppercase font-black mb-0.5">Entries With Criteria / Value</span>
+                    <span class="text-xl font-black text-emerald-400">${entriesWithAny}</span>
+                    <span class="block text-[9px] text-slate-400 font-mono mt-0.5">Crit: ${entriesWithCriteria} • Val: ${entriesWithValue} • Both: ${entriesWithBoth}</span>
+                </div>
             </div>
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
         `;
@@ -800,7 +916,7 @@
         if (Object.keys(criteriaStats).length === 0) {
             dashHtml += `
                 <div class="col-span-1 sm:col-span-2 lg:col-span-3 bg-slate-800/50 p-4 rounded-xl border border-slate-600/50 text-slate-400 text-xs italic font-bold">
-                    No numerical criteria values have been recorded for these results yet.
+                    No criteria or values have been recorded for these results yet.
                 </div>
             `;
         } else {
@@ -809,16 +925,18 @@
                 let maxInsp = s.maxRow[window.EA_KEYS.inspector] || 'Unassigned';
                 let maxDate = s.maxRow[window.EA_KEYS.dates] || 'No Date';
                 let maxSrc = s.maxRow[window.EA_KEYS.source] || 'Unknown Source';
+                let safeEncodedCrit = encodeURIComponent(c).replace(/'/g, "%27");
+                let safeTitleCrit = window.escapeHtml(c || "(Blank Criteria)");
 
-                let maxMeta = `<span title="${maxInsp}">${maxInsp}</span><br><span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate text-blue-300" title="${maxSrc} | ${maxDate}">${maxSrc} • ${maxDate}</span>`;
+                let maxMeta = `<span title="${window.escapeHtml(maxInsp)}">${window.escapeHtml(maxInsp)}</span><br><span class="text-[9px] text-slate-400 font-mono mt-0.5 block truncate text-blue-300" title="${window.escapeHtml(maxSrc)} | ${window.escapeHtml(maxDate)}">${window.escapeHtml(maxSrc)} • ${window.escapeHtml(maxDate)}</span>`;
 
                 dashHtml += `
-                <div class="bg-slate-800/50 p-3 rounded-xl border border-slate-600/50 flex flex-col justify-between transition hover:border-slate-500 shadow-sm">
-                    <span class="block text-[10px] text-emerald-400 uppercase font-black mb-3 pb-1 border-b border-slate-600/50 truncate" title="${c}">${c}</span>
+                <div onclick="window.openCriteriaGraph('${safeEncodedCrit}')" class="bg-slate-800/50 p-3 rounded-xl border border-slate-600/50 flex flex-col justify-between transition hover:border-blue-400/70 hover:bg-slate-800/80 shadow-sm cursor-pointer" title="Click to view column graph for ${safeTitleCrit}">
+                    <span class="block text-[10px] text-emerald-400 uppercase font-black mb-3 pb-1 border-b border-slate-600/50 truncate" title="${safeTitleCrit}">${window.escapeHtml(c || "(Blank Criteria)")}</span>
                     <div class="flex justify-between items-end gap-2 mt-auto">
                         <div>
                             <span class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Min / Max Val</span>
-                            <span class="text-sm font-black text-white">${s.min} <span class="text-slate-500 font-normal mx-1">/</span> <span class="text-emerald-400">${s.max}</span></span>
+                            <span class="text-sm font-black text-white">${window.escapeHtml(s.minRaw)} <span class="text-slate-500 font-normal mx-1">/</span> <span class="text-emerald-400">${window.escapeHtml(s.maxRaw)}</span></span>
                         </div>
                         <div class="text-right min-w-[50%] max-w-[65%]">
                             <span class="block text-[9px] text-slate-400 uppercase font-bold mb-0.5">Max Recorded By</span>
@@ -838,7 +956,7 @@
             const btnClass = isActive ? 'bg-purple-500 text-white shadow-md' : 'bg-purple-500/20 text-purple-400 hover:bg-purple-500/40';
             const borderClass = isActive ? 'border-purple-500/50' : 'border-slate-600/50';
             const textClass = isActive ? 'text-white' : 'text-slate-300';
-            const safeMfgName = mfgStr.replace(/'/g, "\\'"); 
+            const safeMfgName = mfgStr.replace(/'/g, "\\'");
             
             comboCountHtml += `
                 <div class="bg-slate-800/50 p-2.5 rounded-xl border ${borderClass} flex justify-between items-center transition">
@@ -855,7 +973,7 @@
             const btnClass = isActive ? 'bg-emerald-500 text-white shadow-md' : 'bg-emerald-500/20 text-emerald-400 hover:bg-emerald-500/40';
             const borderClass = isActive ? 'border-emerald-500/50' : 'border-slate-600/50';
             const textClass = isActive ? 'text-white' : 'text-slate-300';
-            const safeInspName = insp.replace(/'/g, "\\'"); 
+            const safeInspName = insp.replace(/'/g, "\\'");
             
             inspCountHtml += `
                 <div class="bg-slate-800/50 p-2.5 rounded-xl border ${borderClass} flex justify-between items-center transition">
@@ -872,7 +990,7 @@
             const btnClass = isActive ? 'bg-amber-500 text-white shadow-md' : 'bg-amber-500/20 text-amber-400 hover:bg-amber-500/40';
             const borderClass = isActive ? 'border-amber-500/50' : 'border-slate-600/50';
             const textClass = isActive ? 'text-white' : 'text-slate-300';
-            const safeStatName = stat.replace(/'/g, "\\'"); 
+            const safeStatName = stat.replace(/'/g, "\\'");
             
             statusCountHtml += `
                 <div class="bg-slate-800/50 p-2.5 rounded-xl border ${borderClass} flex justify-between items-center transition">
@@ -897,12 +1015,13 @@
                             <span class="text-[10px] font-black uppercase text-blue-800 tracking-wider">Bulk Apply to Selected (<span id="ea-bulk-selected-count">0</span>)</span>
                         </div>
                         
-                        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-xs w-full sm:w-auto">
-                            <div class="flex flex-col gap-1 w-24 shrink-0">
-                                <select id="ea-bulk-crit" onchange="document.getElementById('ea-bulk-crit-unit').classList.toggle('hidden', this.value !== 'Unit')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
+                        <div class="flex items-center justify-between sm:justify-end gap-2 sm:gap-3 text-xs w-full sm:w-auto flex-wrap">
+                            <div class="flex flex-col gap-1 w-28 shrink-0">
+                                <select id="ea-bulk-crit" onchange="window.onCritSelectChange(this, 'ea-bulk-crit-unit', 'ea-bulk-crit-custom')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
                                     <option value="">Select...</option>
                                     <option value="%">% Percent</option>
                                     <option value="Unit">Per Unit</option>
+                                    <option value="Custom">+ Custom...</option>
                                 </select>
                                 <select id="ea-bulk-crit-unit" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white hidden">
                                     <option value="No">No</option>
@@ -914,9 +1033,10 @@
                                     <option value="Bundle">Bundle</option>
                                     <option value="Other">Other</option>
                                 </select>
+                                <input type="text" id="ea-bulk-crit-custom" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500 bg-white hidden" placeholder="Custom criteria...">
                             </div>
-                            <input type="number" step="0.01" id="ea-bulk-val" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500" placeholder="Value">
-                            <button id="ea-bulk-btn" onclick="window.bulkSaveEaCriteria()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1">
+                            <input type="text" id="ea-bulk-val" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500 bg-white" placeholder="Value">
+                            <button id="ea-bulk-btn" onclick="window.bulkSaveEaCriteria()" class="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer">
                                 <i data-lucide="check-square" class="w-3.5 h-3.5"></i> Apply
                             </button>
                         </div>
@@ -927,9 +1047,9 @@
 
         finalFiltered.forEach((rec, idx) => {
             const idStr = rec[window.EA_KEYS.id] || "Unknown";
-            const sourceStr = rec[window.EA_KEYS.source] || "Unknown Source"; 
-            const discomStr = rec[window.EA_KEYS.discom] || "DISCOM"; 
-            const mfgStr = rec[window.EA_KEYS.mfg] || "-"; 
+            const sourceStr = rec[window.EA_KEYS.source] || "Unknown Source";
+            const discomStr = rec[window.EA_KEYS.discom] || "DISCOM";
+            const mfgStr = rec[window.EA_KEYS.mfg] || "-";
             const matSpecStr = rec[window.EA_KEYS.matSpec] || "-";
             const quantityStr = rec[window.EA_KEYS.quantity] || "-";
             
@@ -939,42 +1059,40 @@
             
             const subStatusStr = rec[window.EA_KEYS.subStatus] || "-";
             const letterNoStr = rec[window.EA_KEYS.letterNo] || "-";
-            const currentCrit = String(rec[window.EA_KEYS.criteria] || "").trim();
-            const currentVal = rec[window.EA_KEYS.value] || "";
+
+            const critRaw = rec[window.EA_KEYS.criteria] !== undefined ? rec[window.EA_KEYS.criteria] : rec["__ea_criteria"];
+            const valRaw = rec[window.EA_KEYS.value] !== undefined ? rec[window.EA_KEYS.value] : rec["__ea_value"];
+            const currentCrit = window.getExactCell(critRaw);
+            const currentVal = window.getExactCell(valRaw);
 
             let mainCrit = "";
-            let subCrit = "No"; 
+            let subCrit = "No";
+            let customCritText = "";
             if (currentCrit.startsWith("Per Unit")) {
                 mainCrit = "Unit";
-                if (currentCrit.includes("-")) {
-                    subCrit = currentCrit.split("-")[1].trim();
-                }
+                if (currentCrit.includes("-")) subCrit = currentCrit.split("-")[1].trim();
             } else if (currentCrit === "%") {
                 mainCrit = "%";
+            } else if (currentCrit !== "") {
+                mainCrit = "Custom";
+                customCritText = currentCrit;
             }
-
-            const displayCrit = currentCrit === '%' ? '% Pct' : (currentCrit.startsWith('Per Unit') ? currentCrit : 'N/A');
-            const displayVal = currentVal !== "" ? currentVal : '--';
 
             const isApptPhase = window.tallyStatusFilter === "Pending & Appointed" || (window.tallyStatusFilter && window.tallyStatusFilter.toLowerCase().includes("schedule"));
             
-            let compactSlot3Html = "";
-
-            if (isApptPhase) {
-                compactSlot3Html = `
+            let compactSlot3Html = isApptPhase
+                ? `
                     <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
                         <span class="text-[9px] font-black text-slate-400 shrink-0" title="Appointed Inspector">APPT:</span>
                         <span class="font-bold text-indigo-600 truncate text-[10px] max-w-[120px]" title="${appointedStr}">${appointedStr}</span>
                     </div>
-                `;
-            } else {
-                compactSlot3Html = `
+                `
+                : `
                     <div class="flex items-center gap-1.5 border-l border-slate-300 pl-2 sm:pl-3 truncate min-w-0">
                         <span class="text-[9px] font-black text-slate-400 shrink-0" title="Inspection Status">STAT:</span>
                         <span class="font-bold text-slate-800 truncate text-[10px] max-w-[120px]" title="${effectiveStatusStr} (${subStatusStr})">${effectiveStatusStr}</span>
                     </div>
                 `;
-            }
 
             const encodedPayload = encodeURIComponent(JSON.stringify(rec));
 
@@ -1001,20 +1119,20 @@
                             <div class="flex items-center gap-2 sm:gap-3">
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-[9px] uppercase font-black text-slate-400">CRIT:</span>
-                                    <span id="ea-display-crit-${idx}" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[100px]" title="${displayCrit}">${displayCrit}</span>
+                                    <span id="ea-display-crit-${idx}" class="font-bold text-slate-700 bg-slate-100 px-2 py-0.5 rounded-md truncate max-w-[140px]" title="${currentCrit}">${currentCrit}</span>
                                 </div>
                                 <span class="text-slate-200">|</span>
                                 <div class="flex items-center gap-1.5">
                                     <span class="text-[9px] uppercase font-black text-slate-400">VAL:</span>
-                                    <span id="ea-display-val-${idx}" class="font-mono font-black text-emerald-600">${displayVal}</span>
+                                    <span id="ea-display-val-${idx}" class="font-mono font-black text-emerald-600">${currentVal}</span>
                                 </div>
                             </div>
 
                             <div class="flex items-center gap-1 pl-2 sm:pl-3 border-l border-slate-200">
-                                <button onclick="window.toggleEaEditMode(${idx}, true)" class="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition" title="Edit Criteria & Value">
+                                <button onclick="window.toggleEaEditMode(${idx}, true)" class="text-slate-400 hover:text-blue-600 hover:bg-blue-50 p-1.5 rounded-lg transition cursor-pointer" title="Edit Criteria & Value">
                                     <i data-lucide="edit-3" class="w-4 h-4"></i>
                                 </button>
-                                <button type="button" onclick="window.toggleEaAccordion(${idx})" class="text-slate-400 hover:text-slate-700 hover:bg-slate-200 bg-slate-100 sm:bg-transparent p-1.5 rounded-lg transition flex items-center shrink-0">
+                                <button type="button" onclick="window.toggleEaAccordion(${idx})" class="text-slate-400 hover:text-slate-700 hover:bg-slate-200 bg-slate-100 sm:bg-transparent p-1.5 rounded-lg transition flex items-center shrink-0 cursor-pointer">
                                     <i id="ea-icon-${idx}" data-lucide="chevron-right" class="w-4 h-4 transition-transform"></i>
                                 </button>
                             </div>
@@ -1034,12 +1152,13 @@
                             </div>
                         </div>
                         
-                        <div class="flex items-center gap-2 w-full sm:w-auto">
-                            <div class="flex flex-col gap-1 w-24 shrink-0">
-                                <select id="ea-crit-${idx}" onchange="document.getElementById('ea-crit-unit-${idx}').classList.toggle('hidden', this.value !== 'Unit')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
+                        <div class="flex items-center gap-2 w-full sm:w-auto flex-wrap">
+                            <div class="flex flex-col gap-1 w-28 shrink-0">
+                                <select id="ea-crit-${idx}" onchange="window.onCritSelectChange(this, 'ea-crit-unit-${idx}', 'ea-crit-custom-${idx}')" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white">
                                     <option value="" ${mainCrit === '' ? 'selected' : ''}>Select...</option>
                                     <option value="%" ${mainCrit === '%' ? 'selected' : ''}>% Percent</option>
                                     <option value="Unit" ${mainCrit === 'Unit' ? 'selected' : ''}>Per Unit</option>
+                                    <option value="Custom" ${mainCrit === 'Custom' ? 'selected' : ''}>+ Custom...</option>
                                 </select>
                                 <select id="ea-crit-unit-${idx}" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none cursor-pointer focus:border-blue-500 bg-white ${mainCrit === 'Unit' ? '' : 'hidden'}">
                                     <option value="No" ${subCrit === 'No' ? 'selected' : ''}>No</option>
@@ -1051,12 +1170,13 @@
                                     <option value="Bundle" ${subCrit === 'Bundle' ? 'selected' : ''}>Bundle</option>
                                     <option value="Other" ${subCrit === 'Other' ? 'selected' : ''}>Other</option>
                                 </select>
+                                <input type="text" id="ea-crit-custom-${idx}" value="${customCritText}" class="w-full px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500 bg-white ${mainCrit === 'Custom' ? '' : 'hidden'}" placeholder="Custom criteria...">
                             </div>
 
-                            <input type="number" step="0.01" id="ea-val-${idx}" value="${currentVal}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500" placeholder="Value">
+                            <input type="text" id="ea-val-${idx}" value="${currentVal}" class="w-24 px-2 py-1.5 border border-slate-300 rounded-lg text-xs font-bold outline-none focus:border-blue-500 bg-white" placeholder="Value">
                             
-                            <button onclick="window.toggleEaEditMode(${idx}, false)" class="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-[10px] font-black uppercase rounded-lg shadow-sm transition">Cancel</button>
-                            <button id="ea-btn-${idx}" onclick="window.saveEaCriteria('${idStr}', ${idx})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1">
+                            <button onclick="window.toggleEaEditMode(${idx}, false)" class="px-2.5 py-1.5 bg-white border border-slate-300 hover:bg-slate-50 text-slate-600 text-[10px] font-black uppercase rounded-lg shadow-sm transition cursor-pointer">Cancel</button>
+                            <button id="ea-btn-${idx}" onclick="window.saveEaCriteria('${idStr}', ${idx})" class="px-3 py-1.5 bg-emerald-600 hover:bg-emerald-700 text-white text-[10px] font-black uppercase rounded-lg shadow-sm transition flex items-center gap-1 cursor-pointer">
                                 <i data-lucide="save" class="w-3.5 h-3.5"></i> Save
                             </button>
                         </div>
@@ -1113,10 +1233,9 @@
 
         container.innerHTML = html;
         if (window.lucide) window.lucide.createIcons();
-        window.updateBulkCount(); 
+        window.updateBulkCount();
     };
-
-    // 🎯 FRONTEND RE-GROUPING: Generates exact table from screenshot layout
+ 
     window.generateGlobalSummary = async function() {
         const btn = document.getElementById("ea-btn-gen-summary");
         const container = document.getElementById("ea-summary-table-container");
@@ -1138,20 +1257,18 @@
         if (window.lucide) window.lucide.createIcons();
 
         try {
-            const res = await fetch(`${EXPENSE_API_URL}?action=getGlobalSummary&client=${window.CURRENT_CLIENT}`);
+            const clientParam = window.CURRENT_CLIENT || "";
+            const res = await fetch(`${EXPENSE_API_URL}?action=getGlobalSummary&client=${encodeURIComponent(clientParam)}`);
             const parsed = await res.json();
             
             if (parsed.status && parsed.data) {
-                
                 if (parsed.data.length === 0) {
                     container.innerHTML = `<div class="p-12 text-center text-slate-400 font-bold text-xs">No records found with assigned values.</div>`;
                 } else {
-                    
                     let grouped = {};
                     parsed.data.forEach(r => {
                         let mfgKey = String(r.mfg || "Unknown").trim();
                         let matKey = String(r.mat || "Unknown").trim();
-                        
                         let groupKey = `${mfgKey.toUpperCase()}|${matKey.toUpperCase()}`;
 
                         if (!grouped[groupKey]) {
@@ -1159,14 +1276,18 @@
                                 displayMfg: mfgKey,
                                 displayAddr: String(r.addr || "").trim(), 
                                 displayMat: matKey,
-                                items: {} // Use object for efficient merging
+                                items: {}
                             };
                         }
 
-                        let critKey = String(r.crit || "N/A").trim();
-                        let rCount = parseInt(r.count) || 0;
-                        let rMin = r.min !== undefined ? parseFloat(r.min) : "N/A";
-                        let rMax = r.max !== undefined ? parseFloat(r.max) : "N/A";
+                        let critKey = window.getExactCell(r.crit);
+                        let rCount = parseInt(r.count, 10) || 0;
+                        let parsedMin = window.parseEaNumber(r.min);
+                        let parsedMax = window.parseEaNumber(r.max);
+                        let rMin = parsedMin !== null ? parsedMin : null;
+                        let rMax = parsedMax !== null ? parsedMax : null;
+                        let rMinRaw = parsedMin !== null ? window.getExactCell(r.minRaw || r.min) : "";
+                        let rMaxRaw = parsedMax !== null ? window.getExactCell(r.maxRaw || r.max) : "";
                         let rInsp = String(r.maxInsp || "Unassigned").trim();
                         let rDate = String(r.maxDate || "No Date").trim();
                         let rSrc = String(r.maxSrc || "Unknown Source").trim();
@@ -1176,36 +1297,35 @@
                                 crit: critKey,
                                 count: rCount,
                                 min: rMin,
+                                minRaw: rMinRaw,
                                 max: rMax,
+                                maxRaw: rMaxRaw,
                                 maxInsp: rInsp,
                                 maxDate: rDate,
                                 maxSrc: rSrc
                             };
                         } else {
                             let existing = grouped[groupKey].items[critKey];
-                            
-                            // Merge counts
                             existing.count += rCount;
                             
-                            // Get the absolute minimum
-                            if (rMin !== "N/A") {
-                                if (existing.min === "N/A" || rMin < existing.min) {
+                            if (rMin !== null) {
+                                if (existing.min === null || rMin < existing.min) {
                                     existing.min = rMin;
+                                    existing.minRaw = rMinRaw;
                                 }
                             }
                             
-                            // Get the absolute maximum and resolve tie-breakers
-                            if (rMax !== "N/A") {
-                                let isNewMax = existing.max === "N/A" || rMax > existing.max;
-                                let isTie = existing.max !== "N/A" && rMax === existing.max;
+                            if (rMax !== null) {
+                                let isNewMax = existing.max === null || rMax > existing.max;
+                                let isTie = existing.max !== null && rMax === existing.max;
                                 
                                 if (isNewMax) {
                                     existing.max = rMax;
+                                    existing.maxRaw = rMaxRaw;
                                     existing.maxInsp = rInsp;
                                     existing.maxDate = rDate;
                                     existing.maxSrc = rSrc;
                                 } else if (isTie) {
-                                    // Extract the timestamps to evaluate which one occurred latest
                                     let rEpoch = window.extractLastDateEpoch(rDate);
                                     let existingEpoch = window.extractLastDateEpoch(existing.maxDate);
                                     if (rEpoch > existingEpoch) {
@@ -1218,13 +1338,10 @@
                         }
                     });
 
-                    // Flatten grouped object back into an array mapping format for rendering
-                    let groupArray = Object.values(grouped).map(g => {
-                        return {
-                            ...g,
-                            items: Object.values(g.items)
-                        };
-                    }).sort((a,b) => a.displayMfg.localeCompare(b.displayMfg) || a.displayMat.localeCompare(b.displayMat));
+                    let groupArray = Object.values(grouped).map(g => ({
+                        ...g,
+                        items: Object.values(g.items)
+                    })).sort((a,b) => a.displayMfg.localeCompare(b.displayMfg) || a.displayMat.localeCompare(b.displayMat));
                     
                     window.flattenedSummaryData = [];
 
@@ -1246,20 +1363,18 @@
 
                     groupArray.forEach((group, i) => {
                         let bg = i % 2 === 0 ? 'bg-white' : 'bg-slate-50';
-                        
                         group.items.sort((a,b) => a.crit.localeCompare(b.crit));
                         let rowSpan = group.items.length;
 
                         group.items.forEach((c, cIdx) => {
-                            
                             window.flattenedSummaryData.push({
                                 mfg: group.displayMfg,
                                 addr: group.displayAddr,
                                 mat: group.displayMat,
                                 crit: c.crit,
                                 count: c.count,
-                                min: c.min,
-                                max: c.max,
+                                min: c.minRaw,
+                                max: c.maxRaw,
                                 maxInsp: c.maxInsp,
                                 maxSrc: c.maxSrc,
                                 maxDate: c.maxDate
@@ -1270,7 +1385,6 @@
 
                             html += `<tr class="${bg} transition hover:bg-blue-50/50">`;
 
-                            // Only print Mfg and Material on the first row of the group, utilizing rowspan to stretch down
                             if (cIdx === 0) {
                                 html += `
                                     <td rowspan="${rowSpan}" class="p-3 border-r border-slate-300 border-b align-top max-w-[250px] whitespace-normal bg-transparent">
@@ -1282,12 +1396,12 @@
                             }
 
                             html += `
-                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-purple-700 font-bold whitespace-normal max-w-[150px]">${c.crit !== "N/A" ? c.crit : "-"}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-purple-700 font-bold whitespace-normal max-w-[150px]">${c.crit}</td>
                                     <td class="p-3 border-r border-slate-300 ${borderB} align-top text-center">
                                         <span class="bg-emerald-100 text-emerald-800 px-2 py-0.5 rounded font-black">${c.count}</span>
                                     </td>
-                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono">${c.min}</td>
-                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono text-emerald-600 font-bold">${c.max}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono">${c.minRaw}</td>
+                                    <td class="p-3 border-r border-slate-300 ${borderB} align-top text-right font-mono text-emerald-600 font-bold">${c.maxRaw}</td>
                                     <td class="p-3 border-r border-slate-300 ${borderB} align-top max-w-[200px] whitespace-normal">
                                         ${maxMeta}
                                     </td>
@@ -1328,7 +1442,7 @@
             let mfg = `"${s.mfg.replace(/"/g, '""')}"`;
             let addr = `"${s.addr.replace(/"/g, '""')}"`;
             let mat = `"${s.mat.replace(/"/g, '""')}"`;
-            let critStr = (s.crit && s.crit !== "N/A") ? `"${s.crit}"` : "-";
+            let critStr = `"${(s.crit || '').replace(/"/g, '""')}"`;
             let insp = `"${(s.maxInsp || '').replace(/"/g, '""')}"`;
             let src = `"${(s.maxSrc || '').replace(/"/g, '""')}"`;
             let dt = `"${(s.maxDate || '').replace(/"/g, '""')}"`;
@@ -1387,7 +1501,7 @@
             const headers = [["Manufacturer Name", "Address", "Material Category", "Criteria", "Count", "Min Val", "Max Val", "Max Recorded By", "Source Sheet", "Date"]];
             
             const rows = window.flattenedSummaryData.map(s => [
-                s.mfg, s.addr, s.mat, (s.crit && s.crit !== "N/A") ? s.crit : '-', s.count, s.min, s.max, s.maxInsp || '', s.maxSrc || '', s.maxDate || ''
+                s.mfg, s.addr, s.mat, s.crit || '', s.count, s.min, s.max, s.maxInsp || '', s.maxSrc || '', s.maxDate || ''
             ]);
 
             doc.autoTable({
@@ -1417,13 +1531,8 @@
     };
 
     window.saveEaCriteria = async function(inspectionId, idx) {
-        let critInput = document.getElementById(`ea-crit-${idx}`).value;
-        if (critInput === 'Unit') {
-            const subUnit = document.getElementById(`ea-crit-unit-${idx}`).value;
-            critInput = `Per Unit - ${subUnit}`;
-        }
-        
-        const valInput = document.getElementById(`ea-val-${idx}`).value;
+        const critInput = window.resolveCriteriaInput(`ea-crit-${idx}`, `ea-crit-unit-${idx}`, `ea-crit-custom-${idx}`);
+        const valInput = window.getExactCell(document.getElementById(`ea-val-${idx}`).value);
         const btn = document.getElementById(`ea-btn-${idx}`);
 
         btn.innerHTML = `<i data-lucide="loader-2" class="w-3 h-3 animate-spin"></i>`;
@@ -1433,7 +1542,7 @@
         try {
             const payload = {
                 action: "saveCriteriaData",
-                client: window.CURRENT_CLIENT,
+                client: window.CURRENT_CLIENT || "",
                 inspectionId: inspectionId,
                 criteria: critInput,
                 value: valInput
@@ -1446,21 +1555,19 @@
             const data = await res.json();
 
             if (data.status) {
-                let record = window.eaRawData.find(r => String(r[window.EA_KEYS.id]) === String(inspectionId));
-                if (record) {
-                    record[window.EA_KEYS.criteria] = critInput;
-                    record[window.EA_KEYS.value] = valInput;
-                }
+                const resolved = (data.saved && data.saved[inspectionId]) ? data.saved[inspectionId] : { criteria: critInput, value: valInput };
 
-                const displayCrit = critInput === '%' ? '% Pct' : (critInput.startsWith('Per Unit') ? critInput : 'N/A');
-                const displayVal = valInput !== "" ? valInput : '--';
-                
-                document.getElementById(`ea-display-crit-${idx}`).innerText = displayCrit;
-                document.getElementById(`ea-display-val-${idx}`).innerText = displayVal;
-                
+                window.eaRawData.forEach(r => {
+                    if (String(r[window.EA_KEYS.id]).trim() === String(inspectionId).trim()) {
+                        r[window.EA_KEYS.criteria] = resolved.criteria;
+                        r[window.EA_KEYS.value] = resolved.value;
+                        r["__ea_criteria"] = resolved.criteria;
+                        r["__ea_value"] = resolved.value;
+                    }
+                });
+
                 window.toggleEaEditMode(idx, false);
-                window.showEaToast();
-                
+                window.showEaToast("Criteria & Value saved successfully!");
                 window.renderEaTable();
             } else {
                 alert("Failed to save: " + data.message);
@@ -1477,23 +1584,21 @@
     };
 
     window.bulkSaveEaCriteria = async function() {
-        const checkedBoxes = Array.from(document.querySelectorAll('.ea-row-cb:checked')).map(cb => cb.value);
+        const checkedIds = Array.from(new Set(
+            Array.from(document.querySelectorAll('.ea-row-cb:checked')).map(cb => String(cb.value).trim())
+        ));
         
-        let critInput = document.getElementById('ea-bulk-crit').value;
-        if (critInput === 'Unit') {
-            const subUnit = document.getElementById('ea-bulk-crit-unit').value;
-            critInput = `Per Unit - ${subUnit}`;
-        }
-        const valInput = document.getElementById('ea-bulk-val').value.trim();
+        const critInput = window.resolveCriteriaInput('ea-bulk-crit', 'ea-bulk-crit-unit', 'ea-bulk-crit-custom');
+        const valInput = window.getExactCell(document.getElementById('ea-bulk-val').value);
         const btn = document.getElementById('ea-bulk-btn');
 
-        if (checkedBoxes.length === 0) {
+        if (checkedIds.length === 0) {
             alert("Please select at least one inspection record using the checkboxes on the left to apply criteria.");
             return;
         }
 
-        if (!critInput && !valInput) {
-            alert("Please select a criteria and enter a value to bulk apply.");
+        if (!window.hasEaVal(critInput) && !window.hasEaVal(valInput)) {
+            alert("Please select or enter a criteria or value to bulk apply.");
             return;
         }
 
@@ -1501,56 +1606,62 @@
         btn.disabled = true;
         btn.classList.replace('bg-blue-600', 'bg-amber-500');
 
-        let subsetToApply = window.eaRawData.filter(r => checkedBoxes.includes(r[window.EA_KEYS.id]));
+        try {
+            const items = checkedIds.map(id => ({
+                inspectionId: id,
+                criteria: critInput,
+                value: valInput
+            }));
 
-        let successCount = 0;
-        let failCount = 0;
+            const payload = {
+                action: "bulkSaveCriteriaData",
+                client: window.CURRENT_CLIENT || "",
+                items: items
+            };
 
-        for (let i = 0; i < subsetToApply.length; i++) {
-            const inspectionId = subsetToApply[i][window.EA_KEYS.id];
-            try {
-                const payload = {
-                    action: "saveCriteriaData",
-                    client: window.CURRENT_CLIENT,
-                    inspectionId: inspectionId,
-                    criteria: critInput,
-                    value: valInput
-                };
-                
-                const res = await fetch(EXPENSE_API_URL, { 
-                    method: "POST", 
-                    body: JSON.stringify(payload) 
-                });
-                const data = await res.json();
-                
-                if (data.status) {
-                    let record = window.eaRawData.find(r => String(r[window.EA_KEYS.id]) === String(inspectionId));
-                    if (record) {
-                        record[window.EA_KEYS.criteria] = critInput;
-                        record[window.EA_KEYS.value] = valInput;
+            const res = await fetch(EXPENSE_API_URL, {
+                method: "POST",
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+
+            if (data.status) {
+                window.eaRawData.forEach(r => {
+                    const id = String(r[window.EA_KEYS.id] || "").trim();
+                    if (checkedIds.includes(id)) {
+                        const resolved = (data.saved && data.saved[id]) ? data.saved[id] : null;
+                        if (resolved) {
+                            r[window.EA_KEYS.criteria] = resolved.criteria;
+                            r[window.EA_KEYS.value] = resolved.value;
+                            r["__ea_criteria"] = resolved.criteria;
+                            r["__ea_value"] = resolved.value;
+                        } else {
+                            if (window.hasEaVal(critInput)) {
+                                r[window.EA_KEYS.criteria] = critInput;
+                                r["__ea_criteria"] = critInput;
+                            }
+                            if (window.hasEaVal(valInput)) {
+                                r[window.EA_KEYS.value] = valInput;
+                                r["__ea_value"] = valInput;
+                            }
+                        }
                     }
-                    successCount++;
-                } else {
-                    failCount++;
-                }
-            } catch (e) {
-                console.error("Bulk save error for ID: " + inspectionId, e);
-                failCount++;
+                });
+
+                window.showEaToast(`Successfully applied to ${data.count || checkedIds.length} selected record(s)!`);
+                window.renderEaTable();
+            } else {
+                alert("Bulk Apply Failed: " + (data.message || "Unknown server error"));
             }
+        } catch (e) {
+            console.error("Bulk save network error:", e);
+            alert("Network Error during Bulk Apply. Please check your connection and try again.");
+        } finally {
+            btn.disabled = false;
+            btn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> Apply`;
+            btn.classList.replace('bg-amber-500', 'bg-blue-600');
+            if (window.lucide) window.lucide.createIcons();
         }
-
-        if (failCount > 0) {
-            alert(`Bulk Apply Complete.\nSuccess: ${successCount}\nFailed: ${failCount}\n\nPlease sync and try again for failed records.`);
-        } else {
-            window.showEaToast(`Successfully applied to ${successCount} selected records!`);
-        }
-
-        btn.disabled = false;
-        btn.innerHTML = `<i data-lucide="check-square" class="w-3.5 h-3.5"></i> Apply`;
-        btn.classList.replace('bg-amber-500', 'bg-blue-600');
-        if (window.lucide) window.lucide.createIcons();
-        
-        window.renderEaTable();
     };
 
     window.openEaDetailsModal = function(encodedPayload) {
@@ -1561,7 +1672,7 @@
 
         let html = `<div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">`;
         window.eaHeaders.forEach(header => {
-            if(header && r[header] !== undefined && r[header] !== "") {
+            if(header && window.hasEaVal(r[header])) {
                 html += `
                     <div class="bg-slate-50 p-2.5 rounded-xl border border-slate-200">
                         <span class="block text-[9px] font-black uppercase text-slate-400 mb-0.5 truncate" title="${header}">${header}</span>
@@ -1580,8 +1691,145 @@
         document.getElementById("ea-details-modal").classList.add("hidden");
     };
 
+    window.eaGraphState = {
+        critKey: "",
+        sortBy: "val", // "val" (ascending) or "date"
+        entries: []
+    };
+
+    window.setEaGraphSort = function(mode) {
+        window.eaGraphState.sortBy = mode;
+        const btnVal = document.getElementById("ea-sort-mode-val");
+        const btnDate = document.getElementById("ea-sort-mode-date");
+        if (btnVal && btnDate) {
+            if (mode === "val") {
+                btnVal.className = "px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-600 text-white transition cursor-pointer";
+                btnDate.className = "px-3 py-1 rounded-lg text-[10px] font-black uppercase text-slate-600 hover:text-slate-900 transition cursor-pointer";
+            } else {
+                btnDate.className = "px-3 py-1 rounded-lg text-[10px] font-black uppercase bg-blue-600 text-white transition cursor-pointer";
+                btnVal.className = "px-3 py-1 rounded-lg text-[10px] font-black uppercase text-slate-600 hover:text-slate-900 transition cursor-pointer";
+            }
+        }
+        window.renderCriteriaGraph();
+    };
+
+    window.openCriteriaGraph = function(encodedCritKey) {
+        const critKey = decodeURIComponent(encodedCritKey || "");
+        const rows = window.eaLastRenderedRows || window.eaRawData || [];
+
+        const matched = rows.filter(r => {
+            const critRaw = r[window.EA_KEYS.criteria] !== undefined ? r[window.EA_KEYS.criteria] : r["__ea_criteria"];
+            const valRaw = r[window.EA_KEYS.value] !== undefined ? r[window.EA_KEYS.value] : r["__ea_value"];
+            const cStr = window.getExactCell(critRaw);
+            const vStr = window.getExactCell(valRaw);
+            if (cStr === "" && vStr === "") return false;
+            return cStr === critKey;
+        });
+
+        window.eaGraphState.critKey = critKey;
+        window.eaGraphState.sortBy = "val";
+        window.eaGraphState.entries = matched.map(r => {
+            const valRaw = r[window.EA_KEYS.value] !== undefined ? r[window.EA_KEYS.value] : r["__ea_value"];
+            const vStr = window.getExactCell(valRaw);
+            const numV = window.parseEaNumber(valRaw);
+            const insp = window.getExactCell(r[window.EA_KEYS.inspector]) || "Unassigned";
+            const dates = window.getExactCell(r[window.EA_KEYS.dates]) || "-";
+            const id = window.getExactCell(r[window.EA_KEYS.id]) || "-";
+            const src = window.getExactCell(r[window.EA_KEYS.source]) || "";
+            return {
+                id,
+                inspector: insp,
+                dates,
+                source: src,
+                valStr: vStr,
+                numVal: numV !== null ? numV : 0,
+                isNum: numV !== null,
+                dateEpoch: window.extractLastDateEpoch(dates)
+            };
+        });
+
+        document.getElementById("ea-graph-crit-title").innerText = critKey || "(Blank Criteria)";
+        document.getElementById("ea-graph-crit-subtitle").innerText = `${matched.length} matching entry(s) in current view`;
+        window.setEaGraphSort("val");
+        document.getElementById("ea-crit-graph-modal").classList.remove("hidden");
+        if (window.lucide) window.lucide.createIcons();
+    };
+
+    window.closeEaGraphModal = function() {
+        document.getElementById("ea-crit-graph-modal").classList.add("hidden");
+    };
+
+    window.renderCriteriaGraph = function() {
+        const body = document.getElementById("ea-graph-body");
+        if (!body) return;
+
+        const mode = window.eaGraphState.sortBy;
+        const list = window.eaGraphState.entries.slice();
+
+        if (mode === "val") {
+            list.sort((a, b) => (a.numVal - b.numVal) || (a.dateEpoch - b.dateEpoch));
+        } else {
+            list.sort((a, b) => (a.dateEpoch - b.dateEpoch) || (a.numVal - b.numVal));
+        }
+
+        if (list.length === 0) {
+            body.innerHTML = `<div class="p-8 text-center text-slate-400 font-bold">No entries found for this criteria.</div>`;
+            return;
+        }
+
+        const maxNum = Math.max(1, ...list.map(item => (item.isNum ? Math.abs(item.numVal) : 0)));
+        const chartHeightPx = 220;
+
+        const columnsHtml = list.map((item) => {
+            const rawRatio = item.isNum ? (Math.abs(item.numVal) / maxNum) : 0;
+            const barPx = item.isNum
+                ? Math.max(item.numVal === 0 ? 6 : 16, Math.round(rawRatio * chartHeightPx))
+                : 6;
+            const displayVal = item.valStr !== "" ? item.valStr : "-";
+
+            return `
+                <div class="flex flex-col items-center justify-end min-w-[115px] max-w-[140px] shrink-0 group">
+                    <!-- Inspector Name & Value label on top of each column -->
+                    <div class="mb-1.5 text-center px-1 w-full">
+                        <div class="text-[10px] font-black text-slate-900 bg-amber-50 border border-amber-200 px-2 py-0.5 rounded-lg truncate" title="${window.escapeHtml(item.inspector)}">
+                            ${window.escapeHtml(item.inspector)}
+                        </div>
+                        <div class="font-mono text-[11px] font-black text-emerald-700 mt-0.5">
+                            ${window.escapeHtml(displayVal)}
+                        </div>
+                    </div>
+
+                    <!-- Vertical Value Column -->
+                    <div class="w-12 sm:w-14 rounded-t-xl bg-gradient-to-t from-blue-700 to-blue-500 group-hover:from-emerald-600 group-hover:to-emerald-400 transition-all duration-300 shadow-sm border-x border-t border-blue-800/20" style="height: ${barPx}px;" title="${window.escapeHtml(item.inspector)} • Value: ${window.escapeHtml(displayVal)} • ID: ${window.escapeHtml(item.id)}"></div>
+
+                    <!-- X-Axis: Date(s) of Inspection & ID -->
+                    <div class="w-full border-t-2 border-slate-700 pt-1.5 mt-0 text-center px-1">
+                        <div class="font-mono text-[9px] font-bold text-slate-700 leading-tight break-words" title="${window.escapeHtml(item.dates)}">
+                            ${window.escapeHtml(item.dates)}
+                        </div>
+                        <div class="font-mono text-[8px] text-slate-400 mt-0.5 truncate" title="${window.escapeHtml(item.id)}">
+                            ${window.escapeHtml(item.id)}
+                        </div>
+                    </div>
+                </div>
+            `;
+        }).join("");
+
+        body.innerHTML = `
+            <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-wider text-slate-400">
+                <span>Y-Axis: Value • X-Axis: Date(s) of Inspection • Sorted by ${mode === "val" ? "Value (Ascending)" : "Inspection Date"}</span>
+                <span>${list.length} Entry(s)</span>
+            </div>
+
+            <div class="bg-slate-50 border border-slate-200 rounded-2xl p-4 overflow-x-auto custom-scrollbar">
+                <div class="flex items-end gap-3 pb-1 min-h-[300px]">
+                    ${columnsHtml}
+                </div>
+            </div>
+        `;
+    };
+
     setTimeout(() => {
         window.initExpenseAnalysisModule();
     }, 50);
 </script>
-```<FollowUp 08/09/2026 12/09/2026" To comparison?" for label="Want me to explain how the date parsing script manages timestamp comparisons?" query="Can you explain how the extractLastDateEpoch function parses dates in strings like "/>
