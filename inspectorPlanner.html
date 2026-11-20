@@ -91,6 +91,8 @@
                 <select id="planner-sort-by" onchange="window.renderInspectorPlannerTable()" class="w-full p-2.5 border border-slate-300 rounded-xl text-xs font-bold outline-none bg-white cursor-pointer">
                     <option value="date-asc">Schedule Date (Ascending)</option>
                     <option value="mfg-asc">Manufacturer Name (A-Z)</option>
+                    <option value="letter-asc">Letter Date (Ascending)</option>
+                    <option value="letter-desc">Letter Date (Descending)</option>
                 </select>
             </div>
         </div>
@@ -104,7 +106,12 @@
                 <thead class="bg-slate-900 text-white uppercase text-[9px] font-mono sticky top-0 z-10">
                     <tr>
                         <th class="border-r border-slate-700 bg-slate-900">
-                            <div class="p-3 resize-x overflow-auto min-w-[180px]">Discom, Inspection ID, Letter No & Date</div>
+                            <div class="p-3 resize-x overflow-auto min-w-[180px] flex items-center justify-between gap-2">
+                                <span>Discom, Inspection ID, Letter No & Date</span>
+                                <button type="button" onclick="window.toggleLetterDateSort()" title="Sort by Letter Date (Asc/Desc)" class="px-1.5 py-0.5 rounded bg-slate-800 hover:bg-slate-700 text-slate-200 cursor-pointer shrink-0">
+                                    <span id="letter-date-sort-icon">⇅</span>
+                                </button>
+                            </div>
                         </th>
                         <th class="border-r border-slate-700 bg-slate-900">
                             <div class="p-3 resize-x overflow-auto min-w-[150px]">Assigned Inspector</div>
@@ -444,6 +451,21 @@
         document.getElementById("planner-inspection-modal").classList.add("hidden");
     };
 
+
+    window.toggleLetterDateSort = function() {
+        const sortSelect = document.getElementById("planner-sort-by");
+        if (!sortSelect) return;
+        sortSelect.value = sortSelect.value === "letter-asc" ? "letter-desc" : "letter-asc";
+        window.renderInspectorPlannerTable();
+    };
+
+    window.toggleLetterDateSort = function() {
+        const sortSelect = document.getElementById("planner-sort-by");
+        if (!sortSelect) return;
+        sortSelect.value = sortSelect.value === "letter-asc" ? "letter-desc" : "letter-asc";
+        window.renderInspectorPlannerTable();
+    };
+
     window.renderInspectorPlannerTable = function() {
         const inspectorFilter = document.getElementById("planner-filter-inspector").value;
         const discomFilter = document.getElementById("planner-filter-discom").value;
@@ -514,11 +536,23 @@
         document.getElementById("sum-block-inspectors").innerText = sumInspectorsSet.size;
         document.getElementById("sum-block-total").innerText = filtered.length;
 
+        const letterSortIcon = document.getElementById("letter-date-sort-icon");
+        if (letterSortIcon) {
+            letterSortIcon.innerText = sortBy === "letter-asc" ? "↑" : (sortBy === "letter-desc" ? "↓" : "⇅");
+        }
+
         filtered.sort((a, b) => {
             if (sortBy === "mfg-asc") {
                 const mfgA = String(a.manufacturer || "").toLowerCase();
                 const mfgB = String(b.manufacturer || "").toLowerCase();
                 return mfgA.localeCompare(mfgB);
+            } else if (sortBy === "letter-asc" || sortBy === "letter-desc") {
+                const dateA = window.parsePlannerDate(a.letterDate);
+                const dateB = window.parsePlannerDate(b.letterDate);
+                if (!dateA && !dateB) return 0;
+                if (!dateA) return 1;
+                if (!dateB) return -1;
+                return sortBy === "letter-asc" ? dateA - dateB : dateB - dateA;
             } else {
                 const dateA = window.parsePlannerDate(a.scheduleDate);
                 const dateB = window.parsePlannerDate(b.scheduleDate);
@@ -597,7 +631,7 @@
         tbody.innerHTML = html;
         if (window.lucide) window.lucide.createIcons();
     };
-
+    
     // LEAFLET MAP & COMPREHENSIVE SMART COORDINATE RESOLUTION ENGINE
     window.initOrRefreshLeafletMap = function() {
         if (typeof L === 'undefined') {
